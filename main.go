@@ -15,1295 +15,529 @@ var (
 )
 
 func main() {
+	//Initialise first 256 bytes of memory with the 6502 opcode table
 	for i := 0; i < 256; i++ {
 		memory[i] = byte(i)
 	}
 
-	//Run the program counter from zero to end of memory and decode the fetched opcode
+	//Run the program counter from zero to end of table and decode the fetched opcode
 	for PC := 0; PC < 256; PC++ {
 		switch memory[PC] {
 		case 0x00:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x00")
-			fmt.Println(" Instruction: BRK")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BRK\n", PC, memory[PC])
 		case 0x01:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x01")
-			fmt.Println(" Instruction: ORA (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ORA (Indirect,X)\n", PC, memory[PC])
 		case 0x02:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x02")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0x03:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x03")
-			fmt.Println(" Instruction: SLO (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SLO (Indirect,X)\n", PC, memory[PC])
 		case 0x04:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x04")
-			fmt.Println(" Instruction: NOP Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Zero Page\n", PC, memory[PC])
 		case 0x05:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x05")
-			fmt.Println(" Instruction: ORA Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ORA Zero Page\n", PC, memory[PC])
 		case 0x06:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x06")
-			fmt.Println(" Instruction: ASL Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ASL Zero Page\n", PC, memory[PC])
 		case 0x07:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x07")
-			fmt.Println(" Instruction: SLO Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SLO Zero Page\n", PC, memory[PC])
 		case 0x08:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x08")
-			fmt.Println(" Instruction: PHP")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: PHP\n", PC, memory[PC])
 		case 0x09:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x09")
-			fmt.Println(" Instruction: ORA Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ORA Immediate\n", PC, memory[PC])
 		case 0x0A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x0A")
-			fmt.Println(" Instruction: ASL Accumulator")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ASL Accumulator\n", PC, memory[PC])
 		case 0x0B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x0B")
-			fmt.Println(" Instruction: ANC Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ANC Immediate\n", PC, memory[PC])
 		case 0x0C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x0C")
-			fmt.Println(" Instruction: NOP Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Absolute\n", PC, memory[PC])
 		case 0x0D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x0D")
-			fmt.Println(" Instruction: ORA Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ORA Absolute\n", PC, memory[PC])
 		case 0x0E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x0E")
-			fmt.Println(" Instruction: ASL Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ASL Absolute\n", PC, memory[PC])
 		case 0x0F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x0F")
-			fmt.Println(" Instruction: SLO Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SLO Absolute\n", PC, memory[PC])
 		case 0x10:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x10")
-			fmt.Println(" Instruction: BPL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BPL\n", PC, memory[PC])
 		case 0x11:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x11")
-			fmt.Println(" Instruction: ORA (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ORA (Indirect),Y\n", PC, memory[PC])
 		case 0x12:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x12")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0x13:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x13")
-			fmt.Println(" Instruction: SLO (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SLO (Indirect),Y\n", PC, memory[PC])
 		case 0x14:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x14")
-			fmt.Println(" Instruction: NOP Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Zero Page,X\n", PC, memory[PC])
 		case 0x15:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x15")
-			fmt.Println(" Instruction: ORA Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ORA Zero Page,X\n", PC, memory[PC])
 		case 0x16:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x16")
-			fmt.Println(" Instruction: ASL Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ASL Zero Page,X\n", PC, memory[PC])
 		case 0x17:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x17")
-			fmt.Println(" Instruction: SLO Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SLO Zero Page,X\n", PC, memory[PC])
 		case 0x18:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x18")
-			fmt.Println(" Instruction: CLC")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CLC\n", PC, memory[PC])
 		case 0x19:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x19")
-			fmt.Println(" Instruction: ORA Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ORA Absolute,Y\n", PC, memory[PC])
 		case 0x1A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x1A")
-			fmt.Println(" Instruction: NOP")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP\n", PC, memory[PC])
 		case 0x1B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x1B")
-			fmt.Println(" Instruction: SLO Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SLO Absolute,Y\n", PC, memory[PC])
 		case 0x1C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x1C")
-			fmt.Println(" Instruction: NOP Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Absolute,X\n", PC, memory[PC])
 		case 0x1D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x1D")
-			fmt.Println(" Instruction: ORA Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ORA Absolute,X\n", PC, memory[PC])
 		case 0x1E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x1E")
-			fmt.Println(" Instruction: ASL Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ASL Absolute,X\n", PC, memory[PC])
 		case 0x1F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x1F")
-			fmt.Println(" Instruction: SLO Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SLO Absolute,X\n", PC, memory[PC])
 		case 0x20:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x20")
-			fmt.Println(" Instruction: JSR")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: JSR\n", PC, memory[PC])
 		case 0x21:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x21")
-			fmt.Println(" Instruction: AND (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AND (Indirect,X)\n", PC, memory[PC])
 		case 0x22:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x22")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0x23:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x23")
-			fmt.Println(" Instruction: RLA (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RLA (Indirect,X)\n", PC, memory[PC])
 		case 0x24:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x24")
-			fmt.Println(" Instruction: BIT Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BIT Zero Page\n", PC, memory[PC])
 		case 0x25:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x25")
-			fmt.Println(" Instruction: AND Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AND Zero Page\n", PC, memory[PC])
 		case 0x26:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x26")
-			fmt.Println(" Instruction: ROL Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROL Zero Page\n", PC, memory[PC])
 		case 0x27:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x27")
-			fmt.Println(" Instruction: RLA Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RLA Zero Page\n", PC, memory[PC])
 		case 0x28:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x28")
-			fmt.Println(" Instruction: PLP")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: PLP\n", PC, memory[PC])
 		case 0x29:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x29")
-			fmt.Println(" Instruction: AND Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AND Immediate\n", PC, memory[PC])
 		case 0x2A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x2A")
-			fmt.Println(" Instruction: ROL Accumulator")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROL Accumulator\n", PC, memory[PC])
 		case 0x2B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x2B")
-			fmt.Println(" Instruction: ANC Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ANC Immediate\n", PC, memory[PC])
 		case 0x2C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x2C")
-			fmt.Println(" Instruction: BIT Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BIT Absolute\n", PC, memory[PC])
 		case 0x2D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x2D")
-			fmt.Println(" Instruction: AND Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AND Absolute\n", PC, memory[PC])
 		case 0x2E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x2E")
-			fmt.Println(" Instruction: ROL Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROL Absolute\n", PC, memory[PC])
 		case 0x2F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x2F")
-			fmt.Println(" Instruction: RLA Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RLA Absolute\n", PC, memory[PC])
 		case 0x30:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x30")
-			fmt.Println(" Instruction: BMI")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BMI\n", PC, memory[PC])
 		case 0x31:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x31")
-			fmt.Println(" Instruction: AND (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AND (Indirect),Y\n", PC, memory[PC])
 		case 0x32:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x32")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0x33:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x33")
-			fmt.Println(" Instruction: RLA (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RLA (Indirect),Y\n", PC, memory[PC])
 		case 0x34:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x34")
-			fmt.Println(" Instruction: NOP Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Zero Page,X\n", PC, memory[PC])
 		case 0x35:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x35")
-			fmt.Println(" Instruction: AND Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AND Zero Page,X\n", PC, memory[PC])
 		case 0x36:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x36")
-			fmt.Println(" Instruction: ROL Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROL Zero Page,X\n", PC, memory[PC])
 		case 0x37:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x37")
-			fmt.Println(" Instruction: RLA Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RLA Zero Page,X\n", PC, memory[PC])
 		case 0x38:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x38")
-			fmt.Println(" Instruction: SEC")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SEC\n", PC, memory[PC])
 		case 0x39:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x39")
-			fmt.Println(" Instruction: AND Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AND Absolute,Y\n", PC, memory[PC])
 		case 0x3A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x3A")
-			fmt.Println(" Instruction: NOP")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP\n", PC, memory[PC])
 		case 0x3B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x3B")
-			fmt.Println(" Instruction: RLA Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RLA Absolute,Y\n", PC, memory[PC])
 		case 0x3C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x3C")
-			fmt.Println(" Instruction: NOP Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Absolute,X\n", PC, memory[PC])
 		case 0x3D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x3D")
-			fmt.Println(" Instruction: AND Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AND Absolute,X\n", PC, memory[PC])
 		case 0x3E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x3E")
-			fmt.Println(" Instruction: ROL Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROL Absolute,X\n", PC, memory[PC])
 		case 0x3F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x3F")
-			fmt.Println(" Instruction: RLA Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RLA Absolute,X\n", PC, memory[PC])
 		case 0x40:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x40")
-			fmt.Println(" Instruction: RTI")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RTI\n", PC, memory[PC])
 		case 0x41:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x41")
-			fmt.Println(" Instruction: EOR (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: EOR (Indirect,X)\n", PC, memory[PC])
 		case 0x42:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x42")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0x43:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x43")
-			fmt.Println(" Instruction: SRE (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SRE (Indirect,X)\n", PC, memory[PC])
 		case 0x44:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x44")
-			fmt.Println(" Instruction: NOP Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Zero Page\n", PC, memory[PC])
 		case 0x45:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x45")
-			fmt.Println(" Instruction: EOR Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: EOR Zero Page\n", PC, memory[PC])
 		case 0x46:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x46")
-			fmt.Println(" Instruction: LSR Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LSR Zero Page\n", PC, memory[PC])
 		case 0x47:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x47")
-			fmt.Println(" Instruction: SRE Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SRE Zero Page\n", PC, memory[PC])
 		case 0x48:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x48")
-			fmt.Println(" Instruction: PHA")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: PHA\n", PC, memory[PC])
 		case 0x49:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x49")
-			fmt.Println(" Instruction: EOR Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: EOR Immediate\n", PC, memory[PC])
 		case 0x4A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x4A")
-			fmt.Println(" Instruction: LSR Accumulator")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LSR Accumulator\n", PC, memory[PC])
 		case 0x4B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x4B")
-			fmt.Println(" Instruction: ALR Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ALR Immediate\n", PC, memory[PC])
 		case 0x4C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x4C")
-			fmt.Println(" Instruction: JMP Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: JMP Absolute\n", PC, memory[PC])
 		case 0x4D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x4D")
-			fmt.Println(" Instruction: EOR Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: EOR Absolute\n", PC, memory[PC])
 		case 0x4E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x4E")
-			fmt.Println(" Instruction: LSR Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LSR Absolute\n", PC, memory[PC])
 		case 0x4F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x4F")
-			fmt.Println(" Instruction: SRE Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SRE Absolute\n", PC, memory[PC])
 		case 0x50:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x50")
-			fmt.Println(" Instruction: BVC")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BVC\n", PC, memory[PC])
 		case 0x51:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x51")
-			fmt.Println(" Instruction: EOR (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: EOR (Indirect),Y\n", PC, memory[PC])
 		case 0x52:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x52")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0x53:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x53")
-			fmt.Println(" Instruction: SRE (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SRE (Indirect),Y\n", PC, memory[PC])
 		case 0x54:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x54")
-			fmt.Println(" Instruction: NOP Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Zero Page,X\n", PC, memory[PC])
 		case 0x55:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x55")
-			fmt.Println(" Instruction: EOR Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: EOR Zero Page,X\n", PC, memory[PC])
 		case 0x56:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x56")
-			fmt.Println(" Instruction: LSR Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LSR Zero Page,X\n", PC, memory[PC])
 		case 0x57:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x57")
-			fmt.Println(" Instruction: SRE Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SRE Zero Page,X\n", PC, memory[PC])
 		case 0x58:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x58")
-			fmt.Println(" Instruction: CLI")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CLI\n", PC, memory[PC])
 		case 0x59:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x59")
-			fmt.Println(" Instruction: EOR Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: EOR Absolute,Y\n", PC, memory[PC])
 		case 0x5A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x5A")
-			fmt.Println(" Instruction: NOP")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP\n", PC, memory[PC])
 		case 0x5B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x5B")
-			fmt.Println(" Instruction: SRE Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SRE Absolute,Y\n", PC, memory[PC])
 		case 0x5C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x5C")
-			fmt.Println(" Instruction: NOP Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Absolute,X\n", PC, memory[PC])
 		case 0x5D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x5D")
-			fmt.Println(" Instruction: EOR Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: EOR Absolute,X\n", PC, memory[PC])
 		case 0x5E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x5E")
-			fmt.Println(" Instruction: LSR Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LSR Absolute,X\n", PC, memory[PC])
 		case 0x5F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x5F")
-			fmt.Println(" Instruction: SRE Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SRE Absolute,X\n", PC, memory[PC])
 		case 0x60:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x60")
-			fmt.Println(" Instruction: RTS")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RTS\n", PC, memory[PC])
 		case 0x61:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x61")
-			fmt.Println(" Instruction: ADC (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ADC (Indirect,X)\n", PC, memory[PC])
 		case 0x62:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x62")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0x63:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x63")
-			fmt.Println(" Instruction: RRA (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RRA (Indirect,X)\n", PC, memory[PC])
 		case 0x64:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x64")
-			fmt.Println(" Instruction: NOP Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Zero Page\n", PC, memory[PC])
 		case 0x65:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x65")
-			fmt.Println(" Instruction: ADC Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ADC Zero Page\n", PC, memory[PC])
 		case 0x66:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x66")
-			fmt.Println(" Instruction: ROR Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROR Zero Page\n", PC, memory[PC])
 		case 0x67:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x67")
-			fmt.Println(" Instruction: RRA Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RRA Zero Page\n", PC, memory[PC])
 		case 0x68:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x68")
-			fmt.Println(" Instruction: PLA")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: PLA\n", PC, memory[PC])
 		case 0x69:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x69")
-			fmt.Println(" Instruction: ADC Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ADC Immediate\n", PC, memory[PC])
 		case 0x6A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x6A")
-			fmt.Println(" Instruction: ROR Accumulator")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROR Accumulator\n", PC, memory[PC])
 		case 0x6B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x6B")
-			fmt.Println(" Instruction: ARR Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ARR Immediate\n", PC, memory[PC])
 		case 0x6C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x6C")
-			fmt.Println(" Instruction: JMP (Indirect)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: JMP (Indirect)\n", PC, memory[PC])
 		case 0x6D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x6D")
-			fmt.Println(" Instruction: ADC Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ADC Absolute\n", PC, memory[PC])
 		case 0x6E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x6E")
-			fmt.Println(" Instruction: ROR Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROR Absolute\n", PC, memory[PC])
 		case 0x6F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x6F")
-			fmt.Println(" Instruction: RRA Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RRA Absolute\n", PC, memory[PC])
 		case 0x70:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x70")
-			fmt.Println(" Instruction: BVS")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BVS\n", PC, memory[PC])
 		case 0x71:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x71")
-			fmt.Println(" Instruction: ADC (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ADC (Indirect),Y\n", PC, memory[PC])
 		case 0x72:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x72")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0x73:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x73")
-			fmt.Println(" Instruction: RRA (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RRA (Indirect),Y\n", PC, memory[PC])
 		case 0x74:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x74")
-			fmt.Println(" Instruction: NOP Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Zero Page,X\n", PC, memory[PC])
 		case 0x75:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x75")
-			fmt.Println(" Instruction: ADC Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ADC Zero Page,X\n", PC, memory[PC])
 		case 0x76:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x76")
-			fmt.Println(" Instruction: ROR Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROR Zero Page,X\n", PC, memory[PC])
 		case 0x77:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x77")
-			fmt.Println(" Instruction: RRA Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RRA Zero Page,X\n", PC, memory[PC])
 		case 0x78:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x78")
-			fmt.Println(" Instruction: SEI")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SEI\n", PC, memory[PC])
 		case 0x79:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x79")
-			fmt.Println(" Instruction: ADC Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ADC Absolute,Y\n", PC, memory[PC])
 		case 0x7A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x7A")
-			fmt.Println(" Instruction: NOP")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP\n", PC, memory[PC])
 		case 0x7B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x7B")
-			fmt.Println(" Instruction: RRA Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RRA Absolute,Y\n", PC, memory[PC])
 		case 0x7C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x7C")
-			fmt.Println(" Instruction: NOP Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Absolute,X\n", PC, memory[PC])
 		case 0x7D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x7D")
-			fmt.Println(" Instruction: ADC Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ADC Absolute,X\n", PC, memory[PC])
 		case 0x7E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x7E")
-			fmt.Println(" Instruction: ROR Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ROR Absolute,X\n", PC, memory[PC])
 		case 0x7F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x7F")
-			fmt.Println(" Instruction: RRA Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: RRA Absolute,X\n", PC, memory[PC])
 		case 0x80:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x80")
-			fmt.Println(" Instruction: NOP Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Immediate\n", PC, memory[PC])
 		case 0x81:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x81")
-			fmt.Println(" Instruction: STA (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STA (Indirect,X)\n", PC, memory[PC])
 		case 0x82:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x82")
-			fmt.Println(" Instruction: NOP Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP\n", PC, memory[PC])
 		case 0x83:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x83")
-			fmt.Println(" Instruction: SAX (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SAX (Indirect,X)\n", PC, memory[PC])
 		case 0x84:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x84")
-			fmt.Println(" Instruction: STY Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STY Zero Page\n", PC, memory[PC])
 		case 0x85:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x85")
-			fmt.Println(" Instruction: STA Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STA Zero Page\n", PC, memory[PC])
 		case 0x86:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x86")
-			fmt.Println(" Instruction: STX Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STX Zero Page\n", PC, memory[PC])
 		case 0x87:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x87")
-			fmt.Println(" Instruction: SAX Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SAX Zero Page\n", PC, memory[PC])
 		case 0x88:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x88")
-			fmt.Println(" Instruction: DEY")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DEY\n", PC, memory[PC])
 		case 0x89:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x89")
-			fmt.Println(" Instruction: NOP Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP\n", PC, memory[PC])
 		case 0x8A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x8A")
-			fmt.Println(" Instruction: TXA")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: TXA\n", PC, memory[PC])
 		case 0x8B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x8B")
-			fmt.Println(" Instruction: XAA Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: XAA Immediate\n", PC, memory[PC])
 		case 0x8C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x8C")
-			fmt.Println(" Instruction: STY Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STY Absolute\n", PC, memory[PC])
 		case 0x8D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x8D")
-			fmt.Println(" Instruction: STA Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STA Absolute\n", PC, memory[PC])
 		case 0x8E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x8E")
-			fmt.Println(" Instruction: STX Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STX Absolute\n", PC, memory[PC])
 		case 0x8F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x8F")
-			fmt.Println(" Instruction: SAX Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SAX Absolute\n", PC, memory[PC])
 		case 0x90:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x90")
-			fmt.Println(" Instruction: BCC")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BCC\n", PC, memory[PC])
 		case 0x91:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x91")
-			fmt.Println(" Instruction: STA (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STA (Indirect),Y\n", PC, memory[PC])
 		case 0x92:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x92")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0x93:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x93")
-			fmt.Println(" Instruction: AHX (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AHX (Indirect),Y\n", PC, memory[PC])
 		case 0x94:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x94")
-			fmt.Println(" Instruction: STY Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STY Zero Page,X\n", PC, memory[PC])
 		case 0x95:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x95")
-			fmt.Println(" Instruction: STA Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STA Zero Page,X\n", PC, memory[PC])
 		case 0x96:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x96")
-			fmt.Println(" Instruction: STX Zero Page,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STX Zero Page,Y\n", PC, memory[PC])
 		case 0x97:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x97")
-			fmt.Println(" Instruction: SAX Zero Page,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SAX Zero Page,Y\n", PC, memory[PC])
 		case 0x98:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x98")
-			fmt.Println(" Instruction: TYA")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: TYA\n", PC, memory[PC])
 		case 0x99:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x99")
-			fmt.Println(" Instruction: STA Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STA Absolute,Y\n", PC, memory[PC])
 		case 0x9A:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x9A")
-			fmt.Println(" Instruction: TXS")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: TXS\n", PC, memory[PC])
 		case 0x9B:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x9B")
-			fmt.Println(" Instruction: TAS Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: TAS Absolute,Y\n", PC, memory[PC])
 		case 0x9C:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x9C")
-			fmt.Println(" Instruction: SHY Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SHY Absolute,X\n", PC, memory[PC])
 		case 0x9D:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x9D")
-			fmt.Println(" Instruction: STA Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: STA Absolute,X\n", PC, memory[PC])
 		case 0x9E:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x9E")
-			fmt.Println(" Instruction: SHX Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SHX Absolute,Y\n", PC, memory[PC])
 		case 0x9F:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0x9F")
-			fmt.Println(" Instruction: AHX Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AHX Absolute,Y\n", PC, memory[PC])
 		case 0xA0:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA0")
-			fmt.Println(" Instruction: LDY Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDY Immediate\n", PC, memory[PC])
 		case 0xA1:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA1")
-			fmt.Println(" Instruction: LDA (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDA (Indirect,X)\n", PC, memory[PC])
 		case 0xA2:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA2")
-			fmt.Println(" Instruction: LDX Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDX Immediate\n", PC, memory[PC])
 		case 0xA3:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA3")
-			fmt.Println(" Instruction: LAX (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LAX (Indirect,X)\n", PC, memory[PC])
 		case 0xA4:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA4")
-			fmt.Println(" Instruction: LDY Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDY Zero Page\n", PC, memory[PC])
 		case 0xA5:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA5")
-			fmt.Println(" Instruction: LDA Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDA Zero Page\n", PC, memory[PC])
 		case 0xA6:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA6")
-			fmt.Println(" Instruction: LDX Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDX Zero Page\n", PC, memory[PC])
 		case 0xA7:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA7")
-			fmt.Println(" Instruction: LAX Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LAX Zero Page\n", PC, memory[PC])
 		case 0xA8:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA8")
-			fmt.Println(" Instruction: TAY")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: TAY\n", PC, memory[PC])
 		case 0xA9:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xA9")
-			fmt.Println(" Instruction: LDA Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDA Immediate\n", PC, memory[PC])
 		case 0xAA:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xAA")
-			fmt.Println(" Instruction: TAX")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: TAX\n", PC, memory[PC])
 		case 0xAB:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xAB")
-			fmt.Println(" Instruction: LAX Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LAX Immediate\n", PC, memory[PC])
 		case 0xAC:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xAC")
-			fmt.Println(" Instruction: LDY Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDY Absolute\n", PC, memory[PC])
 		case 0xAD:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xAD")
-			fmt.Println(" Instruction: LDA Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDA Absolute\n", PC, memory[PC])
 		case 0xAE:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xAE")
-			fmt.Println(" Instruction: LDX Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDX Absolute\n", PC, memory[PC])
 		case 0xAF:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xAF")
-			fmt.Println(" Instruction: LAX Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LAX Absolute\n", PC, memory[PC])
 		case 0xB0:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB0")
-			fmt.Println(" Instruction: BCS")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BCS\n", PC, memory[PC])
 		case 0xB1:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB1")
-			fmt.Println(" Instruction: LDA (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDA (Indirect),Y\n", PC, memory[PC])
 		case 0xB2:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB2")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0xB3:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB3")
-			fmt.Println(" Instruction: LAX (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LAX (Indirect),Y\n", PC, memory[PC])
 		case 0xB4:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB4")
-			fmt.Println(" Instruction: LDY Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDY Zero Page,X\n", PC, memory[PC])
 		case 0xB5:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB5")
-			fmt.Println(" Instruction: LDA Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDA Zero Page,X\n", PC, memory[PC])
 		case 0xB6:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB6")
-			fmt.Println(" Instruction: LDX Zero Page,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDX Zero Page,Y\n", PC, memory[PC])
 		case 0xB7:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB7")
-			fmt.Println(" Instruction: LAX Zero Page,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LAX Zero Page,Y\n", PC, memory[PC])
 		case 0xB8:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB8")
-			fmt.Println(" Instruction: CLV")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CLV\n", PC, memory[PC])
 		case 0xB9:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xB9")
-			fmt.Println(" Instruction: LDA Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDA Absolute,Y\n", PC, memory[PC])
 		case 0xBA:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xBA")
-			fmt.Println(" Instruction: TSX")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: TSX\n", PC, memory[PC])
 		case 0xBB:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xBB")
-			fmt.Println(" Instruction: LAS Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LAS Absolute,Y\n", PC, memory[PC])
 		case 0xBC:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xBC")
-			fmt.Println(" Instruction: LDY Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDY Absolute,X\n", PC, memory[PC])
 		case 0xBD:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xBD")
-			fmt.Println(" Instruction: LDA Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDA Absolute,X\n", PC, memory[PC])
 		case 0xBE:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xBE")
-			fmt.Println(" Instruction: LDX Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LDX Absolute,Y\n", PC, memory[PC])
 		case 0xBF:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xBF")
-			fmt.Println(" Instruction: LAX Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: LAX Absolute,Y\n", PC, memory[PC])
 		case 0xC0:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC0")
-			fmt.Println(" Instruction: CPY Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CPY Immediate\n", PC, memory[PC])
 		case 0xC1:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC1")
-			fmt.Println(" Instruction: CMP (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CMP (Indirect,X)\n", PC, memory[PC])
 		case 0xC2:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC2")
-			fmt.Println(" Instruction: NOP Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Immediate\n", PC, memory[PC])
 		case 0xC3:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC3")
-			fmt.Println(" Instruction: DCP (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DCP (Indirect,X)\n", PC, memory[PC])
 		case 0xC4:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC4")
-			fmt.Println(" Instruction: CPY Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CPY Zero Page\n", PC, memory[PC])
 		case 0xC5:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC5")
-			fmt.Println(" Instruction: CMP Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CMP Zero Page\n", PC, memory[PC])
 		case 0xC6:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC6")
-			fmt.Println(" Instruction: DEC Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DEC Zero Page\n", PC, memory[PC])
 		case 0xC7:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC7")
-			fmt.Println(" Instruction: DCP Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DCP Zero Page\n", PC, memory[PC])
 		case 0xC8:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC8")
-			fmt.Println(" Instruction: INY")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: INY\n", PC, memory[PC])
 		case 0xC9:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xC9")
-			fmt.Println(" Instruction: CMP Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CMP Immediate\n", PC, memory[PC])
 		case 0xCA:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xCA")
-			fmt.Println(" Instruction: DEX")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DEX\n", PC, memory[PC])
 		case 0xCB:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xCB")
-			fmt.Println(" Instruction: AXS Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: AXS Immediate\n", PC, memory[PC])
 		case 0xCC:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xCC")
-			fmt.Println(" Instruction: CPY Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CPY Absolute\n", PC, memory[PC])
 		case 0xCD:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xCD")
-			fmt.Println(" Instruction: CMP Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CMP Absolute\n", PC, memory[PC])
 		case 0xCE:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xCE")
-			fmt.Println(" Instruction: DEC Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DEC Absolute\n", PC, memory[PC])
 		case 0xCF:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xCF")
-			fmt.Println(" Instruction: DCP Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DCP Absolute\n", PC, memory[PC])
 		case 0xD0:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD0")
-			fmt.Println(" Instruction: BNE Relative")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BNE\n", PC, memory[PC])
 		case 0xD1:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD1")
-			fmt.Println(" Instruction: CMP (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CMP (Indirect),Y\n", PC, memory[PC])
 		case 0xD2:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD2")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0xD3:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD3")
-			fmt.Println(" Instruction: DCP (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DCP (Indirect),Y\n", PC, memory[PC])
 		case 0xD4:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD4")
-			fmt.Println(" Instruction: NOP Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Zero Page,X\n", PC, memory[PC])
 		case 0xD5:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD5")
-			fmt.Println(" Instruction: CMP Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CMP Zero Page,X\n", PC, memory[PC])
 		case 0xD6:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD6")
-			fmt.Println(" Instruction: DEC Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DEC Zero Page,X\n", PC, memory[PC])
 		case 0xD7:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD7")
-			fmt.Println(" Instruction: DCP Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DCP Zero Page,X\n", PC, memory[PC])
 		case 0xD8:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD8")
-			fmt.Println(" Instruction: CLD")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CLD\n", PC, memory[PC])
 		case 0xD9:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xD9")
-			fmt.Println(" Instruction: CMP Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CMP Absolute,Y\n", PC, memory[PC])
 		case 0xDA:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xDA")
-			fmt.Println(" Instruction: NOP")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP\n", PC, memory[PC])
 		case 0xDB:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xDB")
-			fmt.Println(" Instruction: DCP Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DCP Absolute,Y\n", PC, memory[PC])
 		case 0xDC:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xDC")
-			fmt.Println(" Instruction: NOP Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Absolute,X\n", PC, memory[PC])
 		case 0xDD:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xDD")
-			fmt.Println(" Instruction: CMP Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CMP Absolute,X\n", PC, memory[PC])
 		case 0xDE:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xDE")
-			fmt.Println(" Instruction: DEC Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DEC Absolute,X\n", PC, memory[PC])
 		case 0xDF:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xDF")
-			fmt.Println(" Instruction: DCP Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: DCP Absolute,X\n", PC, memory[PC])
 		case 0xE0:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE0")
-			fmt.Println(" Instruction: CPX Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CPX Immediate\n", PC, memory[PC])
 		case 0xE1:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE1")
-			fmt.Println(" Instruction: SBC (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SBC (Indirect,X)\n", PC, memory[PC])
 		case 0xE2:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE2")
-			fmt.Println(" Instruction: NOP Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Immediate\n", PC, memory[PC])
 		case 0xE3:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE3")
-			fmt.Println(" Instruction: ISC (Indirect,X)")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ISC (Indirect,X)\n", PC, memory[PC])
 		case 0xE4:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE4")
-			fmt.Println(" Instruction: CPX Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CPX Zero Page\n", PC, memory[PC])
 		case 0xE5:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE5")
-			fmt.Println(" Instruction: SBC Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SBC Zero Page\n", PC, memory[PC])
 		case 0xE6:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE6")
-			fmt.Println(" Instruction: INC Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: INC Zero Page\n", PC, memory[PC])
 		case 0xE7:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE7")
-			fmt.Println(" Instruction: ISC Zero Page")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ISC Zero Page\n", PC, memory[PC])
 		case 0xE8:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE8")
-			fmt.Println(" Instruction: INX")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: INX\n", PC, memory[PC])
 		case 0xE9:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xE9")
-			fmt.Println(" Instruction: SBC Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SBC Immediate\n", PC, memory[PC])
 		case 0xEA:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xEA")
-			fmt.Println(" Instruction: NOP")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP\n", PC, memory[PC])
 		case 0xEB:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xEB")
-			fmt.Println(" Instruction: SBC Immediate")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SBC Immediate\n", PC, memory[PC])
 		case 0xEC:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xEC")
-			fmt.Println(" Instruction: CPX Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: CPX Absolute\n", PC, memory[PC])
 		case 0xED:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xED")
-			fmt.Println(" Instruction: SBC Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SBC Absolute\n", PC, memory[PC])
 		case 0xEE:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xEE")
-			fmt.Println(" Instruction: INC Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: INC Absolute\n", PC, memory[PC])
 		case 0xEF:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xEF")
-			fmt.Println(" Instruction: ISC Absolute")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ISC Absolute\n", PC, memory[PC])
 		case 0xF0:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF0")
-			fmt.Println(" Instruction: BEQ")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: BEQ\n", PC, memory[PC])
 		case 0xF1:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF1")
-			fmt.Println(" Instruction: SBC (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SBC (Indirect),Y\n", PC, memory[PC])
 		case 0xF2:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF2")
-			fmt.Println(" Instruction: KIL")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: KIL\n", PC, memory[PC])
 		case 0xF3:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF3")
-			fmt.Println(" Instruction: ISC (Indirect),Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ISC (Indirect),Y\n", PC, memory[PC])
 		case 0xF4:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF4")
-			fmt.Println(" Instruction: NOP Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Zero Page,X\n", PC, memory[PC])
 		case 0xF5:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF5")
-			fmt.Println(" Instruction: SBC Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SBC Zero Page,X\n", PC, memory[PC])
 		case 0xF6:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF6")
-			fmt.Println(" Instruction: INC Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: INC Zero Page,X\n", PC, memory[PC])
 		case 0xF7:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF7")
-			fmt.Println(" Instruction: ISC Zero Page,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ISC Zero Page,X\n", PC, memory[PC])
 		case 0xF8:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF8")
-			fmt.Println(" Instruction: SED")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SED\n", PC, memory[PC])
 		case 0xF9:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xF9")
-			fmt.Println(" Instruction: SBC Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SBC Absolute,Y\n", PC, memory[PC])
 		case 0xFA:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xFA")
-			fmt.Println(" Instruction: NOP")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP\n", PC, memory[PC])
 		case 0xFB:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xFB")
-			fmt.Println(" Instruction: ISC Absolute,Y")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ISC Absolute,Y\n", PC, memory[PC])
 		case 0xFC:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xFC")
-			fmt.Println(" Instruction: NOP Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: NOP Absolute,X\n", PC, memory[PC])
 		case 0xFD:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xFD")
-			fmt.Println(" Instruction: SBC Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: SBC Absolute,X\n", PC, memory[PC])
 		case 0xFE:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xFE")
-			fmt.Println(" Instruction: INC Absolute,X")
-
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: INC Absolute,X\n", PC, memory[PC])
 		case 0xFF:
-			fmt.Printf("Memory Address: $%02x", PC)
-			fmt.Printf(" Opcode: 0xFF")
-			fmt.Println(" Instruction: ISC Absolute,X")
+			fmt.Printf("Memory Address: $%04x Opcode: $%04x Instruction: ISC Absolute,X\n", PC, memory[PC])
 
 		default:
-			panic(fmt.Sprintf("Unhandled instruction: %v", memory[PC]))
+			panic(fmt.Sprintf("Unhandled instruction: $%04x", memory[PC]))
 		}
 	}
 }
