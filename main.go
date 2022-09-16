@@ -366,7 +366,7 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(ROR - ZeroPage,X)\n", PC, file[PC], file[PC+1])
 			PC++
 		case 0x77:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(RMB7 - ZeroPage)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(ZeroPage)\t\t", PC, file[PC], file[PC+1])
 			fmt.Printf("RMB7 $%02x\n", file[PC+1])
 			PC++
 		case 0x80:
@@ -595,7 +595,7 @@ func disassemble(file string) {
 		//3 byte instructions with 2 operands
 		switch file[PC] {
 		case 0x0C:
-			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(TSB - Absolute)\t", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t\t", PC, file[PC], file[PC+1], file[PC+2])
 			fmt.Printf("TSB $%02x%02x\n", file[PC+2], file[PC+1])
 			PC += 2
 		case 0x0D:
@@ -603,7 +603,7 @@ func disassemble(file string) {
 			fmt.Printf("ORA $%02x%02x\n", file[PC+2], file[PC+1])
 			PC += 2
 		case 0x0E:
-			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t\t", PC, file[PC], file[PC+1], file[PC+2])
 			fmt.Printf("ASL $%02x%02x\n", file[PC+2], file[PC+1])
 			PC += 2
 		case 0x0F:
@@ -616,7 +616,7 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(ORA - Absolute,Y)\n", PC, file[PC], file[PC+1], file[PC+2])
 			PC += 2
 		case 0x1C:
-			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t\t", PC, file[PC], file[PC+1], file[PC+2])
 			fmt.Printf("TRB $%02x%02x\n", file[PC+2], file[PC+1])
 			PC += 2
 		case 0x1D:
@@ -645,7 +645,8 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(BIT - Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
 			PC += 2
 		case 0x2D:
-			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(AND - Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t\t", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("AND $%02X%02X\n", file[PC+2], file[PC+1])
 			PC += 2
 		case 0x2E:
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(ROL - Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
@@ -685,13 +686,15 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(BBR3 - ZeroPage, Relative)\n", PC, file[PC], file[PC+1], file[PC+2])
 			PC += 2
 		case 0x4C:
-			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(JMP - Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t\t", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("JMP $%02X%02X\n", file[PC+2], file[PC+1])
 			PC += 2
 		case 0x4D:
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(EOR - Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
 			PC += 2
 		case 0x4E:
-			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(LSR - Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t\t", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("LSR $%02X%02X\n", file[PC+2], file[PC+1])
 			PC += 2
 		case 0x4F:
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(BBR4 - ZeroPage, Relative)\n", PC, file[PC], file[PC+1], file[PC+2])
@@ -721,7 +724,8 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(ADC - Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
 			PC += 2
 		case 0x6E:
-			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(ROR - Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t\t", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("ROR $%02X%02X\n", file[PC+2], file[PC+1])
 			PC += 2
 		case 0x6F:
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(BBR6 - ZeroPage, Relative)\n", PC, file[PC], file[PC+1], file[PC+2])
@@ -754,7 +758,7 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(STY - Absolute)\n", PC, file[PC], file[PC+1], file[PC+2])
 			PC += 2
 		case 0x8D:
-			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t\t", PC, file[PC], file[PC+1], file[PC+2])
 			fmt.Printf("STA $%04x\n", file[PC+1]|(file[PC+2]<<8))
 			PC += 2
 		case 0x8E:
@@ -875,7 +879,8 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(SBC - Absolute,Y)\n", PC, file[PC], file[PC+1], file[PC+2])
 			PC += 2
 		case 0xFC:
-			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(PHW - Absolute\n", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(Absolute)\t\t", PC, file[PC], file[PC+1], file[PC+2])
+			fmt.Printf("PHW #$%02X%02X\n", file[PC+1], file[PC+2])
 			PC += 2
 		case 0xFD:
 			fmt.Printf("$%04x\t$%02x $%02x $%02x\t(SBC - Absolute,X)\n", PC, file[PC], file[PC+1], file[PC+2])
