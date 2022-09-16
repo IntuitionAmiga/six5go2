@@ -367,7 +367,8 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(SMB0 - Zero Page)\n", PC, file[PC], file[PC+1])
 			PC++
 		case 0x89:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(BIT - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(BIT - Immediate)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("BIT #$%02X\n", file[PC+1])
 			PC++
 		case 0x90:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(BCC - Relative)\t\t", PC, file[PC], file[PC+1])
@@ -393,15 +394,18 @@ func disassemble(file string) {
 			PC++
 		case 0xA0:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDY - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("LDY #$%02X\n", file[PC+1])
 			PC++
 		case 0xA1:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDA - X Indexed Zero Page Indirect)\n", PC, file[PC], file[PC+1])
 			PC++
 		case 0xA2:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDX - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDX - Immediate)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("LDX #$%02X\n", file[PC+1])
 			PC++
 		case 0xA3:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDZ - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDZ - Immediate)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("LDZ #$%02X\n", file[PC+1])
 			PC++
 		case 0xA4:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDY - Zero Page)\n", PC, file[PC], file[PC+1])
@@ -417,7 +421,8 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(SMB2 - Zero Page)\n", PC, file[PC], file[PC+1])
 			PC++
 		case 0xA9:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDA - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDA - Immediate)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("LDA #$%02X\n", file[PC+1])
 			PC++
 		case 0xB0:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(BCS - Relative)\n", PC, file[PC], file[PC+1])
@@ -441,13 +446,15 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(SMB3 - Zero Page)\n", PC, file[PC], file[PC+1])
 			PC++
 		case 0xC0:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(CPY - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(CPY - Immediate)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("CPY #$%02X\n", file[PC+1])
 			PC++
 		case 0xC1:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(CMP - X Indexed Zero Page Indirect)\n", PC, file[PC], file[PC+1])
 			PC++
 		case 0xC2:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(CPZ - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(CPZ - Immediate)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("CPZ #$%02X\n", file[PC+1])
 			PC++
 		case 0xC3:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(DEW - Zero Page)\n", PC, file[PC], file[PC+1])
@@ -490,13 +497,15 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(SMB5 - Zero Page)\n", PC, file[PC], file[PC+1])
 			PC++
 		case 0xE0:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(CPX - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(CPX - Immediate)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("CPX #$%02X\n", file[PC+1])
 			PC++
 		case 0xE1:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(SBC - X Indexed Zero Page Indirect)\n", PC, file[PC], file[PC+1])
 			PC++
 		case 0xE2:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDA - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(LDA - Immediate)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("LDA #$%02X\n", file[PC+1])
 			PC++
 		case 0xE3:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(INW - Zero Page)\n", PC, file[PC], file[PC+1])
@@ -514,7 +523,8 @@ func disassemble(file string) {
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(SMB6 - Zero Page)\n", PC, file[PC], file[PC+1])
 			PC++
 		case 0xE9:
-			fmt.Printf("$%04x\t$%02x $%02x\t\t(SBC - Immediate)\n", PC, file[PC], file[PC+1])
+			fmt.Printf("$%04x\t$%02x $%02x\t\t(SBC - Immediate)\t\t", PC, file[PC], file[PC+1])
+			fmt.Printf("SBC #$%02X\n", file[PC+1])
 			PC++
 		case 0xF0:
 			fmt.Printf("$%04x\t$%02x $%02x\t\t(BEQ - Relative)\n", PC, file[PC], file[PC+1])
