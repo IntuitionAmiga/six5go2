@@ -1615,7 +1615,5 @@ func disassemble(file string) {
 			//incCounter(3)
 			incCounter(3)
 		}
-		fmt.Printf("counter: %d\n", counter)
-
 	}
 }
