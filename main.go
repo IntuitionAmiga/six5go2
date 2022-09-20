@@ -1639,7 +1639,6 @@ func printMachineState() {
 */
 
 func execute(file string) {
-	//PC += counter
 	if printHex {
 		fmt.Printf(" * = $%04X\n\n", PC)
 	}
@@ -2345,7 +2344,10 @@ func execute(file string) {
 
 			//If carry flag/bit zero of the status register is clear, then branch to the address specified by the operand.
 			if SR&1 == 0 {
-				PC = int(memory[counter+1])
+				fmt.Printf("Counter $%04X=\n", counter)
+				counter = int((counter + 2 + int(memory[counter+1])) & 0xFF)
+				PC = counter
+				fmt.Printf("Counter $%04X=\n", counter)
 			}
 			printMachineState()
 
