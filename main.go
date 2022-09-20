@@ -12,9 +12,9 @@ var (
 	counter  = 0 //Byte position Counter
 
 	// CPURegisters and RAM
-	A      byte                     //Accumulator
-	X      byte                     //X register
-	Y      byte                     //Y register		(76543210) SR Bit 5 is always set
+	A      byte        = 0x0000     //Accumulator
+	X      byte        = 0x0000     //X register
+	Y      byte        = 0x0000     //Y register		(76543210) SR Bit 5 is always set
 	SR     byte        = 0b00100000 //Status Register	(NVEBDIZC)
 	SP                 = 0x0100     //Stack Pointer
 	PC                 = 0x0000     //Program Counter
@@ -2344,10 +2344,8 @@ func execute(file string) {
 
 			//If carry flag/bit zero of the status register is clear, then branch to the address specified by the operand.
 			if SR&1 == 0 {
-				fmt.Printf("Counter $%04X=\n", counter)
 				counter = int((counter + 2 + int(memory[counter+1])) & 0xFF)
 				PC = counter
-				fmt.Printf("Counter $%04X=\n", counter)
 			}
 			printMachineState()
 
@@ -3190,10 +3188,43 @@ func execute(file string) {
 			fmt.Printf("LDZ $%02X%02X,X\n", memory[counter+2], memory[counter+1])
 			incCounter(1)
 		case 0xBC:
+			/*
+				LDY - Load Index Register Y From Memory
+				Operation: M → Y
+
+				Load the index register Y from memory.
+
+				LDY does not affect the C or V flags, sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
+				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, memory[counter], memory[counter+1], memory[counter+2])
 			}
 			fmt.Printf("LDY $%02X%02X,X\n", memory[counter+2], memory[counter+1])
+
+			// Set X to Operand 2 and Y to the X indexed value stored in operand 1
+			X = memory[counter+2]
+			fmt.Printf("X=$%04X\n", X)
+			Y = memory[int(memory[counter+1])+int(X)]
+			fmt.Printf("Y = $%04X\n", Y)
+
+			//If bit 7 of Y is 1 then set bit 7 of SR to 1
+			//else set bit 7 of SR to 0
+			fmt.Printf("Y=%b\n", Y)
+			if Y&1 == 1 {
+				//SR = SR | 0x80
+				SR |= 1 << 7
+			} else {
+				//SR = SR & 0b01111111
+				SR |= 0 << 7
+			}
+
+			//If value loaded to Y is 0 set bit 1 of SR to 0
+			if Y == 0 {
+				SR |= 0 << 1
+			}
+			printMachineState()
+
 			incCounter(3)
 		case 0xBD:
 			if printHex {
