@@ -2329,10 +2329,26 @@ func execute(file string) {
 			fmt.Printf("BIT #$%02X\n", memory[counter+1])
 			incCounter(2)
 		case 0x90:
+			/*
+				BCC - Branch on Carry Clear
+				Operation: Branch on C = 0
+
+				This instruction tests the state of the carry bit and takes a conditional branch if the carry bit is reset.
+
+				It affects no flags or registers other than the program counter and then only if the C flag is not on.
+			*/
+
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, memory[counter], memory[counter+1])
 			}
 			fmt.Printf("BCC $%02X\n", (counter+2+int(memory[counter+1]))&0xFF)
+
+			//If carry flag/bit zero of the status register is clear, then branch to the address specified by the operand.
+			if SR&1 == 0 {
+				PC = int(memory[counter+1])
+			}
+			printMachineState()
+
 			incCounter(2)
 		case 0x91:
 			if printHex {
