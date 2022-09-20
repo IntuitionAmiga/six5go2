@@ -62,7 +62,7 @@ func incCounter(amount int) {
 	PC++
 }
 func printMachineState() {
-	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X\n", A, X, Y, SR, SP, PC)
+	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X\n\n", A, X, Y, SR, SP, PC)
 }
 
 /*
@@ -2807,10 +2807,33 @@ func execute(file string) {
 			fmt.Printf("BBR1 $%02X, $%02X\n", memory[counter+1], memory[counter+2])
 			incCounter(3)
 		case 0x20:
+			/*
+				JSR - Jump To Subroutine
+				Operation: PC + 2↓, [PC + 1] → PCL, [PC + 2] → PCH
+
+				This instruction transfers control of the program counter to a subroutine location but leaves a
+				return pointer on the stack to allow the user to return to perform the next instruction in the
+				main program after the subroutine is complete.
+
+				To accomplish this, JSR instruction stores the program counter address which points to the last byte of the
+				jump instruction onto the stack using the stack pointer. The stack byte contains the program count high first,
+				followed by program count low. The JSR then transfers the addresses following the jump instruction to the
+				program counter low and the program counter high, thereby directing the program to begin at that new address.
+
+				The JSR instruction affects no flags, causes the stack pointer to be decremented by 2 and substitutes new values into the program counter low and the program counter high.
+			*/
+
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, memory[counter], memory[counter+1], memory[counter+2])
 			}
 			fmt.Printf("JSR $%02X%02X\n", memory[counter+2], memory[counter+1])
+
+			//Store PC at address stored in SP
+			memory[SP] = byte(PC)
+			//Set PC to address stored in operand 1 and operand 2
+			PC = int(memory[counter+1]) + int(memory[counter+2])<<8
+			printMachineState()
+
 			incCounter(3)
 		case 0x22:
 			if printHex {
