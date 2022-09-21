@@ -2777,10 +2777,29 @@ func execute(file string) {
 			fmt.Printf("SBC #$%02X\n", memory[counter+1])
 			incCounter(2)
 		case 0xF0:
+			/*
+				BEQ - Branch on Result Zero
+				Operation: Branch on Z = 1
+
+				This instruction could also be called "Branch on Equal."
+
+				It takes a conditional branch whenever the Z flag is on or the previous result is equal to 0.
+
+				BEQ does not affect any of the flags or registers other than the program counter and only then
+				when the Z flag is set.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, memory[counter], memory[counter+1])
 			}
 			fmt.Printf("BEQ $%02X\n", (counter+2+int(memory[counter+1]))&0xFF)
+
+			//If SR zero flag 1 is set or the previous result is equal to 0, then branch to the address specified by the operand.
+			if SR&1 == 1 || A == 0 {
+				counter = (counter + 2 + int(memory[counter+1])) & 0xFF
+				PC = counter
+			}
+			printMachineState()
+
 			incCounter(2)
 		case 0xF1:
 			if printHex {
