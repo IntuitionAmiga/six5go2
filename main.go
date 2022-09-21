@@ -2230,10 +2230,50 @@ func execute(file string) {
 			fmt.Printf("RMB6 $%02X\n", memory[counter+1])
 			incCounter(2)
 		case 0x69:
+			/*
+				ADC - Add Memory to Accumulator with Carry
+				Operation: A + M + C → A, C
+
+				This instruction adds the value of memory and carry from the previous operation to the value of the
+				accumulator and stores the result in the accumulator.
+
+				This instruction affects the accumulator; sets the carry flag when the sum of a binary add exceeds
+				255 or when the sum of a decimal add exceeds 99, otherwise carry is reset.
+
+				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
+				otherwise overflow is reset.
+
+				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
+
+				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, memory[counter], memory[counter+1])
 			}
 			fmt.Printf("ADC #$%02X\n", memory[counter+1])
+
+			//Add operand 1 to accumulator
+			A += memory[counter+1]
+			//If accumulator>255 then set SR carry flag bit 0 to 1
+			if A > 255 {
+				SR |= 1 << 0
+			} else {
+				SR |= 0 << 0
+			}
+			//If accumulator>127 or accumulator<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
+			if A > 127 || A < 128 {
+				SR |= 1 << 6
+			} else {
+				SR |= 0 << 6
+			}
+			//If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if A&1 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+			printMachineState()
+
 			incCounter(2)
 		case 0x70:
 			if printHex {
