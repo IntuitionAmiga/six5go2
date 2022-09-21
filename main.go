@@ -1683,10 +1683,24 @@ func execute(file string) {
 			fmt.Printf("TSY\n")
 			incCounter(1)
 		case 0x18:
+			/*
+				CLC - Clear Carry Flag
+				Operation: 0 → C
+
+				This instruction initializes the carry flag to a 0. This operation should normally precede an ADC loop.
+				It is also useful when used with a R0L instruction to clear a bit in memory.
+
+				This instruction affects no registers in the microprocessor and no flags other than the carry flag which is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, memory[counter])
 			}
 			fmt.Printf("CLC\n")
+
+			//Set SR carry flag bit 0 to 0
+			SR |= 0 << 0
+			printMachineState()
+
 			incCounter(1)
 		case 0x1A:
 			if printHex {
@@ -3204,18 +3218,14 @@ func execute(file string) {
 
 			// Set X to Operand 2 and Y to the X indexed value stored in operand 1
 			X = memory[counter+2]
-			fmt.Printf("X=$%04X\n", X)
 			Y = memory[int(memory[counter+1])+int(X)]
-			fmt.Printf("Y = $%04X\n", Y)
 
 			//If bit 7 of Y is 1 then set bit 7 of SR to 1
 			//else set bit 7 of SR to 0
-			fmt.Printf("Y=%b\n", Y)
+			//fmt.Printf("Y=%b\n", Y)
 			if Y&1 == 1 {
-				//SR = SR | 0x80
 				SR |= 1 << 7
 			} else {
-				//SR = SR & 0b01111111
 				SR |= 0 << 7
 			}
 
