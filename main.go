@@ -376,6 +376,12 @@ func execute(file string) {
 
 			//Decrement the X register by 1
 			X--
+			//If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if X&1 == 1 {
+				SR |= 0x80
+			} else {
+				SR |= 0x7F
+			}
 
 			incCount(1)
 			printMachineState()
