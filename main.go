@@ -1217,12 +1217,8 @@ func execute(file string) {
 				PC += fileposition
 				fmt.Printf("XXXXX")
 			} else {
-
-				fmt.Printf("PC: %04x\n", PC)
-				fmt.Printf("Fileposition: %04x\n", fileposition)
 				incCount(2)
 				printMachineState()
-				fmt.Printf("Fileposition: %04x\n", fileposition)
 			}
 
 		case 0xF1:
