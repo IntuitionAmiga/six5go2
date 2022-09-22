@@ -48,6 +48,7 @@ func main() {
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
 	copy(memory[:], file)
+	printMachineState()
 	execute(string(file))
 }
 
@@ -906,11 +907,38 @@ func execute(file string) {
 			fmt.Printf("LDA ($%02X,X)\n", memory[fileposition+1])
 			incCount(2)
 		case 0xA2:
+			/*
+				LDX - Load Index Register X From Memory
+				Operation: M → X
+
+				Load the index register X from memory.
+
+				LDX does not affect the C or V flags; sets Z if the value loaded was zero, otherwise resets it;
+				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, memory[fileposition], memory[fileposition+1])
 			}
 			fmt.Printf("LDX #$%02X\n", memory[fileposition+1])
+
+			//Load the value of the memory[fileposition+1] into the X register.
+			X = memory[fileposition+1]
+
+			//If accumulator is zero, set the SR zero flag
+			if X == 0 {
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
+			//If bit 7 of the accumulator is set, set the SR negative flag
+			if A&1 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+
 			incCount(2)
+			printMachineState()
 		case 0xA3:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, memory[fileposition], memory[fileposition+1])
