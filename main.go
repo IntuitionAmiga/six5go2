@@ -1035,11 +1035,49 @@ func execute(file string) {
 			fmt.Printf("LDY $%02X,X\n", memory[fileposition+1])
 			incCount(2)
 		case 0xB5:
+			/*
+				LDA - Load Accumulator with Memory
+				Operation: M → A
+
+				When instruction LDA is executed by the microprocessor, data is transferred from memory to the accumulator
+				and stored in the accumulator.
+
+				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
+				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
+				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, memory[fileposition], memory[fileposition+1])
 			}
 			fmt.Printf("LDA $%02X,X\n", memory[fileposition+1])
+
+			//Load the accumulator with the X indexed value in the operand
+			A = memory[fileposition+1+int(X)]
+
+			//If A is zero, set the zero flag else reset the zero flag
+			if A == 0 {
+				//SR = 0b00100010
+				//Set bit 1 to 1
+				SR |= 1 << 1
+			} else {
+				//SR = 0b00100000
+				//Set bit 1 to 0
+				SR |= 0 << 1
+			}
+
+			//If bit 7 of A is 1, set the negative flag else reset the negative flag
+			if A&0b10000000 != 0 {
+				//SR = 0b00100001
+				//Set bit 7 to 1
+				SR |= 1 << 7
+			} else {
+				//SR = 0b00100000
+				//Set bit 7 to 0
+				SR |= 0 << 7
+			}
+
 			incCount(2)
+			printMachineState()
 		case 0xB6:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, memory[fileposition], memory[fileposition+1])
@@ -1438,14 +1476,14 @@ func execute(file string) {
 				JSR - Jump To Subroutine
 				Operation: PC + 2↓, [PC + 1] → PCL, [PC + 2] → PCH
 
-				This instruction transfers control of the program fileposition to a subroutine location but leaves a
+				This instruction transfers control of the program counter to a subroutine location but leaves a
 				return pointer on the stack to allow the user to return to perform the next instruction in the
 				main program after the subroutine is complete.
 
-				To accomplish this, JSR instruction stores the program fileposition address which points to the last byte of the
+				To accomplish this, JSR instruction stores the program counter address which points to the last byte of the
 				jump instruction onto the stack using the stack pointer. The stack byte contains the program count high first,
 				followed by program count low. The JSR then transfers the addresses following the jump instruction to the
-				program fileposition low and the program fileposition high, thereby directing the program to begin at that new address.
+				program counter low and the program counter high, thereby directing the program to begin at that new address.
 
 				The JSR instruction affects no flags, causes the stack pointer to be decremented by 2 and substitutes new values into the program fileposition low and the program fileposition high.
 			*/
@@ -1559,7 +1597,8 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, memory[fileposition], memory[fileposition+1], memory[fileposition+2])
 			}
 			fmt.Printf("JMP $%02X%02X\n", memory[fileposition+2], memory[fileposition+1])
-			incCount(3)
+
+			incCount(0)
 		case 0x4D:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, memory[fileposition], memory[fileposition+1], memory[fileposition+2])
