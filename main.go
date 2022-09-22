@@ -1029,11 +1029,37 @@ func execute(file string) {
 			fmt.Printf("LDA ($%02X)\n", memory[fileposition+1])
 			incCount(2)
 		case 0xB4:
+			/*
+				LDY - Load Index Register Y From Memory
+				Operation: M → Y
+
+				Load the index register Y from memory.
+
+				LDY does not affect the C or V flags, sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
+				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, memory[fileposition], memory[fileposition+1])
 			}
 			fmt.Printf("LDY $%02X,X\n", memory[fileposition+1])
+
+			//Load the Y register with the X indexed value in the operand
+			Y = memory[fileposition+1+int(X)]
+			//If bit 7 of Y is 1, set the SR negative flag bit 7 else reset the SR negative flag
+			if Y&1 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+
+			//If Y is zero, set the SR zero flag else reset the SR zero flag
+			if Y == 0 {
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
 			incCount(2)
+			printMachineState()
 		case 0xB5:
 			/*
 				LDA - Load Accumulator with Memory
