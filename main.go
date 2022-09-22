@@ -11,7 +11,7 @@ var (
 	file         []byte
 	fileposition = 0 //Byte position counter
 
-	// CPURegisters and RAM
+	//CPURegisters and RAM
 	A      byte        = 0x0000     //Accumulator
 	X      byte        = 0x0000     //X register
 	Y      byte        = 0x0000     //Y register		(76543210) SR Bit 5 is always set
@@ -162,7 +162,7 @@ func execute(file string) {
 				Operation: 1 → C
 
 				This instruction initializes the carry flag to a 1.
-				This operation should normally precede a SBC loop.
+				This operation should normally precede an SBC loop.
 				It is also useful when used with a ROL instruction to initialize a bit in memory to a 1.
 
 				This instruction affects no registers in the microprocessor and no flags other than the carry
@@ -468,11 +468,32 @@ func execute(file string) {
 			fmt.Printf("ORA #$%02x\n", memory[fileposition+1])
 			incCount(2)
 		case 0x10:
+			/*
+				BPL - Branch on Result Plus
+				Operation: Branch on N = 0
+
+				This instruction is the complementary branch to branch on result minus.
+				It is a conditional branch which takes the branch when the N bit is reset (0).
+				BPL is used to test if the previous result bit 7 was off (0) and branch on result minus is used to
+				determine if the previous result was minus or bit 7 was on (1).
+
+				The instruction affects no flags or other registers other than the P counter and only affects the
+				P counter when the N bit is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, memory[fileposition], memory[fileposition+1])
 			}
 			fmt.Printf("BPL $%02X\n", (fileposition+2+int(memory[fileposition+1]))&0xFF)
-			incCount(2)
+
+			//If SR negative bit 7 is 0, then branch
+			if SR&7 == 1 {
+
+				fileposition = (fileposition + 2 + int(memory[fileposition+1])) & 0xFF
+				PC += fileposition
+			}
+
+			incCount(0)
+			printMachineState()
 		case 0x11:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page),Indirect Y)\n", PC, memory[fileposition], memory[fileposition+1])
@@ -868,7 +889,7 @@ func execute(file string) {
 
 			//If carry flag/bit zero of the status register is clear, then branch to the address specified by the operand.
 			if SR&1 == 0 {
-				fileposition = int((fileposition + 2) + int(memory[fileposition+1])) // & 0xFFFF
+				fileposition = (fileposition + 2) + int(memory[fileposition+1]) // & 0xFFFF
 				PC += fileposition
 			}
 
