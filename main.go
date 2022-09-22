@@ -358,11 +358,27 @@ func execute(file string) {
 			fmt.Printf("INY\n")
 			incCount(1)
 		case 0xCA:
+			/*
+				DEX - Decrement Index Register X By One
+				Operation: X - 1 → X
+
+				This instruction subtracts one from the current value of the index register X and stores the result
+				in the index register X.
+
+				DEX does not affect the carry or overflow flag, it sets the N flag if it has bit 7 on as a result
+				of the decrement, otherwise it resets the N flag;
+				sets the Z flag if X is a 0 as a result of the decrement, otherwise it resets the Z flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, memory[fileposition])
 			}
 			fmt.Printf("DEX\n")
+
+			//Decrement the X register by 1
+			X--
+
 			incCount(1)
+			printMachineState()
 		case 0xD8:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, memory[fileposition])
