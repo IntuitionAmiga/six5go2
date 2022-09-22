@@ -877,11 +877,25 @@ func execute(file string) {
 			fmt.Printf("STY $%02X,X\n", memory[fileposition+1])
 			incCount(2)
 		case 0x95:
+			/*
+				STA - Store Accumulator in Memory
+				Operation: A → M
+
+				This instruction transfers the contents of the accumulator to memory.
+
+				This instruction affects none of the flags in the processor status register and does not affect
+				the accumulator.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, memory[fileposition], memory[fileposition+1])
 			}
 			fmt.Printf("STA $%02X,X\n", memory[fileposition+1])
+
+			//Store contents of Accumulator in X indexed memory
+			memory[memory[fileposition+1]+X] = A
+
 			incCount(2)
+			printMachineState()
 		case 0x96:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, memory[fileposition], memory[fileposition+1])
