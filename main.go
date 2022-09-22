@@ -871,11 +871,24 @@ func execute(file string) {
 			fmt.Printf("STA ($%02X)\n", memory[fileposition+1])
 			incCount(2)
 		case 0x94:
+			/*
+				STY - Store Index Register Y In Memory
+				Operation: Y → M
+
+				Transfer the value of the Y register to the addressed memory location.
+
+				STY does not affect any flags or registers in the microprocessor.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, memory[fileposition], memory[fileposition+1])
 			}
 			fmt.Printf("STY $%02X,X\n", memory[fileposition+1])
+
+			//Store contents of Y register in X indexed memory address
+			memory[memory[fileposition+1]+X] = Y
+
 			incCount(2)
+			printMachineState()
 		case 0x95:
 			/*
 				STA - Store Accumulator in Memory
@@ -1352,7 +1365,7 @@ func execute(file string) {
 			//Update the accumulator
 			A = A - memory[fileposition+1] - (1 - SR&1)
 			//Set carry flag bit 0 if result is greater than or equal to 1
-			if A >= 0 {
+			if A >= 1 {
 				SR |= 1 << 0
 			} else {
 				SR |= 0 << 0
@@ -1638,7 +1651,7 @@ func execute(file string) {
 			}
 			fmt.Printf("JMP $%02X%02X\n", memory[fileposition+2], memory[fileposition+1])
 
-			incCount(0)
+			incCount(3)
 		case 0x4D:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, memory[fileposition], memory[fileposition+1], memory[fileposition+2])
