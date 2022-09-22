@@ -156,11 +156,27 @@ func execute(file string) {
 			fmt.Printf("TYS\n")
 			incCount(1)
 		case 0x38:
+			/*
+				SEC - Set Carry Flag
+				Operation: 1 → C
+
+				This instruction initializes the carry flag to a 1.
+				This operation should normally precede a SBC loop.
+				It is also useful when used with a ROL instruction to initialize a bit in memory to a 1.
+
+				This instruction affects no registers in the microprocessor and no flags other than the carry
+				flag which is set.
+			*/
+
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, memory[fileposition])
 			}
 			fmt.Printf("SEC\n")
+
+			//Set SR carry flag bit 0 to 1
+			SR |= 1 << 0
 			incCount(1)
+			printMachineState()
 		case 0x3A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, memory[fileposition])
