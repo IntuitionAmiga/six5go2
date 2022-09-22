@@ -208,12 +208,28 @@ func execute(file string) {
 			fmt.Printf("ASR\n")
 			incCount(1)
 		case 0x48:
+			/*
+				PHA - Push Accumulator On Stack
+				Operation: A↓
+
+				This instruction transfers the current value of the accumulator to the next location on the stack,
+				automatically decrementing the stack to point to the next empty location.
+
+				The Push A instruction only affects the stack pointer register which is decremented by 1 as a result of
+				the operation. It affects no flags.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, memory[fileposition])
 			}
 			fmt.Printf("PHA\n")
-			//incCount(1)
+
+			//Update memory address pointed to by SP with value stored in accumulator
+			memory[SP] = A
+			//Decrement the stack pointer by 1 byte
+			SP--
+
 			incCount(1)
+			printMachineState()
 		case 0x4A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, memory[fileposition])
