@@ -1205,11 +1205,56 @@ func execute(file string) {
 			fmt.Printf("SMB6 $%02X\n", memory[fileposition+1])
 			incCount(2)
 		case 0xE9:
+			/*
+				SBC - Subtract Memory from Accumulator with Borrow
+				Operation: A - M - ~C → A
+
+				This instruction subtracts the value of memory and borrow from the value of the accumulator,
+				using two's complement arithmetic, and stores the result in the accumulator.
+
+				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates
+				that a borrow has not occurred.
+
+				This instruction affects the accumulator.
+				The carry flag is set if the result is greater than or equal to 0.
+				The carry flag is reset when the result is less than 0, indicating a borrow.
+				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
+				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
+				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, memory[fileposition], memory[fileposition+1])
 			}
 			fmt.Printf("SBC #$%02X\n", memory[fileposition+1])
+
+			//Update the accumulator
+			A = A - memory[fileposition+1] - (1 - SR&1)
+			//Set carry flag bit 0 if result is greater than or equal to 1
+			if A >= 0 {
+				SR |= 1 << 0
+			} else {
+				SR |= 0 << 0
+			}
+			//Set overflow flag bit 6 if accumulator is greater than 127 or less than -127
+			if int(A) > 127 || int(A) < -127 {
+				SR |= 1 << 6
+			} else {
+				SR |= 0 << 6
+			}
+			//If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if A&1 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+			//Set Z flag bit 1 if accumulator is 0 else set Z flag bit 1 to 0
+			if A == 0 {
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
 			incCount(2)
+			printMachineState()
 		case 0xF0:
 			/*
 				BEQ - Branch on Result Zero
