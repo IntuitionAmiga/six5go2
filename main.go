@@ -52,18 +52,10 @@ func main() {
 }
 
 func incCount(amount int) {
-	//fmt.Printf("prefunc PC= %04X\n", PC)
-	//fmt.Printf("prefunc Byte fileposition = %04X\n", fileposition)
-
 	if fileposition+amount < len(file)-1 && amount != 0 {
 		fileposition += amount
-		//PC += fileposition
-		PC += amount
-		//PC++
 	}
-	//fmt.Printf("postfunc PC= %04X\n", PC)
-	//fmt.Printf("postfunc Byte fileposition = %04X\n", fileposition)
-	//PC++
+	PC += amount
 }
 func printMachineState() {
 	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X\n\n", A, X, Y, SR, SP, PC)
@@ -74,7 +66,7 @@ func execute(file string) {
 	if printHex {
 		fmt.Printf(" * = $%04X\n\n", PC)
 	}
-	for fileposition = 0; fileposition < len(file); fileposition++ {
+	for fileposition = 0; fileposition < len(file); {
 		//PC += fileposition
 		// 1 byte instructions with no operands
 		switch memory[fileposition] {
@@ -827,9 +819,10 @@ func execute(file string) {
 
 			//If carry flag/bit zero of the status register is clear, then branch to the address specified by the operand.
 			if SR&1 == 0 {
-				fileposition = int((fileposition + 2 + int(memory[fileposition+1])) & 0xFF)
-				PC = fileposition
+				fileposition = int((fileposition + 2) + int(memory[fileposition+1])) // & 0xFFFF
+				PC += fileposition
 			}
+
 			incCount(0)
 			printMachineState()
 		case 0x91:
@@ -1221,10 +1214,17 @@ func execute(file string) {
 			//If SR zero flag 1 is set or the previous result is equal to 0, then branch to the address specified by the operand.
 			if SR&1 == 1 || A == 0 {
 				fileposition = (fileposition + 2 + int(memory[fileposition+1])) & 0xFF
-				PC = fileposition
+				PC += fileposition
+				fmt.Printf("XXXXX")
+			} else {
+
+				fmt.Printf("PC: %04x\n", PC)
+				fmt.Printf("Fileposition: %04x\n", fileposition)
+				incCount(2)
+				printMachineState()
+				fmt.Printf("Fileposition: %04x\n", fileposition)
 			}
-			incCount(0)
-			printMachineState()
+
 		case 0xF1:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, memory[fileposition], memory[fileposition+1])
@@ -1278,11 +1278,24 @@ func execute(file string) {
 			fmt.Printf("ASL $%02X%02X\n", memory[fileposition+2], memory[fileposition+1])
 			incCount(3)
 		case 0x0F:
+			/*
+				BBR0 - Branch on Bit 0 Reset
+				Operation: Branch on M0 = 0
+
+				This instruction tests the specified zero page location and branches if bit 0 is clear.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, memory[fileposition], memory[fileposition+1], memory[fileposition+2])
 			}
 			fmt.Printf("BBR0 $%02X, $%02X\n", memory[fileposition+1], memory[fileposition+2])
+
+			if memory[memory[fileposition+1]]&1 == 0 {
+				fileposition = (fileposition + 3 + int(memory[fileposition+2])) & 0xFF
+				PC = fileposition
+			}
+
 			incCount(3)
+			printMachineState()
 		case 0x13:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, memory[fileposition], memory[fileposition+1], memory[fileposition+2])
@@ -1346,10 +1359,7 @@ func execute(file string) {
 			//Set PC to address stored in operand 1 and operand 2
 			PC = int(memory[fileposition+1]) + int(memory[fileposition+2])<<8
 
-			//fmt.Printf("pre PC= %04X\n", PC)
-			//fmt.Printf("pre Byte fileposition = %04X\n", fileposition)
-
-			incCount(0)
+			incCount(3)
 			printMachineState()
 			//fmt.Printf("post PC= %04X\n", PC)
 			//fmt.Printf("post Byte fileposition = %04X\n", fileposition)
