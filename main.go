@@ -507,11 +507,39 @@ func execute(file string) {
 			incCount(1)
 			printMachineState()
 		case 0x8A:
+			/*
+				TXA - Transfer Index X To Accumulator
+				Operation: X → A
+
+				This instruction moves the value that is in the index register X to the accumulator A without disturbing
+				the content of the index register X.
+
+				TXA does not affect any register other than the accumulator and does not affect the carry or overflow flag.
+				If the result in A has bit 7 on, then the N flag is set, otherwise it is reset.
+				If the resultant value in the accumulator is 0, then the Z flag is set, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("TXA\n")
+
+			//Set accumulator to value of X register
+			A = X
+			//If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
+			if A&1<<7 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 1 << 7
+			}
+			//If accumulator is 0, set zero SR flag else set zero SR flag to 0
+			if A == 0 {
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
+
 			incCount(1)
+			printMachineState()
 		case 0x98:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
