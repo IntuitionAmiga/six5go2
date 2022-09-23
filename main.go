@@ -58,11 +58,9 @@ func currentByte() byte {
 func operand1() byte {
 	return memory[fileposition+1]
 }
-
 func operand2() byte {
 	return memory[fileposition+2]
 }
-
 func incCount(amount int) {
 	if fileposition+amount < len(file)-1 && amount != 0 {
 		fileposition += amount
@@ -246,11 +244,34 @@ func execute(file string) {
 			incCount(1)
 			printMachineState()
 		case 0x40:
+			/*
+				RTI - Return From Interrupt
+				Operation: P↑ PC↑
+
+				This instruction transfers from the stack into the microprocessor the processor status and the
+				program counter location for the instruction which was interrupted.
+
+				By virtue of the interrupt having stored this data before executing the instruction and the fact
+				that the RTI re-initialises the microprocessor to the same state as when it was interrupted, the
+				combination of interrupt plus RTI allows truly reentrant coding.
+
+				The RTI instruction re-initialises all flags to the position to the point they were at the time
+				the interrupt was taken and sets the program counter back to its pre-interrupt state.
+
+				It affects no other registers in the microprocessor.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("RTI\n")
+
+			//Update SR with the value stored at the address pointed to by SP
+			SR = memory[SP]
+			//Update PC with the value stored at the address pointed to by SP+1
+			PC = int(memory[SP] + 1)
+
 			incCount(1)
+			printMachineState()
 		case 0x42:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
