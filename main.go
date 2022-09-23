@@ -367,11 +367,29 @@ func execute(file string) {
 			incCount(1)
 			printMachineState()
 		case 0x60:
+			/*
+				RTS - Return From Subroutme
+				Operation: PC↑, PC + 1 → PC
+
+				This instruction loads the program count low and program count high from the stack into the program
+				counter and increments the program counter so that it points to the instruction following the JSR.
+
+				The stack pointer is adjusted by incrementing it twice.
+
+				The RTS instruction does not affect any flags and affects only PCL and PCH.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("RTS\n")
+
+			//Update PC with the value stored at the address pointed to by SP+1
+			PC = int(memory[SP] + 1)
+			//Increment the stack pointer twice
+			SP += 2
+
 			incCount(1)
+			printMachineState()
 		case 0x68:
 			/*
 				PLA - Pull Accumulator From Stack
