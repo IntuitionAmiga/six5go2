@@ -393,11 +393,26 @@ func execute(file string) {
 			fmt.Printf("TAX\n")
 			incCount(1)
 		case 0xB8:
+			/*
+				CLV - Clear Overflow Flag
+				Operation: 0 → V
+
+				This instruction clears the overflow flag to a 0. This command is used in conjunction with the
+				set overflow pin which can change the state of the overflow flag with an external signal.
+
+				CLV affects no registers in the microprocessor and no flags other than the overflow flag which
+				is set to a 0.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("CLV\n")
+
+			//Set SR overflow flag bit 6 to 0
+			SR |= 0 << 6
+
 			incCount(1)
+			printMachineState()
 		case 0xBA:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
