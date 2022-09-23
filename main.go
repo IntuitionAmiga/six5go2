@@ -531,11 +531,43 @@ func execute(file string) {
 			fmt.Printf("TAY\n")
 			incCount(1)
 		case 0xAA:
+			/*
+				TAX - Transfer Accumulator To Index X
+				Operation: A → X
+
+				This instruction takes the value from accumulator A and transfers or loads it into the index register X
+				without disturbing the content of the accumulator A.
+
+				TAX only affects the index register X, does not affect the carry or overflow flags.
+				The N flag is set if the resultant value in the index register X has bit 7 on, otherwise N is reset.
+				The Z bit is set if the content of the register X is 0 as a result of the operation, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("TAX\n")
+
+			//Update X with the value of A
+			X = A
+			//If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if X&1<<7 == 1 {
+				//Set bit 7 of SR to 1
+				SR |= 1 << 7
+			} else {
+				//Set bit 7 of SR to 0
+				SR |= 0 << 7
+			}
+			//If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if X == 0 {
+				//Set bit 1 of SR to 1
+				SR |= 1 << 1
+			} else {
+				//Set bit 1 of SR to 0
+				SR |= 0 << 1
+			}
+
 			incCount(1)
+			printMachineState()
 		case 0xB8:
 			/*
 				CLV - Clear Overflow Flag
