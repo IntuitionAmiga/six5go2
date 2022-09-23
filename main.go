@@ -209,11 +209,10 @@ func execute(file string) {
 			fmt.Printf("DEC\n")
 			incCount(1)
 		case 0x3B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
-			}
-			fmt.Printf("DEZ\n")
+			//NOP
+
 			incCount(1)
+			printMachineState()
 		case 0x40:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -376,7 +375,7 @@ func execute(file string) {
 			}
 			fmt.Printf("DEY\n")
 
-			//Decrement the  Yregister by 1
+			//Decrement the  Y register by 1
 			Y--
 			//If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if Y&1<<7 == 1 {
@@ -515,11 +514,26 @@ func execute(file string) {
 			fmt.Printf("PHZ\n")
 			incCount(1)
 		case 0xE8:
+			/*
+				INX - Increment Index Register X By One
+				Operation: X + 1 → X
+
+				Increment X adds 1 to the current value of the X register. This is an 8-bit increment which does not affect the carry operation, therefore, if the value of X before the increment was FF, the resulting value is 00.
+
+				INX does not affect the carry or overflow flags; it sets the N flag if the result of the increment has a one in bit 7, otherwise resets N; sets the Z flag if the result of the increment is 0, otherwise it resets the Z flag.
+
+				INX does not affect any other register other than the X register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("INX\n")
+
+			//Increment the X register by 1
+			X++
+
 			incCount(1)
+			printMachineState()
 		case 0xEA:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
