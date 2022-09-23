@@ -336,11 +336,44 @@ func execute(file string) {
 			fmt.Printf("RTS\n")
 			incCount(1)
 		case 0x68:
+			/*
+				PLA - Pull Accumulator From Stack
+				Operation: A↑
+
+				This instruction adds 1 to the current value of the stack pointer and uses it to address the stack
+				and loads the contents of the stack into the A register.
+
+				The PLA instruction does not affect the carry or overflow flags.
+				It sets N if the bit 7 is on in accumulator A as a result of instructions, otherwise it is reset.
+				If accumulator A is zero as a result of the PLA, then the Z flag is set, otherwise it is reset.
+
+				The PLA instruction changes content of the accumulator A to the contents of the memory location at
+				stack register plus 1 and also increments the stack register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("PLA\n")
+
+			//Increment the stack pointer by 1 byte
+			SP++
+			//Update accumulator with value stored in memory address pointed to by SP
+			A = memory[SP]
+			//If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
+			if A&1<<7 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 1 << 7
+			}
+			//If accumulator is 0, set zero SR flag else set zero SR flag to 0
+			if A == 0 {
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
+
 			incCount(1)
+			printMachineState()
 		case 0x6A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
