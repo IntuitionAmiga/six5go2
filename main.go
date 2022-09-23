@@ -525,11 +525,43 @@ func execute(file string) {
 			fmt.Printf("TXS\n")
 			incCount(1)
 		case 0xA8:
+			/*
+				TAY - Transfer Accumulator To Index Y
+				Operation: A → Y
+
+				This instruction moves the value of the accumulator into index register Y without affecting
+				the accumulator.
+
+				TAY instruction only affects the Y register and does not affect either the carry or overflow flags.
+				If the index register Y has bit 7 on, then N is set, otherwise it is reset.
+				If the content of the index register Y equals 0 as a result of the operation, Z is set on, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("TAY\n")
+
+			//Set Y register to the value of the accumulator
+			Y = A
+			//If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if Y&1<<7 == 1 {
+				//Set bit 7 of SR to 1
+				SR = SR | 1<<7
+			} else {
+				//Set bit 7 of SR to 0
+				SR ^= 1 << 7
+			}
+			//If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if A == 0 {
+				//Set bit 1 of SR to 1
+				SR = SR | 1<<1
+			} else {
+				//Set bit 1 of SR to 0
+				SR ^= 1 << 1
+			}
+
 			incCount(1)
+			printMachineState()
 		case 0xAA:
 			/*
 				TAX - Transfer Accumulator To Index X
