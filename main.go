@@ -89,11 +89,24 @@ func execute(file string) {
 			fmt.Printf("BRK\n")
 			incCount(1)
 		case 0x02:
+			/*
+				CLE - Clear Extend Disable Flag
+				Operation: 0 → E
+
+				This instruction initializes the extend disable to a 0. This sets the stack pointer to 16 bit mode.
+
+				It affects no registers in the microprocessor and no flags other than the extend disable which is cleared.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("CLE\n")
+
+			//Set bit 5 of SR to 0
+			SR = SR | 0<<5
+
 			incCount(1)
+			printMachineState()
 		case 0x03:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
