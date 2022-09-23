@@ -103,7 +103,7 @@ func execute(file string) {
 			fmt.Printf("CLE\n")
 
 			//Set bit 5 of SR to 0
-			SR = SR | 0<<5
+			SR |= 0 << 5
 
 			incCount(1)
 			printMachineState()
@@ -268,11 +268,26 @@ func execute(file string) {
 			fmt.Printf("TAZ\n")
 			incCount(1)
 		case 0x58:
+			/*
+				CLI - Clear Interrupt Disable
+				Operation: 0 → I
+
+				This instruction initializes the interrupt disable to a 0.
+				his allows the microprocessor to receive interrupts.
+
+				It affects no registers in the microprocessor and no flags other than the interrupt disable
+				which is cleared.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("CLI\n")
+
+			//Set SR interrupt disable bit 2 to 0
+			SR |= 0 << 2
+
 			incCount(1)
+			printMachineState()
 		case 0x5A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
