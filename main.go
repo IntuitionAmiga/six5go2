@@ -66,6 +66,7 @@ func incCount(amount int) {
 		fileposition += amount
 	}
 	PC += amount
+	printMachineState()
 }
 func printMachineState() {
 	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X\n\n", A, X, Y, SR, SP, PC)
@@ -104,7 +105,7 @@ func execute(file string) {
 			SR |= 0 << 5
 
 			incCount(1)
-			printMachineState()
+
 		case 0x03:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -132,7 +133,7 @@ func execute(file string) {
 
 			fmt.Printf("PHP\n")
 			incCount(1)
-			printMachineState()
+
 		case 0x0A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -163,7 +164,7 @@ func execute(file string) {
 			//Set SR carry flag bit 0 to 0
 			SR |= 0 << 0
 			incCount(1)
-			printMachineState()
+
 		case 0x1A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -197,7 +198,7 @@ func execute(file string) {
 			SR = memory[SP]
 
 			incCount(1)
-			printMachineState()
+
 		case 0x2A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -231,7 +232,7 @@ func execute(file string) {
 			//Set SR carry flag bit 0 to 1
 			SR |= 1 << 0
 			incCount(1)
-			printMachineState()
+
 		case 0x3A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -242,7 +243,7 @@ func execute(file string) {
 			//NOP
 
 			incCount(1)
-			printMachineState()
+
 		case 0x40:
 			/*
 				RTI - Return From Interrupt
@@ -271,7 +272,7 @@ func execute(file string) {
 			PC = int(memory[SP] + 1)
 
 			incCount(1)
-			printMachineState()
+
 		case 0x42:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -306,7 +307,7 @@ func execute(file string) {
 			SP--
 
 			incCount(1)
-			printMachineState()
+
 		case 0x4A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -339,7 +340,7 @@ func execute(file string) {
 			SR |= 0 << 2
 
 			incCount(1)
-			printMachineState()
+
 		case 0x5A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -365,7 +366,7 @@ func execute(file string) {
 			fmt.Printf("AUG\n")
 
 			incCount(1)
-			printMachineState()
+
 		case 0x60:
 			/*
 				RTS - Return From Subroutme
@@ -389,7 +390,7 @@ func execute(file string) {
 			SP += 2
 
 			incCount(1)
-			printMachineState()
+
 		case 0x68:
 			/*
 				PLA - Pull Accumulator From Stack
@@ -428,7 +429,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0x6A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -460,7 +461,7 @@ func execute(file string) {
 			SR |= 1 << 2
 
 			incCount(1)
-			printMachineState()
+
 		case 0x7A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -505,7 +506,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0x8A:
 			/*
 				TXA - Transfer Index X To Accumulator
@@ -539,7 +540,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0x98:
 			/*
 				TYA - Transfer Index Y To Accumulator
@@ -574,7 +575,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0x9A:
 			/*
 				TXS - Transfer Index X To Stack Pointer
@@ -594,7 +595,7 @@ func execute(file string) {
 			SP = int(X)
 
 			incCount(1)
-			printMachineState()
+
 		case 0xA8:
 			/*
 				TAY - Transfer Accumulator To Index Y
@@ -632,7 +633,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0xAA:
 			/*
 				TAX - Transfer Accumulator To Index X
@@ -670,7 +671,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0xB8:
 			/*
 				CLV - Clear Overflow Flag
@@ -691,7 +692,7 @@ func execute(file string) {
 			SR |= 0 << 6
 
 			incCount(1)
-			printMachineState()
+
 		case 0xBA:
 			/*
 				TSX - Transfer Stack Pointer To Index X
@@ -729,7 +730,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0xC8:
 			/*
 				INY - Increment Index Register Y By One
@@ -770,7 +771,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0xCA:
 			/*
 				DEX - Decrement Index Register X By One
@@ -800,7 +801,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0xD8:
 			/*
 				CLD - Clear Decimal Mode
@@ -820,7 +821,7 @@ func execute(file string) {
 			//Set SR decimal mode flag to 0
 
 			incCount(1)
-			printMachineState()
+
 		case 0xDA:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -874,7 +875,7 @@ func execute(file string) {
 			}
 
 			incCount(1)
-			printMachineState()
+
 		case 0xEA:
 			/*
 				NOP - No Operation
@@ -886,7 +887,7 @@ func execute(file string) {
 			fmt.Printf("NOP\n")
 
 			incCount(1)
-			printMachineState()
+
 		case 0xF8:
 			/*
 				SED - Set Decimal Mode
@@ -907,7 +908,7 @@ func execute(file string) {
 			SR |= 1 << 3
 
 			incCount(1)
-			printMachineState()
+
 		case 0xFA:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -986,7 +987,7 @@ func execute(file string) {
 			}
 
 			incCount(0)
-			printMachineState()
+
 		case 0x11:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page),Indirect Y)\n", PC, currentByte(), operand1())
@@ -1259,7 +1260,7 @@ func execute(file string) {
 				SR |= 0 << 7
 			}
 			incCount(2)
-			printMachineState()
+
 		case 0x70:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
@@ -1346,7 +1347,7 @@ func execute(file string) {
 			memory[operand1()] = A
 			//fmt.Printf("Address[$%02X] = $%02X\n", operand1(), memory[operand1()])
 			incCount(2)
-			printMachineState()
+
 		case 0x86:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, currentByte(), operand1())
@@ -1387,7 +1388,7 @@ func execute(file string) {
 			}
 
 			incCount(0)
-			printMachineState()
+
 		case 0x91:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, currentByte(), operand1())
@@ -1418,7 +1419,7 @@ func execute(file string) {
 			memory[operand1()+X] = Y
 
 			incCount(2)
-			printMachineState()
+
 		case 0x95:
 			/*
 				STA - Store Accumulator in Memory
@@ -1438,7 +1439,7 @@ func execute(file string) {
 			memory[operand1()+X] = A
 
 			incCount(2)
-			printMachineState()
+
 		case 0x96:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, currentByte(), operand1())
@@ -1495,7 +1496,7 @@ func execute(file string) {
 			}
 
 			incCount(2)
-			printMachineState()
+
 		case 0xA3:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, currentByte(), operand1())
@@ -1546,7 +1547,7 @@ func execute(file string) {
 			}
 
 			incCount(2)
-			printMachineState()
+
 		case 0xA6:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, currentByte(), operand1())
@@ -1614,7 +1615,7 @@ func execute(file string) {
 				SR |= 0 << 1
 			}
 			incCount(2)
-			printMachineState()
+
 		case 0xB5:
 			/*
 				LDA - Load Accumulator with Memory
@@ -1658,7 +1659,7 @@ func execute(file string) {
 			}
 
 			incCount(2)
-			printMachineState()
+
 		case 0xB6:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, currentByte(), operand1())
@@ -1776,7 +1777,7 @@ func execute(file string) {
 				//SR = 0b00100000
 			}
 			incCount(2)
-			printMachineState()
+
 		case 0xD0:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
@@ -1917,7 +1918,7 @@ func execute(file string) {
 				SR |= 0 << 1
 			}
 			incCount(2)
-			printMachineState()
+
 		case 0xF0:
 			/*
 				BEQ - Branch on Result Zero
@@ -1942,7 +1943,7 @@ func execute(file string) {
 				fmt.Printf("XXXXX")
 			} else {
 				incCount(2)
-				printMachineState()
+
 			}
 
 		case 0xF1:
@@ -2015,7 +2016,7 @@ func execute(file string) {
 			}
 
 			incCount(3)
-			printMachineState()
+
 		case 0x13:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, currentByte(), operand1(), operand2())
@@ -2080,7 +2081,7 @@ func execute(file string) {
 			PC = int(operand1()) + int(operand2())<<8
 
 			incCount(3)
-			printMachineState()
+
 		case 0x22:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t((Indirect) Z)\t\n", PC, currentByte(), operand1(), operand2())
@@ -2450,7 +2451,7 @@ func execute(file string) {
 				SR |= 0 << 1
 			}
 			incCount(3)
-			printMachineState()
+
 		case 0xBD:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, currentByte(), operand1(), operand2())
