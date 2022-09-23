@@ -285,6 +285,7 @@ func execute(file string) {
 			fmt.Printf("AUG\n")
 
 			incCount(1)
+			printMachineState()
 		case 0x60:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -412,11 +413,25 @@ func execute(file string) {
 			incCount(1)
 			printMachineState()
 		case 0xD8:
+			/*
+				CLD - Clear Decimal Mode
+				Operation: 0 → D
+
+				This instruction sets the decimal mode flag to a 0. This all subsequent ADC and SBC instructions
+				to operate as simple operations.
+
+				CLD affects no registers in the microprocessor and no flags other than the decimal mode flag which
+				is set to a 0.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("CLD\n")
+
+			//Set SR decimal mode flag to 0
+
 			incCount(1)
+			printMachineState()
 		case 0xDA:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
