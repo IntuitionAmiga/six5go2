@@ -134,6 +134,7 @@ func execute(file string) {
 
 			fmt.Printf("PHP\n")
 			incCount(1)
+			printMachineState()
 		case 0x0A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
