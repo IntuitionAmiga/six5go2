@@ -707,11 +707,26 @@ func execute(file string) {
 			incCount(1)
 			printMachineState()
 		case 0xF8:
+			/*
+				SED - Set Decimal Mode
+				Operation: 1 → D
+
+				This instruction sets the decimal mode flag D to a 1.
+				This makes all subsequent ADC and SBC instructions operate as a decimal arithmetic operation.
+
+				SED affects no registers in the microprocessor and no flags other than the decimal mode which
+				is set to a 1.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("SED\n")
+
+			//Set SR decimal mode flag to 1
+			SR |= 1 << 3
+
 			incCount(1)
+			printMachineState()
 		case 0xFA:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
