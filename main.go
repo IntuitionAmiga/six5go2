@@ -114,9 +114,24 @@ func execute(file string) {
 			fmt.Printf("SEE\n")
 			incCount(1)
 		case 0x08:
+			/*
+				PHP - Push Processor Status On Stack
+				Operation: P↓
+
+				This instruction transfers the contents of the processor status register unchanged to the stack,
+				as governed by the stack pointer.
+
+				The PHP instruction affects no registers or flags in the microprocessor.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
+
+			//Push SR to stack
+			memory[SP] = SR
+			//Decrement the stack pointer by 1 byte
+			SP--
+
 			fmt.Printf("PHP\n")
 			incCount(1)
 		case 0x0A:
