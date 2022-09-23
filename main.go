@@ -522,8 +522,9 @@ func execute(file string) {
 				This is an 8-bit increment which does not affect the carry operation, therefore,
 				if the value of X before the increment was FF, the resulting value is 00.
 
-				INX does not affect the carry or overflow flags; it sets the N flag if the result of the increment
-				has a one in bit 7, otherwise resets N; sets the Z flag if the result of the increment is 0, otherwise it resets the Z flag.
+				INX does not affect the carry or overflow flags;
+				it sets the N flag if the result of the increment has a one in bit 7, otherwise resets N;
+				sets the Z flag if the result of the increment is 0, otherwise it resets the Z flag.
 
 				INX does not affect any other register other than the X register.
 			*/
@@ -537,6 +538,15 @@ func execute(file string) {
 				X = 0
 			} else {
 				X++
+			}
+
+			//If X bit 7 is 1, set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if X&1<<7 == 1 {
+				//Set bit 7 of SR to 1
+				SR = SR | 1<<7
+			} else {
+				//Set bit 7 of SR to 0
+				SR ^= 1 << 7
 			}
 
 			incCount(1)
