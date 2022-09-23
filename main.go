@@ -591,11 +591,17 @@ func execute(file string) {
 			incCount(1)
 			printMachineState()
 		case 0xEA:
+			/*
+				NOP - No Operation
+				Operation: No operation
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("NOP\n")
+
 			incCount(1)
+			printMachineState()
 		case 0xF8:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
