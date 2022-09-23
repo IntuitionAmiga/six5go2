@@ -536,8 +536,12 @@ func execute(file string) {
 			//If X==0xFF then X=0 else increment the X by 1
 			if X == 0xFF {
 				X = 0
+				//Set SR zero flag bit 1 to 1
+				SR |= 1 << 1
 			} else {
 				X++
+				//Set SR zero flag bit 1 to 0
+				SR ^= 1 << 1
 			}
 
 			//If X bit 7 is 1, set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
