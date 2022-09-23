@@ -547,11 +547,25 @@ func execute(file string) {
 			fmt.Printf("TYA\n")
 			incCount(1)
 		case 0x9A:
+			/*
+				TXS - Transfer Index X To Stack Pointer
+				Operation: X → S
+
+				This instruction transfers the value in the index register X to the stack pointer.
+
+				TXS changes only the stack pointer, making it equal to the content of the index register X.
+				It does not affect any of the flags.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("TXS\n")
+
+			//Set stack pointer to value of X register
+			SP = int(X)
+
 			incCount(1)
+			printMachineState()
 		case 0xA8:
 			/*
 				TAY - Transfer Accumulator To Index Y
