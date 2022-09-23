@@ -179,11 +179,27 @@ func execute(file string) {
 			fmt.Printf("INZ\n")
 			incCount(1)
 		case 0x28:
+			/*
+				PLP - Pull Processor Status From Stack
+				Operation: P↑
+
+				This instruction transfers the next value on the stack to the Processor Status register,
+				thereby changing all of the flags and setting the mode switches to the values from the stack.
+
+				The PLP instruction affects no registers in the processor other than the status register.
+
+				This instruction could affect all flags in the status register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("PLP\n")
+
+			//Update SR with the value stored at the address pointed to by SP
+			SR = memory[SP]
+
 			incCount(1)
+			printMachineState()
 		case 0x2A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
