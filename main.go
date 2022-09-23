@@ -446,11 +446,46 @@ func execute(file string) {
 			fmt.Printf("TSX\n")
 			incCount(1)
 		case 0xC8:
+			/*
+				INY - Increment Index Register Y By One
+				Operation: Y + 1 → Y
+
+				Increment Y increments or adds one to the current value in the Y register,
+				storing the result in the Y register.
+
+				As in the case of INX the primary application is to step thru a set of values using the Y register.
+
+				The INY does not affect the carry or overflow flags, sets the N flag if the result of the increment
+				has a one in bit 7, otherwise resets N,
+				sets Z if as a result of the increment the Y register is zero otherwise resets the Z flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("INY\n")
+
+			//Increment the  Y register by 1
+			Y++
+			//If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if Y&1<<7 == 1 {
+				//Set bit 7 of SR to 1
+				SR = SR | 1<<7
+			} else {
+				//Set bit 7 of SR to 0
+				SR ^= 1 << 7
+			}
+
+			//If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if Y == 0 {
+				//Set bit 1 of SR to 1
+				SR = SR | 1<<1
+			} else {
+				//Set bit 1 of SR to 0
+				SR ^= 1 << 1
+			}
+
 			incCount(1)
+			printMachineState()
 		case 0xCA:
 			/*
 				DEX - Decrement Index Register X By One
