@@ -622,11 +622,43 @@ func execute(file string) {
 			incCount(1)
 			printMachineState()
 		case 0xBA:
+			/*
+				TSX - Transfer Stack Pointer To Index X
+				Operation: S → X
+
+				This instruction transfers the value in the stack pointer to the index register X.
+
+				TSX does not affect the carry or overflow flags.
+				It sets N if bit 7 is on in index X as a result of the instruction, otherwise it is reset.
+				If index X is zero as a result of the TSX, the Z flag is set, otherwise it is reset.
+				TSX changes the value of index X, making it equal to the content of the stack pointer.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("TSX\n")
+
+			//Update X with the value stored at the address pointed to by SP
+			X = memory[SP]
+			//If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if X&1<<7 == 1 {
+				//Set bit 7 of SR to 1
+				SR |= 1 << 7
+			} else {
+				//Set bit 7 of SR to 0
+				SR |= 0 << 7
+			}
+			//If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if X == 0 {
+				//Set bit 1 of SR to 1
+				SR |= 1 << 1
+			} else {
+				//Set bit 1 of SR to 0
+				SR |= 0 << 1
+			}
+
 			incCount(1)
+			printMachineState()
 		case 0xC8:
 			/*
 				INY - Increment Index Register Y By One
