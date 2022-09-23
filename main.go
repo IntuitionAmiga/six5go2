@@ -272,6 +272,19 @@ func execute(file string) {
 			}
 			fmt.Printf("TAB\n")
 			incCount(1)
+		case 0x5C:
+			/*
+				AUG - Augment
+				Operation: No Operation
+
+				The AUG instruction is a 4-byte NOP, and reserved for future expansion.
+			*/
+			if printHex {
+				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
+			}
+			fmt.Printf("AUG\n")
+
+			incCount(1)
 		case 0x60:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -1587,19 +1600,19 @@ func execute(file string) {
 				return pointer on the stack to allow the user to return to perform the next instruction in the
 				main program after the subroutine is complete.
 
-				To accomplish this, JSR instruction stores the program counter address which points to the last byte of the
-				jump instruction onto the stack using the stack pointer. The stack byte contains the program count high first,
-				followed by program count low. The JSR then transfers the addresses following the jump instruction to the
-				program counter low and the program counter high, thereby directing the program to begin at that new address.
+				To accomplish this, JSR instruction stores the program counter address which points to the last byte
+				of the jump instruction onto the stack using the stack pointer. The stack byte contains the
+				program count high first, followed by program count low. The JSR then transfers the addresses following
+				the jump instruction to the	program counter low and the program counter high, thereby directing the
+				program to begin at that new address.
 
-				The JSR instruction affects no flags, causes the stack pointer to be decremented by 2 and substitutes new values into the program fileposition low and the program fileposition high.
+				The JSR instruction affects no flags, causes the stack pointer to be decremented by 2 and substitutes
+				new values into the program fileposition low and the program fileposition high.
 			*/
-
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, currentByte(), operand1(), operand2())
 			}
 			fmt.Printf("JSR $%02X%02X\n", operand2(), operand1())
-
 			//Store PC at address stored in SP
 			memory[SP] = byte(PC)
 			//Set PC to address stored in operand 1 and operand 2
@@ -1607,8 +1620,6 @@ func execute(file string) {
 
 			incCount(3)
 			printMachineState()
-			//fmt.Printf("post PC= %04X\n", PC)
-			//fmt.Printf("post Byte fileposition = %04X\n", fileposition)
 		case 0x22:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t((Indirect) Z)\t\n", PC, currentByte(), operand1(), operand2())
@@ -1967,7 +1978,6 @@ func execute(file string) {
 
 			//If bit 7 of Y is 1 then set bit 7 of SR to 1
 			//else set bit 7 of SR to 0
-			//fmt.Printf("Y=%b\n", Y)
 			if Y&1 == 1 {
 				SR |= 1 << 7
 			} else {
