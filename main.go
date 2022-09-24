@@ -228,10 +228,38 @@ func execute(file string) {
 			incCount(1)
 
 		case 0x2A:
+			/*
+				ROL - Rotate Left
+				Operation: C ← /M7...M0/ ← C
+
+				The rotate left instruction shifts either the accumulator or addressed memory left 1 bit, with
+				the input carry being stored in bit 0 and with the input bit 7 being stored in the carry flags.
+
+				The ROL instruction either shifts the accumulator left 1 bit and stores the carry in accumulator bit 0
+				or does not affect the internal registers at all.
+				The ROL instruction sets carry equal to the input bit 7,
+				sets N equal to the input bit 6,
+				sets the Z flag if the result of the rotate is 0,
+				otherwise it resets Z and does not affect the overflow flag at all.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
 			}
 			fmt.Printf("ROL\n")
+
+			//Shift left the accumulator by 1 bit
+			A = A << 1
+			//Set SR carry flag bit 0 to the value of Accumulator bit 7
+			SR |= A >> 7
+			//Set SR negative flag bit 7 to the value of Accumulator bit 6
+			SR |= A >> 6
+			//Set SR zero flag bit 1 to 1 if Accumulator is 0 else set SR zero flag to 0
+			if A == 0 {
+				SR |= 1 << 1
+			} else {
+				SR &= 0 << 1
+			}
+
 			incCount(1)
 		case 0x2B:
 			if printHex {
