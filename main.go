@@ -1093,13 +1093,12 @@ func execute(file string) {
 			fmt.Printf("BPL $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
 			//If SR negative bit 7 is 0, then branch
-			if SR&7 == 1 {
-
+			if SR&1<<7 == 0 {
 				fileposition = (fileposition + 2 + int(operand1())) & 0xFF
 				PC += fileposition
 			}
 
-			incCount(0)
+			incCount(2)
 
 		case 0x11:
 			if printHex {
@@ -1709,10 +1708,8 @@ func execute(file string) {
 				//Set bit 1 to 1
 				SR |= 1 << 1
 			} else {
-				//SR = 0b00100000
 				//Set SR bit 1 to 0
 				SR ^= 0 << 1
-				//SR |= 0 << 1
 			}
 
 			//If bit 7 of A is 1, set the negative flag else reset the negative flag
