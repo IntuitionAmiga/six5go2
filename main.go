@@ -516,11 +516,41 @@ func execute(file string) {
 			incCount(1)
 
 		case 0x6A:
+			/*
+				ROR - Rotate Right
+				Operation: C → /M7...M0/ → C
+
+				The rotate right instruction shifts either the accumulator or addressed memory right 1 bit with
+				bit 0 shifted into the carry and carry shifted into bit 7.
+
+				The ROR instruction either shifts the accumulator right 1 bit and stores the carry in accumulator
+				bit 7 or does not affect the internal registers at all.
+				The ROR instruction sets carry equal to input bit 0,
+				sets N equal to the input carry and sets the Z flag if the result of the rotate is 0;
+				It otherwise it resets Z and does not affect the overflow flag at all.
+
+				(Available on Microprocessors after June, 1976)
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
 			}
 			fmt.Printf("ROR\n")
+
+			Atemp := A
+			//Shift accumulator right 1 bit
+			A = A >> 1
+			//Update accumulator bit 7 with bit 0 of Atemp
+			A |= (Atemp & 1) << 7
+			//If A==0 then update SR negative flag bit 7 with Atemp bit 0 and set zero flag bit 1 to 1 else set zero flag bit 1 to 0
+			if A == 0 {
+				SR |= (Atemp & 1) << 7
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
+
 			incCount(1)
+
 		case 0x6B:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
