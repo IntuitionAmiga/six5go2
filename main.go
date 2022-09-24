@@ -1737,11 +1737,42 @@ func execute(file string) {
 			fmt.Printf("SMB2 $%02X\n", operand1())
 			incCount(2)
 		case 0xA9:
+			/*
+				LDA - Load Accumulator with Memory
+				Operation: M → A
+
+				When instruction LDA is executed by the microprocessor, data is transferred from memory to the
+				accumulator and stored in the accumulator.
+
+				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
+				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
+				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, currentByte(), operand1())
 			}
 			fmt.Printf("LDA #$%02X\n", operand1())
+
+			//Load the accumulator with the value in the operand
+			A = operand1()
+			//If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
+			if A == 0 {
+				//Set bit 1 to 1
+				SR |= 1 << 1
+			} else {
+				//Set SR bit 1 to 0
+				SR ^= 0 << 1
+				//SR |= 0 << 1
+			}
+			//If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
+			if A&1 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+
 			incCount(2)
+
 		case 0xB0:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
