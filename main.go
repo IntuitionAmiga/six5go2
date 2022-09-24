@@ -75,6 +75,7 @@ func printMachineState() {
 //nolint:gocognit
 //nolint:gocognit
 //nolint:gocognit
+//nolint:gocognit
 func execute(file string) {
 	PC += fileposition
 	if printHex {
@@ -2575,10 +2576,51 @@ func execute(file string) {
 			fmt.Printf("JMP ($%02X%02X)\n", operand2(), operand1())
 			incCount(3)
 		case 0x6D:
+			/*
+				ADC - Add Memory to Accumulator with Carry
+				Operation: A + M + C → A, C
+
+				This instruction adds the value of memory and carry from the previous operation to the value of the
+				accumulator and stores the result in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99
+				otherwise carry is reset.
+
+				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
+				otherwise overflow is reset.
+
+				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
+				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, currentByte(), operand1(), operand2())
 			}
 			fmt.Printf("ADC $%02X%02X\n", operand2(), operand1())
+
+			// Read bit 7 of the accumulator into a temp var
+			temp := (A & 0x80) >> 7
+			// If SR carry bit is set, add 1 to A
+			if SR&0x01 == 0x01 {
+				A++
+			}
+			// Add the value of operand
+			A += operand1()
+			// If bit 7 of accumulator is not equal to bit 7 of temp then set SR overflow flag bit 6 to 1
+			if (A&0x80)>>7 != (temp&0x80)>>7 {
+				SR |= 0x40
+			}
+			// If bit 7 of accumulator is 1 then set negative flag
+			if (A & 0x80) == 0x80 {
+				SR |= 0x80
+			}
+			// If accumulator is 0 then set zero flag else set SR zero flag to 0
+			if A == 0 {
+				SR |= 0x02
+			} else {
+				SR &= 0xFD
+			}
+
 			incCount(3)
 		case 0x6E:
 			if printHex {
