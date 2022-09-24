@@ -51,7 +51,6 @@ func main() {
 	printMachineState()
 	execute(string(file))
 }
-
 func currentByte() byte {
 	return memory[fileposition]
 }
@@ -71,7 +70,6 @@ func incCount(amount int) {
 func printMachineState() {
 	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X\n\n", A, X, Y, SR, SP, PC)
 }
-
 func execute(file string) {
 	PC += fileposition
 	if printHex {
@@ -1970,11 +1968,48 @@ func execute(file string) {
 			fmt.Printf("SMB5 $%02X\n", operand1())
 			incCount(2)
 		case 0xE0:
+			/*
+				CPX - Compare Index Register X To Memory
+				Operation: X - M
+
+				This instruction subtracts the value of the addressed memory location from the content of index
+				register X using the adder but does not store the result;
+				therefore, its only use is to set the N, Z and C flags to allow for comparison between the index
+				register X and the value in memory.
+
+				The CPX instruction does not affect any register in the machine; it also does not affect the overflow flag.
+				It causes the carry to be set on if the absolute value of the index register X is equal to or greater
+				than the data from memory.
+				If the value of the memory is greater than the content of the index register X, carry is reset.
+				If the results of the subtraction contain a bit 7, then the N flag is set, if not, it is reset.
+				If the value in memory is equal to the value in index register X, the Z flag is set, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, currentByte(), operand1())
 			}
 			fmt.Printf("CPX #$%02X\n", operand1())
+
+			//Subtract operand from X
+			TempResult := X - operand1()
+			//If operand is greater than X, set carry flag to 0
+			if operand1() > X {
+				SR |= 0 << 0
+			}
+			//If bit 7 of TempResult is set, set N flag to 1
+			if TempResult&0b10000000 == 0b10000000 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+			//If operand is equal to X, set Z flag to 1 else set Zero flag to 0
+			if operand1() == X {
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
+
 			incCount(2)
+
 		case 0xE1:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, currentByte(), operand1())
