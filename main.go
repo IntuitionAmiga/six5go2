@@ -1820,11 +1820,50 @@ func execute(file string) {
 			fmt.Printf("SMB3 $%02X\n", operand1())
 			incCount(2)
 		case 0xC0:
+			/*
+				CPY - Compare Index Register Y To Memory
+				Operation: Y - M
+
+				This instruction performs a two's complement subtraction between the index register Y and the
+				specified memory location. The results of the subtraction are not stored anywhere. The instruction is
+				strictly used to set the flags.
+
+				CPY affects no registers in the microprocessor and also does not affect the overflow flag.
+
+				If the value in the index register Y is equal to or greater than the value in the memory,
+				the carry flag will be set, otherwise it will be cleared.
+
+				If the results of the subtracttion contain bit 7 on the N bit will be set, otherwise it will be cleared.
+
+				If the value in the index register Y and the value in the memory are equal, the zero flag will be set,
+				otherwise it will be cleared.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, currentByte(), operand1())
 			}
 			fmt.Printf("CPY #$%02X\n", operand1())
+
+			//Subtract operand from Y
+			TempResult := Y - operand1()
+			//If operand is greater than Y, set carry flag to 0
+			if operand1() > Y {
+				SR |= 0 << 0
+			}
+			//If bit 7 of TempResult is set, set N flag to 1
+			if TempResult&0b10000000 == 0b10000000 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+			//If operand is equal to Y, set Z flag to 1 else set Zero flag to 0
+			if operand1() == Y {
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
+
 			incCount(2)
+
 		case 0xC1:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, currentByte(), operand1())
