@@ -74,6 +74,7 @@ func printMachineState() {
 //nolint:funlen
 //nolint:gocognit
 //nolint:gocognit
+//nolint:gocognit
 func execute(file string) {
 	PC += fileposition
 	if printHex {
@@ -1632,10 +1633,37 @@ func execute(file string) {
 			fmt.Printf("SMB1 $%02X\n", operand1())
 			incCount(2)
 		case 0xA0:
+			/*
+				LDY - Load Index Register Y From Memory
+				Operation: M → Y
+
+				Load the index register Y from memory.
+
+				LDY does not affect the C or V flags,
+				sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
+				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, currentByte(), operand1())
 			}
 			fmt.Printf("LDY #$%02X\n", operand1())
+
+			// Load the value of the operand1() into the Y register.
+			Y = operand1()
+
+			// If bit 7 of Y is set, set the SR negative flag else reset it to 0
+			if Y&1 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+			// If Y is zero, set the SR zero flag else reset it to 0
+			if Y == 0 {
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
+
 			incCount(2)
 		case 0xA1:
 			if printHex {
@@ -1661,17 +1689,17 @@ func execute(file string) {
 			// Load the value of the operand1() into the X register.
 			X = operand1()
 
-			// If accumulator is zero, set the SR zero flag
+			// If bit 7 of X is set, set the SR negative flag else reset it to 0
+			if X&1 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+			// If X is zero, set the SR zero flag else reset it to 0
 			if X == 0 {
 				SR |= 1 << 1
 			} else {
 				SR |= 0 << 1
-			}
-			// If bit 7 of the accumulator is set, set the SR negative flag
-			if A&1 == 1 {
-				SR |= 1 << 7
-			} else {
-				SR |= 0 << 7
 			}
 
 			incCount(2)
