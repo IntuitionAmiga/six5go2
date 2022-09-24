@@ -135,11 +135,39 @@ func execute(file string) {
 			incCount(1)
 
 		case 0x0A:
+			/*
+				ASL - Arithmetic Shift Left
+				Operation: C ← /M7...M0/ ← 0
+
+				The shift left instruction shifts either the accumulator or the address memory location 1 bit to
+				the left, with the bit 0 always being set to 0 and the the input bit 7 being stored in the carry flag.
+
+				ASL either shifts the accumulator left 1 bit or is a read/modify/write instruction that affects only memory.
+
+				The instruction does not affect the overflow bit, sets N equal to the result bit 7 (bit 6 in the input),
+				sets Z flag if the result is equal to 0, otherwise resets Z and stores the input bit 7 in the carry flag
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
 			}
 			fmt.Printf("ASL\n")
+
+			//Shift left the accumulator by 1 bit
+			A = A << 1
+			//Set SR negative flag if bit 7 of A is set
+			if A&1 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR |= 0 << 7
+			}
+			//Set SR zero flag if A is 0
+			if A == 0 {
+				SR |= 1 << 1
+			} else {
+				SR &= 0 << 1
+			}
 			incCount(1)
+
 		case 0x0B:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
