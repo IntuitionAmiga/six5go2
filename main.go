@@ -1170,11 +1170,39 @@ func execute(file string) {
 			fmt.Printf("RMB2 $%02X\n", operand1())
 			incCount(2)
 		case 0x29:
+			/*
+				AND - "AND" Memory with Accumulator
+				Operation: A ∧ M → A
+
+				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
+				AND operation and stores the result back in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
+				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, currentByte(), operand1())
 			}
 			fmt.Printf("AND #$%02X\n", operand1())
+
+			//AND the accumulator with the operand
+			A = A & operand1()
+			//If A==0, set zero flag
+			if A == 0 {
+				SR |= 1 << 1
+			} else {
+				SR &= 0 << 1
+			}
+			//If accumulator bit 7 is 1, set negative SR flag
+			if A&1 == 1 {
+				SR |= 1 << 7
+			} else {
+				SR &= 0 << 7
+			}
+
 			incCount(2)
+
 		case 0x30:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
