@@ -1374,6 +1374,12 @@ func execute(file string) {
 			} else {
 				SR |= 0 << 7
 			}
+			//If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if A == 0 {
+				SR |= 1 << 1
+			} else {
+				SR |= 0 << 1
+			}
 			incCount(2)
 
 		case 0x70:
