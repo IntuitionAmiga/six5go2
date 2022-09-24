@@ -9,16 +9,16 @@ import (
 var (
 	printHex     bool
 	file         []byte
-	fileposition = 0 //Byte position counter
+	fileposition = 0 //  Byte position counter
 
-	//CPURegisters and RAM
-	A      byte        = 0x0000     //Accumulator
-	X      byte        = 0x0000     //X register
-	Y      byte        = 0x0000     //Y register		(76543210) SR Bit 5 is always set
-	SR     byte        = 0b10100100 //Status Register	(NVEBDIZC)
-	SP                 = 0x0100     //Stack Pointer
-	PC                 = 0x0000     //Program Counter
-	memory [65536]byte              //Memory
+	// CPURegisters and RAM
+	A      byte        = 0x0000     // Accumulator
+	X      byte        = 0x0000     // X register
+	Y      byte        = 0x0000     // Y register		(76543210) SR Bit 5 is always set
+	SR     byte        = 0b10100100 // Status Register	(NVEBDIZC)
+	SP                 = 0x0100     // Stack Pointer
+	PC                 = 0x0000     // Program Counter
+	memory [65536]byte              // Memory
 )
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 		printHex = true
 	}
 
-	// Read file
+	//  Read file
 	file, _ = os.ReadFile(os.Args[1])
 
 	fmt.Printf("USAGE   - six5go2 <target_filename> <entry_point> (Hex memory address) <hex> (Print hex values above each instruction) \n")
@@ -70,14 +70,18 @@ func incCount(amount int) {
 func printMachineState() {
 	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X\n\n", A, X, Y, SR, SP, PC)
 }
+
+//nolint:funlen
+//nolint:gocognit
+//nolint:gocognit
 func execute(file string) {
 	PC += fileposition
 	if printHex {
 		fmt.Printf(" * = $%04X\n\n", PC)
 	}
 	for fileposition = 0; fileposition < len(file); {
-		//PC += fileposition
-		// 1 byte instructions with no operands
+		// PC += fileposition
+		//  1 byte instructions with no operands
 		switch currentByte() {
 		case 0x00:
 			if printHex {
@@ -99,7 +103,7 @@ func execute(file string) {
 			}
 			fmt.Printf("CLE\n")
 
-			//Set bit 5 of SR to 0
+			// Set bit 5 of SR to 0
 			SR |= 0 << 5
 
 			incCount(1)
@@ -124,9 +128,9 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 
-			//Push SR to stack
+			// Push SR to stack
 			memory[SP] = SR
-			//Decrement the stack pointer by 1 byte
+			// Decrement the stack pointer by 1 byte
 			SP--
 
 			fmt.Printf("PHP\n")
@@ -150,15 +154,15 @@ func execute(file string) {
 			}
 			fmt.Printf("ASL\n")
 
-			//Shift left the accumulator by 1 bit
-			A = A << 1
-			//Set SR negative flag if bit 7 of A is set
+			// Shift left the accumulator by 1 bit
+			A <<= 1
+			// Set SR negative flag if bit 7 of A is set
 			if A&1 == 1 {
 				SR |= 1 << 7
 			} else {
 				SR |= 0 << 7
 			}
-			//Set SR zero flag if A is 0
+			// Set SR zero flag if A is 0
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
@@ -187,7 +191,7 @@ func execute(file string) {
 			}
 			fmt.Printf("CLC\n")
 
-			//Set SR carry flag bit 0 to 0
+			// Set SR carry flag bit 0 to 0
 			SR |= 0 << 0
 			incCount(1)
 
@@ -220,7 +224,7 @@ func execute(file string) {
 			}
 			fmt.Printf("PLP\n")
 
-			//Update SR with the value stored at the address pointed to by SP
+			// Update SR with the value stored at the address pointed to by SP
 			SR = memory[SP]
 
 			incCount(1)
@@ -245,13 +249,13 @@ func execute(file string) {
 			}
 			fmt.Printf("ROL\n")
 
-			//Shift left the accumulator by 1 bit
-			A = A << 1
-			//Set SR carry flag bit 0 to the value of Accumulator bit 7
+			// Shift left the accumulator by 1 bit
+			A <<= 1
+			// Set SR carry flag bit 0 to the value of Accumulator bit 7
 			SR |= A >> 7
-			//Set SR negative flag bit 7 to the value of Accumulator bit 6
+			// Set SR negative flag bit 7 to the value of Accumulator bit 6
 			SR |= A >> 6
-			//Set SR zero flag bit 1 to 1 if Accumulator is 0 else set SR zero flag to 0
+			// Set SR zero flag bit 1 to 1 if Accumulator is 0 else set SR zero flag to 0
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
@@ -283,7 +287,7 @@ func execute(file string) {
 			}
 			fmt.Printf("SEC\n")
 
-			//Set SR carry flag bit 0 to 1
+			// Set SR carry flag bit 0 to 1
 			SR |= 1 << 0
 			incCount(1)
 
@@ -294,7 +298,7 @@ func execute(file string) {
 			fmt.Printf("DEC\n")
 			incCount(1)
 		case 0x3B:
-			//NOP
+			// NOP
 
 			incCount(1)
 
@@ -320,9 +324,9 @@ func execute(file string) {
 			}
 			fmt.Printf("RTI\n")
 
-			//Update SR with the value stored at the address pointed to by SP
+			// Update SR with the value stored at the address pointed to by SP
 			SR = memory[SP]
-			//Update PC with the value stored at the address pointed to by SP+1
+			// Update PC with the value stored at the address pointed to by SP+1
 			PC = int(memory[SP] + 1)
 
 			incCount(1)
@@ -355,9 +359,9 @@ func execute(file string) {
 			}
 			fmt.Printf("PHA\n")
 
-			//Update memory address pointed to by SP with value stored in accumulator
+			// Update memory address pointed to by SP with value stored in accumulator
 			memory[SP] = A
-			//Decrement the stack pointer by 1 byte
+			// Decrement the stack pointer by 1 byte
 			SP--
 
 			incCount(1)
@@ -383,17 +387,17 @@ func execute(file string) {
 			}
 			fmt.Printf("LSR\n")
 
-			//Shift A right 1 bit
-			A = A >> 1
-			//Set SR negative flag bit 7 to 0
+			// Shift A right 1 bit
+			A >>= 1
+			// Set SR negative flag bit 7 to 0
 			SR &= 0 << 7
-			//Set SR zero flag bit 1 to 1 if A is 0 else set it to 0
+			// Set SR zero flag bit 1 to 1 if A is 0 else set it to 0
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
 				SR &= 0 << 1
 			}
-			//Set SR carry flag bit 0 to bit 0 of A
+			// Set SR carry flag bit 0 to bit 0 of A
 			SR |= A & 1
 
 			incCount(1)
@@ -419,7 +423,7 @@ func execute(file string) {
 			}
 			fmt.Printf("CLI\n")
 
-			//Set SR interrupt disable bit 2 to 0
+			// Set SR interrupt disable bit 2 to 0
 			SR |= 0 << 2
 
 			incCount(1)
@@ -452,7 +456,7 @@ func execute(file string) {
 
 		case 0x60:
 			/*
-				RTS - Return From Subroutme
+				RTS - Return From Subroutine
 				Operation: PC↑, PC + 1 → PC
 
 				This instruction loads the program count low and program count high from the stack into the program
@@ -467,9 +471,9 @@ func execute(file string) {
 			}
 			fmt.Printf("RTS\n")
 
-			//Update PC with the value stored at the address pointed to by SP+1
+			// Update PC with the value stored at the address pointed to by SP+1
 			PC = int(memory[SP] + 1)
-			//Increment the stack pointer twice
+			// Increment the stack pointer twice
 			SP += 2
 
 			incCount(1)
@@ -494,17 +498,17 @@ func execute(file string) {
 			}
 			fmt.Printf("PLA\n")
 
-			//Increment the stack pointer by 1 byte
+			// Increment the stack pointer by 1 byte
 			SP++
-			//Update accumulator with value stored in memory address pointed to by SP
+			// Update accumulator with value stored in memory address pointed to by SP
 			A = memory[SP]
-			//If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
+			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if A&1<<7 == 1 {
 				SR |= 1 << 7
 			} else {
-				SR |= 1 << 7
+				SR |= 0 << 7
 			}
-			//If accumulator is 0, set zero SR flag else set zero SR flag to 0
+			// If accumulator is 0, set zero SR flag else set zero SR flag to 0
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
@@ -535,11 +539,11 @@ func execute(file string) {
 			fmt.Printf("ROR\n")
 
 			Atemp := A
-			//Shift accumulator right 1 bit
-			A = A >> 1
-			//Update accumulator bit 7 with bit 0 of Atemp
+			// Shift accumulator right 1 bit
+			A >>= 1
+			// Update accumulator bit 7 with bit 0 of Atemp
 			A |= (Atemp & 1) << 7
-			//If A==0 then update SR negative flag bit 7 with Atemp bit 0 and set zero flag bit 1 to 1 else set zero flag bit 1 to 0
+			// If A==0 then update SR negative flag bit 7 with Atemp bit 0 and set zero flag bit 1 to 1 else set zero flag bit 1 to 0
 			if A == 0 {
 				SR |= (Atemp & 1) << 7
 				SR |= 1 << 1
@@ -570,7 +574,7 @@ func execute(file string) {
 			}
 			fmt.Printf("SEI\n")
 
-			//Set SR interrupt disable bit 2 to 1
+			// Set SR interrupt disable bit 2 to 1
 			SR |= 1 << 2
 
 			incCount(1)
@@ -607,14 +611,14 @@ func execute(file string) {
 			}
 			fmt.Printf("DEY\n")
 
-			//Decrement the  Y register by 1
+			// Decrement the  Y register by 1
 			Y--
-			//If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if Y&1<<7 == 1 {
-				//Set bit 7 of SR to 1
-				SR = SR | 1<<7
+				// Set bit 7 of SR to 1
+				SR |= 1 << 7
 			} else {
-				//Set bit 7 of SR to 0
+				// Set bit 7 of SR to 0
 				SR ^= 1 << 7
 			}
 
@@ -637,15 +641,15 @@ func execute(file string) {
 			}
 			fmt.Printf("TXA\n")
 
-			//Set accumulator to value of X register
+			// Set accumulator to value of X register
 			A = X
-			//If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
+			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if A&1<<7 == 1 {
 				SR |= 1 << 7
 			} else {
-				SR |= 1 << 7
+				SR |= 0 << 7
 			}
-			//If accumulator is 0, set zero SR flag else set zero SR flag to 0
+			// If accumulator is 0, set zero SR flag else set zero SR flag to 0
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
@@ -672,15 +676,15 @@ func execute(file string) {
 			}
 			fmt.Printf("TYA\n")
 
-			//Set accumulator to value of Y register
+			// Set accumulator to value of Y register
 			A = Y
-			//If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
+			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if A&1<<7 == 1 {
 				SR |= 1 << 7
 			} else {
-				SR |= 1 << 7
+				SR |= 0 << 7
 			}
-			//If accumulator is 0, set zero SR flag else set zero SR flag to 0
+			// If accumulator is 0, set zero SR flag else set zero SR flag to 0
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
@@ -704,7 +708,7 @@ func execute(file string) {
 			}
 			fmt.Printf("TXS\n")
 
-			//Set stack pointer to value of X register
+			// Set stack pointer to value of X register
 			SP = int(X)
 
 			incCount(1)
@@ -726,22 +730,22 @@ func execute(file string) {
 			}
 			fmt.Printf("TAY\n")
 
-			//Set Y register to the value of the accumulator
+			// Set Y register to the value of the accumulator
 			Y = A
-			//If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if Y&1<<7 == 1 {
-				//Set bit 7 of SR to 1
-				SR = SR | 1<<7
+				// Set bit 7 of SR to 1
+				SR |= 1 << 7
 			} else {
-				//Set bit 7 of SR to 0
+				// Set bit 7 of SR to 0
 				SR ^= 1 << 7
 			}
-			//If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			// If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
-				//Set bit 1 of SR to 1
-				SR = SR | 1<<1
+				// Set bit 1 of SR to 1
+				SR |= 1 << 1
 			} else {
-				//Set bit 1 of SR to 0
+				// Set bit 1 of SR to 0
 				SR ^= 1 << 1
 			}
 
@@ -764,22 +768,22 @@ func execute(file string) {
 			}
 			fmt.Printf("TAX\n")
 
-			//Update X with the value of A
+			// Update X with the value of A
 			X = A
-			//If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if X&1<<7 == 1 {
-				//Set bit 7 of SR to 1
+				// Set bit 7 of SR to 1
 				SR |= 1 << 7
 			} else {
-				//Set bit 7 of SR to 0
+				// Set bit 7 of SR to 0
 				SR |= 0 << 7
 			}
-			//If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if X == 0 {
-				//Set bit 1 of SR to 1
+				// Set bit 1 of SR to 1
 				SR |= 1 << 1
 			} else {
-				//Set bit 1 of SR to 0
+				// Set bit 1 of SR to 0
 				SR |= 0 << 1
 			}
 
@@ -801,7 +805,7 @@ func execute(file string) {
 			}
 			fmt.Printf("CLV\n")
 
-			//Set SR overflow flag bit 6 to 0
+			// Set SR overflow flag bit 6 to 0
 			SR |= 0 << 6
 
 			incCount(1)
@@ -823,22 +827,22 @@ func execute(file string) {
 			}
 			fmt.Printf("TSX\n")
 
-			//Update X with the value stored at the address pointed to by SP
+			// Update X with the value stored at the address pointed to by SP
 			X = memory[SP]
-			//If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if X&1<<7 == 1 {
-				//Set bit 7 of SR to 1
+				// Set bit 7 of SR to 1
 				SR |= 1 << 7
 			} else {
-				//Set bit 7 of SR to 0
+				// Set bit 7 of SR to 0
 				SR |= 0 << 7
 			}
-			//If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if X == 0 {
-				//Set bit 1 of SR to 1
+				// Set bit 1 of SR to 1
 				SR |= 1 << 1
 			} else {
-				//Set bit 1 of SR to 0
+				// Set bit 1 of SR to 0
 				SR |= 0 << 1
 			}
 
@@ -863,23 +867,23 @@ func execute(file string) {
 			}
 			fmt.Printf("INY\n")
 
-			//Increment the  Y register by 1
+			// Increment the  Y register by 1
 			Y++
-			//If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if Y&1<<7 == 1 {
-				//Set bit 7 of SR to 1
-				SR = SR | 1<<7
+				// Set bit 7 of SR to 1
+				SR |= 1 << 7
 			} else {
-				//Set bit 7 of SR to 0
+				// Set bit 7 of SR to 0
 				SR ^= 1 << 7
 			}
 
-			//If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			// If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if Y == 0 {
-				//Set bit 1 of SR to 1
-				SR = SR | 1<<1
+				// Set bit 1 of SR to 1
+				SR |= 1 << 1
 			} else {
-				//Set bit 1 of SR to 0
+				// Set bit 1 of SR to 0
 				SR ^= 1 << 1
 			}
 
@@ -902,14 +906,14 @@ func execute(file string) {
 			}
 			fmt.Printf("DEX\n")
 
-			//Decrement the X register by 1
+			// Decrement the X register by 1
 			X--
-			//If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if X&1<<7 == 1 {
-				//Set bit 7 of SR to 1
-				SR = SR | 1<<7
+				// Set bit 7 of SR to 1
+				SR |= 1 << 7
 			} else {
-				//Set bit 7 of SR to 0
+				// Set bit 7 of SR to 0
 				SR ^= 1 << 7
 			}
 
@@ -931,7 +935,7 @@ func execute(file string) {
 			}
 			fmt.Printf("CLD\n")
 
-			//Set SR decimal mode flag to 0
+			// Set SR decimal mode flag to 0
 
 			incCount(1)
 
@@ -967,23 +971,23 @@ func execute(file string) {
 			}
 			fmt.Printf("INX\n")
 
-			//If X==0xFF then X=0 else increment the X by 1
+			// If X==0xFF then X=0 else increment the X by 1
 			if X == 0xFF {
 				X = 0
-				//Set SR zero flag bit 1 to 1
+				// Set SR zero flag bit 1 to 1
 				SR |= 1 << 1
 			} else {
 				X++
-				//Set SR zero flag bit 1 to 0
+				// Set SR zero flag bit 1 to 0
 				SR ^= 1 << 1
 			}
 
-			//If X bit 7 is 1, set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// If X bit 7 is 1, set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if X&1<<7 == 1 {
-				//Set bit 7 of SR to 1
-				SR = SR | 1<<7
+				// Set bit 7 of SR to 1
+				SR |= 1 << 7
 			} else {
-				//Set bit 7 of SR to 0
+				// Set bit 7 of SR to 0
 				SR ^= 1 << 7
 			}
 
@@ -1017,7 +1021,7 @@ func execute(file string) {
 			}
 			fmt.Printf("SED\n")
 
-			//Set SR decimal mode flag to 1
+			// Set SR decimal mode flag to 1
 			SR |= 1 << 3
 
 			incCount(1)
@@ -1036,7 +1040,7 @@ func execute(file string) {
 			incCount(1)
 		}
 
-		//2 byte instructions with 1 operand
+		// 2 byte instructions with 1 operand
 		switch currentByte() {
 		case 0x01:
 			if printHex {
@@ -1092,7 +1096,7 @@ func execute(file string) {
 			}
 			fmt.Printf("BPL $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
-			//If SR negative bit 7 is 0, then branch
+			// If SR negative bit 7 is 0, then branch
 			if SR&1<<7 == 0 {
 				fileposition = (fileposition + 2 + int(operand1())) & 0xFF
 				PC += fileposition
@@ -1183,15 +1187,15 @@ func execute(file string) {
 			}
 			fmt.Printf("AND #$%02X\n", operand1())
 
-			//AND the accumulator with the operand
-			A = A & operand1()
-			//If A==0, set zero flag
+			// AND the accumulator with the operand
+			A &= operand1()
+			// If A==0, set zero flag
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
 				SR &= 0 << 1
 			}
-			//If accumulator bit 7 is 1, set negative SR flag
+			// If accumulator bit 7 is 1, set negative SR flag
 			if A&1 == 1 {
 				SR |= 1 << 7
 			} else {
@@ -1289,16 +1293,16 @@ func execute(file string) {
 			}
 			fmt.Printf("EOR #$%02X\n", operand1())
 
-			//XOR the accumulator with the operand
+			// XOR the accumulator with the operand
 			A ^= operand1()
 
-			//If accumulator is 0the  set Zero flag to 1 else set Zero flag to 0
+			// If accumulator is 0the  set Zero flag to 1 else set Zero flag to 0
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
 				SR |= 0 << 1
 			}
-			//If bit 7 of accumulator is set, set SR Negative flag to 1
+			// If bit 7 of accumulator is set, set SR Negative flag to 1
 			if A&1 == 1 {
 				SR |= 1 << 7
 			} else {
@@ -1408,27 +1412,27 @@ func execute(file string) {
 			}
 			fmt.Printf("ADC #$%02X\n", operand1())
 
-			//Add operand 1 to accumulator
+			// Add operand 1 to accumulator
 			A += operand1()
-			//If accumulator>255 then set SR carry flag bit 0 to 1
+			// If accumulator>255 then set SR carry flag bit 0 to 1
 			if A > 255 {
 				SR |= 1 << 0
 			} else {
 				SR |= 0 << 0
 			}
-			//If accumulator>127 or accumulator<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
+			// If accumulator>127 or accumulator<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
 			if A > 127 || A < 128 {
 				SR |= 1 << 6
 			} else {
 				SR |= 0 << 6
 			}
-			//If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if A&1 == 1 {
 				SR |= 1 << 7
 			} else {
 				SR |= 0 << 7
 			}
-			//If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
@@ -1518,9 +1522,9 @@ func execute(file string) {
 			}
 			fmt.Printf("STA $%02X\n", operand1())
 
-			//Store contents of Accumulator in memory
+			// Store contents of Accumulator in memory
 			memory[operand1()] = A
-			//fmt.Printf("Address[$%02X] = $%02X\n", operand1(), memory[operand1()])
+			// fmt.Printf("Address[$%02X] = $%02X\n", operand1(), memory[operand1()])
 			incCount(2)
 
 		case 0x86:
@@ -1556,9 +1560,9 @@ func execute(file string) {
 			}
 			fmt.Printf("BCC $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
-			//If carry flag/bit zero of the status register is clear, then branch to the address specified by the operand.
+			// If carry flag/bit zero of the status register is clear, then branch to the address specified by the operand.
 			if SR&1 == 0 {
-				fileposition = (fileposition + 2) + int(operand1()) // & 0xFFFF
+				fileposition = (fileposition + 2) + int(operand1()) //  & 0xFFFF
 				PC += fileposition
 			}
 
@@ -1590,7 +1594,7 @@ func execute(file string) {
 			}
 			fmt.Printf("STY $%02X,X\n", operand1())
 
-			//Store contents of Y register in X indexed memory address
+			// Store contents of Y register in X indexed memory address
 			memory[operand1()+X] = Y
 
 			incCount(2)
@@ -1610,7 +1614,7 @@ func execute(file string) {
 			}
 			fmt.Printf("STA $%02X,X\n", operand1())
 
-			//Store contents of Accumulator in X indexed memory
+			// Store contents of Accumulator in X indexed memory
 			memory[operand1()+X] = A
 
 			incCount(2)
@@ -1654,16 +1658,16 @@ func execute(file string) {
 			}
 			fmt.Printf("LDX #$%02X\n", operand1())
 
-			//Load the value of the operand1() into the X register.
+			// Load the value of the operand1() into the X register.
 			X = operand1()
 
-			//If accumulator is zero, set the SR zero flag
+			// If accumulator is zero, set the SR zero flag
 			if X == 0 {
 				SR |= 1 << 1
 			} else {
 				SR |= 0 << 1
 			}
-			//If bit 7 of the accumulator is set, set the SR negative flag
+			// If bit 7 of the accumulator is set, set the SR negative flag
 			if A&1 == 1 {
 				SR |= 1 << 7
 			} else {
@@ -1701,18 +1705,18 @@ func execute(file string) {
 			}
 			fmt.Printf("LDA $%02X\n", operand1())
 
-			//Load the accumulator with the value in the operand
+			// Load the accumulator with the value in the operand
 			A = operand1()
-			//If A is zero, set the zero flag else reset the zero flag
+			// If A is zero, set the zero flag else reset the zero flag
 			if A == 0 {
-				//Set bit 1 to 1
+				// Set bit 1 to 1
 				SR |= 1 << 1
 			} else {
-				//Set SR bit 1 to 0
+				// Set SR bit 1 to 0
 				SR ^= 0 << 1
 			}
 
-			//If bit 7 of A is 1, set the negative flag else reset the negative flag
+			// If bit 7 of A is 1, set the negative flag else reset the negative flag
 			if A&1 == 1 {
 				SR |= 1 << 7
 			} else {
@@ -1750,18 +1754,18 @@ func execute(file string) {
 			}
 			fmt.Printf("LDA #$%02X\n", operand1())
 
-			//Load the accumulator with the value in the operand
+			// Load the accumulator with the value in the operand
 			A = operand1()
-			//If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
+			// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
 			if A == 0 {
-				//Set bit 1 to 1
+				// Set bit 1 to 1
 				SR |= 1 << 1
 			} else {
-				//Set SR bit 1 to 0
+				// Set SR bit 1 to 0
 				SR ^= 0 << 1
-				//SR |= 0 << 1
+				// SR |= 0 << 1
 			}
-			//If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
+			// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
 			if A&1 == 1 {
 				SR |= 1 << 7
 			} else {
@@ -1803,16 +1807,16 @@ func execute(file string) {
 			}
 			fmt.Printf("LDY $%02X,X\n", operand1())
 
-			//Load the Y register with the X indexed value in the operand
+			// Load the Y register with the X indexed value in the operand
 			Y = memory[fileposition+1+int(X)]
-			//If bit 7 of Y is 1, set the SR negative flag bit 7 else reset the SR negative flag
+			// If bit 7 of Y is 1, set the SR negative flag bit 7 else reset the SR negative flag
 			if Y&1 == 1 {
 				SR |= 1 << 7
 			} else {
 				SR |= 0 << 7
 			}
 
-			//If Y is zero, set the SR zero flag else reset the SR zero flag
+			// If Y is zero, set the SR zero flag else reset the SR zero flag
 			if Y == 0 {
 				SR |= 1 << 1
 			} else {
@@ -1837,28 +1841,28 @@ func execute(file string) {
 			}
 			fmt.Printf("LDA $%02X,X\n", operand1())
 
-			//Load the accumulator with the X indexed value in the operand
+			// Load the accumulator with the X indexed value in the operand
 			A = memory[fileposition+1+int(X)]
 
-			//If A is zero, set the zero flag else reset the zero flag
+			// If A is zero, set the zero flag else reset the zero flag
 			if A == 0 {
-				//SR = 0b00100010
-				//Set bit 1 to 1
+				// SR = 0b00100010
+				// Set bit 1 to 1
 				SR |= 1 << 1
 			} else {
-				//SR = 0b00100000
-				//Set bit 1 to 0
+				// SR = 0b00100000
+				// Set bit 1 to 0
 				SR |= 0 << 1
 			}
 
-			//If bit 7 of A is 1, set the negative flag else reset the negative flag
+			// If bit 7 of A is 1, set the negative flag else reset the negative flag
 			if A&0b10000000 != 0 {
-				//SR = 0b00100001
-				//Set bit 7 to 1
+				// SR = 0b00100001
+				// Set bit 7 to 1
 				SR |= 1 << 7
 			} else {
-				//SR = 0b00100000
-				//Set bit 7 to 0
+				// SR = 0b00100000
+				// Set bit 7 to 0
 				SR |= 0 << 7
 			}
 
@@ -1890,7 +1894,7 @@ func execute(file string) {
 				If the value in the index register Y is equal to or greater than the value in the memory,
 				the carry flag will be set, otherwise it will be cleared.
 
-				If the results of the subtracttion contain bit 7 on the N bit will be set, otherwise it will be cleared.
+				If the results of the subtraction contain bit 7 on the N bit will be set, otherwise it will be cleared.
 
 				If the value in the index register Y and the value in the memory are equal, the zero flag will be set,
 				otherwise it will be cleared.
@@ -1900,19 +1904,19 @@ func execute(file string) {
 			}
 			fmt.Printf("CPY #$%02X\n", operand1())
 
-			//Subtract operand from Y
+			// Subtract operand from Y
 			TempResult := Y - operand1()
-			//If operand is greater than Y, set carry flag to 0
+			// If operand is greater than Y, set carry flag to 0
 			if operand1() > Y {
 				SR |= 0 << 0
 			}
-			//If bit 7 of TempResult is set, set N flag to 1
+			// If bit 7 of TempResult is set, set N flag to 1
 			if TempResult&0b10000000 == 0b10000000 {
 				SR |= 1 << 7
 			} else {
 				SR |= 0 << 7
 			}
-			//If operand is equal to Y, set Z flag to 1 else set Zero flag to 0
+			// If operand is equal to Y, set Z flag to 1 else set Zero flag to 0
 			if operand1() == Y {
 				SR |= 1 << 1
 			} else {
@@ -1982,42 +1986,42 @@ func execute(file string) {
 			}
 			fmt.Printf("CMP #$%02X\n", operand1())
 
-			//Compare memory and accumulator
+			// Compare memory and accumulator
 			if operand1() == A {
-				//Set Z flag and negative flag to true
-				//Set bit 1 to true
+				// Set Z flag and negative flag to true
+				// Set bit 1 to true
 				SR |= 0 << 1
-				//SR = 0b00100010
+				// SR = 0b00100010
 			}
-			//Set carry flag to true if A is greater than or equal to operand
+			// Set carry flag to true if A is greater than or equal to operand
 			if A >= operand1() {
-				//Set bit 0 to true
+				// Set bit 0 to true
 				SR |= 1 << 0
-				//SR = 0b00100001
+				// SR = 0b00100001
 			}
-			//Set carry flag to false if A is less than operand
+			// Set carry flag to false if A is less than operand
 			if A < operand1() {
-				//Set bit zero to false
+				// Set bit zero to false
 				SR |= 0 << 0
-				//SR = 0b00100000
+				// SR = 0b00100000
 			}
-			//Set Z flag to false if A is not equal to operand
+			// Set Z flag to false if A is not equal to operand
 			if A != operand1() {
-				//Set bit 1 to false
+				// Set bit 1 to false
 				SR |= 0 << 1
-				//SR = 0b00100000
+				// SR = 0b00100000
 			}
-			//Set N flag to true if A minus operand results in most significant bit being set
+			// Set N flag to true if A minus operand results in most significant bit being set
 			if (A-operand1())&0b10000000 == 0b10000000 {
-				//Set bit 7 to true
+				// Set bit 7 to true
 				SR |= 1 << 7
-				//SR = 0b10100000
+				// SR = 0b10100000
 			}
-			//Set N flag to false if A minus operand results in most significant bit being unset
+			// Set N flag to false if A minus operand results in most significant bit being unset
 			if (A-operand1())&0b10000000 == 0b00000000 {
-				//Set bit 7 to false
+				// Set bit 7 to false
 				SR |= 0 << 7
-				//SR = 0b00100000
+				// SR = 0b00100000
 			}
 			incCount(2)
 
@@ -2085,19 +2089,19 @@ func execute(file string) {
 			}
 			fmt.Printf("CPX #$%02X\n", operand1())
 
-			//Subtract operand from X
+			// Subtract operand from X
 			TempResult := X - operand1()
-			//If operand is greater than X, set carry flag to 0
+			// If operand is greater than X, set carry flag to 0
 			if operand1() > X {
 				SR |= 0 << 0
 			}
-			//If bit 7 of TempResult is set, set N flag to 1
+			// If bit 7 of TempResult is set, set N flag to 1
 			if TempResult&0b10000000 == 0b10000000 {
 				SR |= 1 << 7
 			} else {
 				SR |= 0 << 7
 			}
-			//If operand is equal to X, set Z flag to 1 else set Zero flag to 0
+			// If operand is equal to X, set Z flag to 1 else set Zero flag to 0
 			if operand1() == X {
 				SR |= 1 << 1
 			} else {
@@ -2171,27 +2175,27 @@ func execute(file string) {
 			}
 			fmt.Printf("SBC #$%02X\n", operand1())
 
-			//Update the accumulator
+			// Update the accumulator
 			A = A - operand1() - (1 - SR&1)
-			//Set carry flag bit 0 if result is greater than or equal to 1
+			// Set carry flag bit 0 if result is greater than or equal to 1
 			if A >= 1 {
 				SR |= 1 << 0
 			} else {
 				SR |= 0 << 0
 			}
-			//Set overflow flag bit 6 if accumulator is greater than 127 or less than -127
+			// Set overflow flag bit 6 if accumulator is greater than 127 or less than -127
 			if int(A) > 127 || int(A) < -127 {
 				SR |= 1 << 6
 			} else {
 				SR |= 0 << 6
 			}
-			//If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if A&1 == 1 {
 				SR |= 1 << 7
 			} else {
 				SR |= 0 << 7
 			}
-			//Set Z flag bit 1 if accumulator is 0 else set Z flag bit 1 to 0
+			// Set Z flag bit 1 if accumulator is 0 else set Z flag bit 1 to 0
 			if A == 0 {
 				SR |= 1 << 1
 			} else {
@@ -2214,18 +2218,14 @@ func execute(file string) {
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
 			}
-			fmt.Printf("BEQ $%02X\n", (fileposition+2+int(operand1()))&0xFF)
-
-			//If SR zero flag 1 is set or the previous result is equal to 0, then branch to the address specified by the operand.
+			fmt.Printf("BEQ $%02X\n", (fileposition+2+int(operand1()))&0xFF) // If SR zero flag 1 is set or the previous result is equal to 0, then branch to the address specified by the operand.
 			if SR&1 == 1 || A == 0 {
 				fileposition = (fileposition + 2 + int(operand1())) & 0xFF
 				PC += fileposition
 				fmt.Printf("XXXXX")
 			} else {
 				incCount(2)
-
 			}
-
 		case 0xF1:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, currentByte(), operand1())
@@ -2258,7 +2258,7 @@ func execute(file string) {
 			incCount(2)
 		}
 
-		//3 byte instructions with 2 operands
+		// 3 byte instructions with 2 operands
 		switch currentByte() {
 		case 0x0C:
 			if printHex {
@@ -2355,9 +2355,9 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, currentByte(), operand1(), operand2())
 			}
 			fmt.Printf("JSR $%02X%02X\n", operand2(), operand1())
-			//Store PC at address stored in SP
+			// Store PC at address stored in SP
 			memory[SP] = byte(PC)
-			//Set PC to address stored in operand 1 and operand 2
+			// Set PC to address stored in operand 1 and operand 2
 			PC = int(operand1()) + int(operand2())<<8
 
 			incCount(3)
@@ -2714,19 +2714,19 @@ func execute(file string) {
 			}
 			fmt.Printf("LDY $%02X%02X,X\n", operand2(), operand1())
 
-			// Set X to Operand 2 and Y to the X indexed value stored in operand 1
+			//  Set X to Operand 2 and Y to the X indexed value stored in operand 1
 			X = operand2()
 			Y = memory[int(operand1())+int(X)]
 
-			//If bit 7 of Y is 1 then set bit 7 of SR to 1
-			//else set bit 7 of SR to 0
+			// If bit 7 of Y is 1 then set bit 7 of SR to 1
+			// else set bit 7 of SR to 0
 			if Y&1 == 1 {
 				SR |= 1 << 7
 			} else {
 				SR |= 0 << 7
 			}
 
-			//If value loaded to Y is 0 set bit 1 of SR to 0
+			// If value loaded to Y is 0 set bit 1 of SR to 0
 			if Y == 0 {
 				SR |= 0 << 1
 			}
@@ -2887,7 +2887,7 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, currentByte(), operand1(), operand2())
 			}
 			fmt.Printf("BBS7 $%02X, $%02X\n", operand1(), operand2())
-			//incCount(3)
+			// incCount(3)
 			incCount(3)
 		}
 	}
