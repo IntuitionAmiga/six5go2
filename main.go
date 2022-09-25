@@ -40,7 +40,7 @@ func main() {
 	file, _ = os.ReadFile(os.Args[1])
 
 	fmt.Printf("USAGE   - six5go2 <target_filename> <entry_point> (Hex memory address) <hex> (Print hex values above each instruction) \n")
-	fmt.Printf("EXAMPLE - six5go2 cbmbasic35.rom 0800 hex\n\n")
+	fmt.Printf("EXAMPLE - six5go2 c64kernal.bin 0e00 hex\n\n")
 	fmt.Printf("Length of file %s is %v ($%04X) bytes\n\n", os.Args[1], len(file), len(file))
 
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
@@ -1555,12 +1555,16 @@ func execute(file string) {
 			}
 			fmt.Printf("BCC $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
-			// If carry flag bit zero of the status register is clear, then branch to the address specified by the operand.
+			// If SR negative flag bit 0 is 0 then branch
 			if getSRBit(0) == 0 {
-				fileposition = (fileposition + 2) + int(operand1())
-				PC += fileposition
+				// Branch
+				fileposition += 2 + int(operand1())
+				PC = fileposition
+				incCount(0)
+			} else {
+				// Don't branch
+				incCount(2)
 			}
-			incCount(0)
 		case 0x91:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
