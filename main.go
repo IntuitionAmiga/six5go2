@@ -15,8 +15,8 @@ var (
 	A      byte        = 0x0000     // Accumulator
 	X      byte        = 0x0000     // X register
 	Y      byte        = 0x0000     // Y register		(76543210) SR Bit 5 is always set
-	SR     byte        = 0b10100100 // Status Register	(NVEBDIZC)
-	SP                 = 0x0100     // Stack Pointer
+	SR     byte        = 0b00100010 // Status Register	(NVEBDIZC)
+	SP                 = 0x01ff     // Stack Pointer
 	PC                 = 0x0000     // Program Counter
 	memory [65536]byte              // Memory
 )
@@ -842,8 +842,8 @@ func execute(file string) {
 				This instruction subtracts one from the current value of the index register X and stores the result
 				in the index register X.
 
-				DEX does not affect the carry or overflow flag, it sets the N flag if it has bit 7 on as a result
-				of the decrement, otherwise it resets the N flag;
+				DEX does not affect the carry or overflow flag, it
+				sets the N flag if it has bit 7 on as a result of the decrement, otherwise it resets the N flag;
 				sets the Z flag if X is a 0 as a result of the decrement, otherwise it resets the Z flag.
 			*/
 			if printHex {
@@ -858,6 +858,12 @@ func execute(file string) {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
+			}
+			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if X == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
 			}
 			incCount(1)
 		case 0xD8:
@@ -1039,7 +1045,9 @@ func execute(file string) {
 				Operation: Branch on N = 0
 
 				This instruction is the complementary branch to branch on result minus.
+
 				It is a conditional branch which takes the branch when the N bit is reset (0).
+
 				BPL is used to test if the previous result bit 7 was off (0) and branch on result minus is used to
 				determine if the previous result was minus or bit 7 was on (1).
 
@@ -1053,7 +1061,7 @@ func execute(file string) {
 
 			// If SR negative bit 7 is 0, then branch
 			if getSRBit(7) == 0 {
-				fileposition = (fileposition + 2 + int(operand1())) & 0xFF
+				fileposition = ((fileposition + 2 + int(operand1())) & 0xFF)
 				PC += fileposition
 			}
 			incCount(2)
