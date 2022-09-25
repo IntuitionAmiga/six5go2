@@ -2329,10 +2329,49 @@ func execute(file string) {
 			fmt.Printf("ORA $%02X%02X\n", operand2(), operand1())
 			incCount(3)
 		case 0x0E:
+			/*
+				ASL - Arithmetic Shift Left
+				Operation: C ← /M7...M0/ ← 0
+
+				The shift left instruction shifts either the accumulator or the address memory location
+				1 bit to the left, with the bit 0 always being set to 0 and the the input bit 7 being stored in
+				the carry flag.
+
+				ASL either shifts the accumulator left 1 bit or is a read/modify/write instruction that affects only memory.
+
+				The instruction does not affect the overflow bit,
+				sets N equal to the result bit 7 (bit 6 in the input),
+				sets Z flag if the result is equal to 0, otherwise resets Z
+				and stores the input bit 7 in the carry flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, currentByte(), operand1(), operand2())
 			}
 			fmt.Printf("ASL $%02X%02X\n", operand2(), operand1())
+			// Update temp var with the values of Operands 1 and 2
+			temp := (int(operand2()) << 8) + int(operand1())
+			// Shift left 1 bit
+			temp = temp << 1
+			// Set SR negative flag 7 to 1 if the result bit 7 is 1
+			if temp&0x80 == 0x80 {
+				SR |= 0x80
+			} else {
+				SR &= 0x7F
+			}
+			// Set SR zero flag 1 to 1 if the result is equal to 0, otherwise reset Zero flag to 0 and store bit 7 of temp in SR carry flag
+			if temp == 0 {
+				SR |= 0x01
+			} else {
+				SR &= 0xFE
+				if temp&0x80 == 0x80 {
+					SR |= 0x01
+				} else {
+					SR &= 0xFE
+				}
+			}
+			// Update memory[temp] with the new value
+			memory[temp] = byte(temp)
+
 			incCount(3)
 		case 0x0F:
 			/*
@@ -2453,19 +2492,19 @@ func execute(file string) {
 			}
 			fmt.Printf("AND $%02X%02X\n", operand2(), operand1())
 
-			//AND the accumulator with the value stored at the address stored in operand 1 and operand 2
-			A = A & (memory[int(operand1())+int(operand2())<<8])
+			// AND the accumulator with the value stored at the address stored in operand 1 and operand 2
+			A &= memory[int(operand1())+int(operand2())<<8]
 			// If A==0 set the SR zero flag to 1
 			if A == 0 {
-				SR = SR | 0x02
+				SR |= 0x02
 			} else {
-				SR = SR & 0xFD
+				SR &= 0xFD
 			}
-			//If bit 7 of A is 1 then set the SR negative flag to 1 else set negative flag to 0
+			// If bit 7 of A is 1 then set the SR negative flag to 1 else set negative flag to 0
 			if A&1 == 1 {
-				SR = SR | 0x80
+				SR |= 0x80
 			} else {
-				SR = SR & 0x7F
+				SR &= 0x7F
 			}
 
 			incCount(3)
