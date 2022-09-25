@@ -2351,7 +2351,7 @@ func execute(file string) {
 			// Update temp var with the values of Operands 1 and 2
 			temp := (int(operand2()) << 8) + int(operand1())
 			// Shift left 1 bit
-			temp = temp << 1
+			temp <<= 1
 			// Set SR negative flag 7 to 1 if the result bit 7 is 1
 			if temp&0x80 == 0x80 {
 				SR |= 0x80
@@ -2470,10 +2470,39 @@ func execute(file string) {
 			fmt.Printf("JSR ($%02X%02X,X)\n", operand2(), operand1())
 			incCount(3)
 		case 0x2C:
+			/*
+				BIT - Test Bits in Memory with Accumulator
+				Operation: A ∧ M, M7 → N, M6 → V
+
+				This instruction performs an AND between a memory location and the accumulator but does not store the
+				result of the AND into the accumulator.
+
+				The bit instruction affects the N flag with
+				N being set to the value of bit 7 of the memory being tested, the V flag with
+				V being set equal to bit 6 of the memory being tested and
+				Z being set by the result of the AND operation between the accumulator and the memory if the
+				result is Zero, Z is reset otherwise.
+
+				It does not affect the accumulator.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, currentByte(), operand1(), operand2())
 			}
 			fmt.Printf("BIT $%02X%02X\n", operand2(), operand1())
+
+			// Store the result of the AND between the accumulator and the operands in a temp var
+			temp := A & memory[int(operand1())+int(operand2())<<8]
+			// Set the SR Negative flag bit 7 to the value of bit 7 of temp
+			SR = (SR & 0x7F) | (temp & 0x80)
+			// Set the SR Overflow flag bit 6 to the value of bit 6 of temp
+			SR = (SR & 0xBF) | (temp & 0x40)
+			// If temp==0 then set the SR Zero flag bit 1 to the result of temp else set SR negative flag to 0
+			if temp == 0 {
+				SR |= 0x02
+			} else {
+				SR &= 0xFD
+			}
+
 			incCount(3)
 		case 0x2D:
 			/*
