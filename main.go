@@ -28,12 +28,10 @@ func main() {
 		fmt.Printf("USAGE - %s <target_filename> <entry_point_address> <hex>\n", os.Args[0])
 		os.Exit(0)
 	}
-
 	if len(os.Args) > 2 {
 		parseUint, _ := strconv.ParseUint(os.Args[2], 16, 16)
 		PC = int(parseUint)
 	}
-
 	if len(os.Args) > 3 && os.Args[3] == "hex" {
 		printHex = true
 	}
@@ -47,7 +45,9 @@ func main() {
 
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
+	//  Copy file into memory
 	copy(memory[:], file)
+	// Start emulation
 	printMachineState()
 	execute(string(file))
 }
@@ -70,12 +70,16 @@ func incCount(amount int) {
 func printMachineState() {
 	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X\n\n", A, X, Y, SR, SP, PC)
 }
+func getSRBit(x byte) byte {
+	return (SR >> x) & 1
+}
+func setSRBitOn(x byte) {
+	SR |= 1 << x
+}
+func setSRBitOff(x byte) {
+	SR &= ^(1 << x)
+}
 
-//nolint:funlen
-//nolint:gocognit
-//nolint:gocognit
-//nolint:gocognit
-//nolint:gocognit
 func execute(file string) {
 	PC += fileposition
 	if printHex {
@@ -104,12 +108,9 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("CLE\n")
-
 			// Set bit 5 of SR to 0
-			SR |= 0 << 5
-
+			setSRBitOff(5)
 			incCount(1)
-
 		case 0x03:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -129,15 +130,13 @@ func execute(file string) {
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
+			fmt.Printf("PHP\n")
 
 			// Push SR to stack
 			memory[SP] = SR
 			// Decrement the stack pointer by 1 byte
 			SP--
-
-			fmt.Printf("PHP\n")
 			incCount(1)
-
 		case 0x0A:
 			/*
 				ASL - Arithmetic Shift Left
@@ -160,18 +159,17 @@ func execute(file string) {
 			A <<= 1
 			// Set SR negative flag if bit 7 of A is set
 			if A&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// Set SR zero flag if A is 0
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR &= 0 << 1
+				setSRBitOff(1)
 			}
 			incCount(1)
-
 		case 0x0B:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -194,9 +192,8 @@ func execute(file string) {
 			fmt.Printf("CLC\n")
 
 			// Set SR carry flag bit 0 to 0
-			SR |= 0 << 0
+			setSRBitOff(0)
 			incCount(1)
-
 		case 0x1A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -228,9 +225,7 @@ func execute(file string) {
 
 			// Update SR with the value stored at the address pointed to by SP
 			SR = memory[SP]
-
 			incCount(1)
-
 		case 0x2A:
 			/*
 				ROL - Rotate Left
@@ -254,16 +249,20 @@ func execute(file string) {
 			// Shift left the accumulator by 1 bit
 			A <<= 1
 			// Set SR carry flag bit 0 to the value of Accumulator bit 7
-			SR |= A >> 7
+			if A&1 == 1 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+
 			// Set SR negative flag bit 7 to the value of Accumulator bit 6
 			SR |= A >> 6
 			// Set SR zero flag bit 1 to 1 if Accumulator is 0 else set SR zero flag to 0
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR &= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(1)
 		case 0x2B:
 			if printHex {
@@ -283,16 +282,14 @@ func execute(file string) {
 				This instruction affects no registers in the microprocessor and no flags other than the carry
 				flag which is set.
 			*/
-
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
 			}
 			fmt.Printf("SEC\n")
 
 			// Set SR carry flag bit 0 to 1
-			SR |= 1 << 0
+			setSRBitOn(0)
 			incCount(1)
-
 		case 0x3A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -301,9 +298,8 @@ func execute(file string) {
 			incCount(1)
 		case 0x3B:
 			// NOP
-
+			// 65CE02 only - DEZ - Decrement Z Register
 			incCount(1)
-
 		case 0x40:
 			/*
 				RTI - Return From Interrupt
@@ -330,9 +326,7 @@ func execute(file string) {
 			SR = memory[SP]
 			// Update PC with the value stored at the address pointed to by SP+1
 			PC = int(memory[SP] + 1)
-
 			incCount(1)
-
 		case 0x42:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, currentByte())
@@ -365,9 +359,7 @@ func execute(file string) {
 			memory[SP] = A
 			// Decrement the stack pointer by 1 byte
 			SP--
-
 			incCount(1)
-
 		case 0x4A:
 			/*
 				LSR - Logical Shift Right
@@ -392,16 +384,15 @@ func execute(file string) {
 			// Shift A right 1 bit
 			A >>= 1
 			// Set SR negative flag bit 7 to 0
-			SR &= 0 << 7
+			setSRBitOff(7)
 			// Set SR zero flag bit 1 to 1 if A is 0 else set it to 0
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR &= 0 << 1
+				setSRBitOff(1)
 			}
 			// Set SR carry flag bit 0 to bit 0 of A
 			SR |= A & 1
-
 			incCount(1)
 		case 0x4B:
 			if printHex {
@@ -426,10 +417,8 @@ func execute(file string) {
 			fmt.Printf("CLI\n")
 
 			// Set SR interrupt disable bit 2 to 0
-			SR |= 0 << 2
-
+			setSRBitOff(2)
 			incCount(1)
-
 		case 0x5A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -453,9 +442,7 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("AUG\n")
-
 			incCount(1)
-
 		case 0x60:
 			/*
 				RTS - Return From Subroutine
@@ -477,9 +464,7 @@ func execute(file string) {
 			PC = int(memory[SP] + 1)
 			// Increment the stack pointer twice
 			SP += 2
-
 			incCount(1)
-
 		case 0x68:
 			/*
 				PLA - Pull Accumulator From Stack
@@ -506,17 +491,16 @@ func execute(file string) {
 			A = memory[SP]
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if A&1<<7 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If accumulator is 0, set zero SR flag else set zero SR flag to 0
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(1)
 
 		case 0x6A:
@@ -548,13 +532,11 @@ func execute(file string) {
 			// If A==0 then update SR negative flag bit 7 with Atemp bit 0 and set zero flag bit 1 to 1 else set zero flag bit 1 to 0
 			if A == 0 {
 				SR |= (Atemp & 1) << 7
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(1)
-
 		case 0x6B:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -577,10 +559,8 @@ func execute(file string) {
 			fmt.Printf("SEI\n")
 
 			// Set SR interrupt disable bit 2 to 1
-			SR |= 1 << 2
-
+			setSRBitOn(2)
 			incCount(1)
-
 		case 0x7A:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -617,15 +597,11 @@ func execute(file string) {
 			Y--
 			// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if Y&1<<7 == 1 {
-				// Set bit 7 of SR to 1
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				// Set bit 7 of SR to 0
-				SR ^= 1 << 7
+				setSRBitOff(7)
 			}
-
 			incCount(1)
-
 		case 0x8A:
 			/*
 				TXA - Transfer Index X To Accumulator
@@ -647,19 +623,17 @@ func execute(file string) {
 			A = X
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if A&1<<7 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If accumulator is 0, set zero SR flag else set zero SR flag to 0
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(1)
-
 		case 0x98:
 			/*
 				TYA - Transfer Index Y To Accumulator
@@ -682,9 +656,9 @@ func execute(file string) {
 			A = Y
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if A&1<<7 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If accumulator is 0, set zero SR flag else set zero SR flag to 0
 			if A == 0 {
@@ -692,9 +666,7 @@ func execute(file string) {
 			} else {
 				SR |= 0 << 1
 			}
-
 			incCount(1)
-
 		case 0x9A:
 			/*
 				TXS - Transfer Index X To Stack Pointer
@@ -712,9 +684,7 @@ func execute(file string) {
 
 			// Set stack pointer to value of X register
 			SP = int(X)
-
 			incCount(1)
-
 		case 0xA8:
 			/*
 				TAY - Transfer Accumulator To Index Y
@@ -736,23 +706,17 @@ func execute(file string) {
 			Y = A
 			// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if Y&1<<7 == 1 {
-				// Set bit 7 of SR to 1
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				// Set bit 7 of SR to 0
-				SR ^= 1 << 7
+				setSRBitOff(7)
 			}
 			// If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
-				// Set bit 1 of SR to 1
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				// Set bit 1 of SR to 0
-				SR ^= 1 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(1)
-
 		case 0xAA:
 			/*
 				TAX - Transfer Accumulator To Index X
@@ -774,23 +738,17 @@ func execute(file string) {
 			X = A
 			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if X&1<<7 == 1 {
-				// Set bit 7 of SR to 1
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				// Set bit 7 of SR to 0
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if X == 0 {
-				// Set bit 1 of SR to 1
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				// Set bit 1 of SR to 0
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(1)
-
 		case 0xB8:
 			/*
 				CLV - Clear Overflow Flag
@@ -808,10 +766,8 @@ func execute(file string) {
 			fmt.Printf("CLV\n")
 
 			// Set SR overflow flag bit 6 to 0
-			SR |= 0 << 6
-
+			setSRBitOff(6)
 			incCount(1)
-
 		case 0xBA:
 			/*
 				TSX - Transfer Stack Pointer To Index X
@@ -833,23 +789,17 @@ func execute(file string) {
 			X = memory[SP]
 			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if X&1<<7 == 1 {
-				// Set bit 7 of SR to 1
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				// Set bit 7 of SR to 0
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if X == 0 {
-				// Set bit 1 of SR to 1
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				// Set bit 1 of SR to 0
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(1)
-
 		case 0xC8:
 			/*
 				INY - Increment Index Register Y By One
@@ -873,24 +823,17 @@ func execute(file string) {
 			Y++
 			// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if Y&1<<7 == 1 {
-				// Set bit 7 of SR to 1
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				// Set bit 7 of SR to 0
-				SR ^= 1 << 7
+				setSRBitOff(7)
 			}
-
 			// If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if Y == 0 {
-				// Set bit 1 of SR to 1
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				// Set bit 1 of SR to 0
-				SR ^= 1 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(1)
-
 		case 0xCA:
 			/*
 				DEX - Decrement Index Register X By One
@@ -912,15 +855,11 @@ func execute(file string) {
 			X--
 			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if X&1<<7 == 1 {
-				// Set bit 7 of SR to 1
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				// Set bit 7 of SR to 0
-				SR ^= 1 << 7
+				setSRBitOff(7)
 			}
-
 			incCount(1)
-
 		case 0xD8:
 			/*
 				CLD - Clear Decimal Mode
@@ -937,10 +876,8 @@ func execute(file string) {
 			}
 			fmt.Printf("CLD\n")
 
-			// Set SR decimal mode flag to 0
-
+			setSRBitOff(3)
 			incCount(1)
-
 		case 0xDA:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -976,25 +913,19 @@ func execute(file string) {
 			// If X==0xFF then X=0 else increment the X by 1
 			if X == 0xFF {
 				X = 0
-				// Set SR zero flag bit 1 to 1
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
 				X++
-				// Set SR zero flag bit 1 to 0
-				SR ^= 1 << 1
+				setSRBitOff(1)
 			}
 
 			// If X bit 7 is 1, set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if X&1<<7 == 1 {
-				// Set bit 7 of SR to 1
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				// Set bit 7 of SR to 0
-				SR ^= 1 << 7
+				setSRBitOff(7)
 			}
-
 			incCount(1)
-
 		case 0xEA:
 			/*
 				NOP - No Operation
@@ -1004,9 +935,7 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
 			}
 			fmt.Printf("NOP\n")
-
 			incCount(1)
-
 		case 0xF8:
 			/*
 				SED - Set Decimal Mode
@@ -1024,10 +953,8 @@ func execute(file string) {
 			fmt.Printf("SED\n")
 
 			// Set SR decimal mode flag to 1
-			SR |= 1 << 3
-
+			setSRBitOn(3)
 			incCount(1)
-
 		case 0xFA:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, currentByte())
@@ -1095,17 +1022,16 @@ func execute(file string) {
 			A |= operand1()
 			// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR ^= 1 << 1
+				setSRBitOff(1)
 			}
 			// If A bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if A&1<<7 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR ^= 1 << 7
+				setSRBitOff(7)
 			}
-
 			incCount(2)
 		case 0x10:
 			/*
@@ -1126,13 +1052,11 @@ func execute(file string) {
 			fmt.Printf("BPL $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
 			// If SR negative bit 7 is 0, then branch
-			if SR&1<<7 == 0 {
+			if getSRBit(7) == 0 {
 				fileposition = (fileposition + 2 + int(operand1())) & 0xFF
 				PC += fileposition
 			}
-
 			incCount(2)
-
 		case 0x11:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page),Indirect Y)\n", PC, currentByte(), operand1())
@@ -1220,19 +1144,17 @@ func execute(file string) {
 			A &= operand1()
 			// If A==0, set zero flag
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR &= 0 << 1
+				setSRBitOff(1)
 			}
 			// If accumulator bit 7 is 1, set negative SR flag
 			if A&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR &= 0 << 7
+				setSRBitOff(7)
 			}
-
 			incCount(2)
-
 		case 0x30:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
@@ -1327,19 +1249,17 @@ func execute(file string) {
 
 			// If accumulator is 0the  set Zero flag to 1 else set Zero flag to 0
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
 			// If bit 7 of accumulator is set, set SR Negative flag to 1
 			if A&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
-
 			incCount(2)
-
 		case 0x50:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
@@ -1445,30 +1365,29 @@ func execute(file string) {
 			A += operand1()
 			// If accumulator>255 then set SR carry flag bit 0 to 1
 			if A > 255 {
-				SR |= 1 << 0
+				setSRBitOn(0)
 			} else {
-				SR |= 0 << 0
+				setSRBitOff(0)
 			}
 			// If accumulator>127 or accumulator<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
 			if A > 127 || A < 128 {
-				SR |= 1 << 6
+				setSRBitOn(6)
 			} else {
-				SR |= 0 << 6
+				setSRBitOff(6)
 			}
 			// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if A&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
 			incCount(2)
-
 		case 0x70:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
@@ -1555,7 +1474,6 @@ func execute(file string) {
 			memory[operand1()] = A
 			// fmt.Printf("Address[$%02X] = $%02X\n", operand1(), memory[operand1()])
 			incCount(2)
-
 		case 0x86:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, currentByte(), operand1())
@@ -1589,14 +1507,12 @@ func execute(file string) {
 			}
 			fmt.Printf("BCC $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
-			// If carry flag/bit zero of the status register is clear, then branch to the address specified by the operand.
-			if SR&1 == 0 {
+			// If carry flag bit zero of the status register is clear, then branch to the address specified by the operand.
+			if getSRBit(0) == 0 {
 				fileposition = (fileposition + 2) + int(operand1()) //  & 0xFFFF
 				PC += fileposition
 			}
-
 			incCount(0)
-
 		case 0x91:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, currentByte(), operand1())
@@ -1625,9 +1541,7 @@ func execute(file string) {
 
 			// Store contents of Y register in X indexed memory address
 			memory[operand1()+X] = Y
-
 			incCount(2)
-
 		case 0x95:
 			/*
 				STA - Store Accumulator in Memory
@@ -1645,9 +1559,7 @@ func execute(file string) {
 
 			// Store contents of Accumulator in X indexed memory
 			memory[operand1()+X] = A
-
 			incCount(2)
-
 		case 0x96:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, currentByte(), operand1())
@@ -1678,20 +1590,18 @@ func execute(file string) {
 
 			// Load the value of the operand1() into the Y register.
 			Y = operand1()
-
 			// If bit 7 of Y is set, set the SR negative flag else reset it to 0
 			if Y&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If Y is zero, set the SR zero flag else reset it to 0
 			if Y == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(2)
 		case 0xA1:
 			if printHex {
@@ -1713,25 +1623,21 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, currentByte(), operand1())
 			}
 			fmt.Printf("LDX #$%02X\n", operand1())
-
 			// Load the value of the operand1() into the X register.
 			X = operand1()
-
 			// If bit 7 of X is set, set the SR negative flag else reset it to 0
 			if X&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If X is zero, set the SR zero flag else reset it to 0
 			if X == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(2)
-
 		case 0xA3:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, currentByte(), operand1())
@@ -1765,22 +1671,18 @@ func execute(file string) {
 			A = operand1()
 			// If A is zero, set the zero flag else reset the zero flag
 			if A == 0 {
-				// Set bit 1 to 1
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				// Set SR bit 1 to 0
-				SR ^= 0 << 1
+				setSRBitOff(1)
 			}
 
 			// If bit 7 of A is 1, set the negative flag else reset the negative flag
 			if A&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
-
 			incCount(2)
-
 		case 0xA6:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, currentByte(), operand1())
@@ -1814,22 +1716,17 @@ func execute(file string) {
 			A = operand1()
 			// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
 			if A == 0 {
-				// Set bit 1 to 1
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				// Set SR bit 1 to 0
-				SR ^= 0 << 1
-				// SR |= 0 << 1
+				setSRBitOff(1)
 			}
 			// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
 			if A&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
-
 			incCount(2)
-
 		case 0xB0:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
@@ -1867,16 +1764,16 @@ func execute(file string) {
 			Y = memory[fileposition+1+int(X)]
 			// If bit 7 of Y is 1, set the SR negative flag bit 7 else reset the SR negative flag
 			if Y&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 
 			// If Y is zero, set the SR zero flag else reset the SR zero flag
 			if Y == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
 			incCount(2)
 
@@ -1902,28 +1799,18 @@ func execute(file string) {
 
 			// If A is zero, set the zero flag else reset the zero flag
 			if A == 0 {
-				// SR = 0b00100010
-				// Set bit 1 to 1
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				// SR = 0b00100000
-				// Set bit 1 to 0
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
 
 			// If bit 7 of A is 1, set the negative flag else reset the negative flag
 			if A&0b10000000 != 0 {
-				// SR = 0b00100001
-				// Set bit 7 to 1
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				// SR = 0b00100000
-				// Set bit 7 to 0
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
-
 			incCount(2)
-
 		case 0xB6:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, currentByte(), operand1())
@@ -1964,23 +1851,21 @@ func execute(file string) {
 			TempResult := Y - operand1()
 			// If operand is greater than Y, set carry flag to 0
 			if operand1() > Y {
-				SR |= 0 << 0
+				setSRBitOff(0)
 			}
 			// If bit 7 of TempResult is set, set N flag to 1
 			if TempResult&0b10000000 == 0b10000000 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If operand is equal to Y, set Z flag to 1 else set Zero flag to 0
 			if operand1() == Y {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(2)
-
 		case 0xC1:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, currentByte(), operand1())
@@ -2044,43 +1929,30 @@ func execute(file string) {
 
 			// Compare memory and accumulator
 			if operand1() == A {
-				// Set Z flag and negative flag to true
-				// Set bit 1 to true
-				SR |= 0 << 1
-				// SR = 0b00100010
+				setSRBitOn(1)
+				setSRBitOn(7)
 			}
 			// Set carry flag to true if A is greater than or equal to operand
 			if A >= operand1() {
-				// Set bit 0 to true
-				SR |= 1 << 0
-				// SR = 0b00100001
+				setSRBitOn(0)
 			}
 			// Set carry flag to false if A is less than operand
 			if A < operand1() {
-				// Set bit zero to false
-				SR |= 0 << 0
-				// SR = 0b00100000
+				setSRBitOff(0)
 			}
 			// Set Z flag to false if A is not equal to operand
 			if A != operand1() {
-				// Set bit 1 to false
-				SR |= 0 << 1
-				// SR = 0b00100000
+				setSRBitOff(1)
 			}
 			// Set N flag to true if A minus operand results in most significant bit being set
 			if (A-operand1())&0b10000000 == 0b10000000 {
-				// Set bit 7 to true
-				SR |= 1 << 7
-				// SR = 0b10100000
+				setSRBitOn(7)
 			}
 			// Set N flag to false if A minus operand results in most significant bit being unset
 			if (A-operand1())&0b10000000 == 0b00000000 {
-				// Set bit 7 to false
-				SR |= 0 << 7
-				// SR = 0b00100000
+				setSRBitOff(7)
 			}
 			incCount(2)
-
 		case 0xD0:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
@@ -2149,23 +2021,21 @@ func execute(file string) {
 			TempResult := X - operand1()
 			// If operand is greater than X, set carry flag to 0
 			if operand1() > X {
-				SR |= 0 << 0
+				setSRBitOff(0)
 			}
 			// If bit 7 of TempResult is set, set N flag to 1
 			if TempResult&0b10000000 == 0b10000000 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// If operand is equal to X, set Z flag to 1 else set Zero flag to 0
 			if operand1() == X {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
-
 			incCount(2)
-
 		case 0xE1:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, currentByte(), operand1())
@@ -2235,30 +2105,29 @@ func execute(file string) {
 			A = A - operand1() - (1 - SR&1)
 			// Set carry flag bit 0 if result is greater than or equal to 1
 			if A >= 1 {
-				SR |= 1 << 0
+				setSRBitOn(0)
 			} else {
-				SR |= 0 << 0
+				setSRBitOff(0)
 			}
 			// Set overflow flag bit 6 if accumulator is greater than 127 or less than -127
 			if int(A) > 127 || int(A) < -127 {
-				SR |= 1 << 6
+				setSRBitOn(6)
 			} else {
-				SR |= 0 << 6
+				setSRBitOff(6)
 			}
 			// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if A&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 			// Set Z flag bit 1 if accumulator is 0 else set Z flag bit 1 to 0
 			if A == 0 {
-				SR |= 1 << 1
+				setSRBitOn(1)
 			} else {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
 			incCount(2)
-
 		case 0xF0:
 			/*
 				BEQ - Branch on Result Zero
@@ -2275,7 +2144,7 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, currentByte(), operand1())
 			}
 			fmt.Printf("BEQ $%02X\n", (fileposition+2+int(operand1()))&0xFF) // If SR zero flag 1 is set or the previous result is equal to 0, then branch to the address specified by the operand.
-			if SR&1 == 1 || A == 0 {
+			if getSRBit(1) == 1 || A == 0 {
 				fileposition = (fileposition + 2 + int(operand1())) & 0xFF
 				PC += fileposition
 				fmt.Printf("XXXXX")
@@ -2354,24 +2223,23 @@ func execute(file string) {
 			temp <<= 1
 			// Set SR negative flag 7 to 1 if the result bit 7 is 1
 			if temp&0x80 == 0x80 {
-				SR |= 0x80
+				setSRBitOn(7)
 			} else {
-				SR &= 0x7F
+				setSRBitOff(7)
 			}
 			// Set SR zero flag 1 to 1 if the result is equal to 0, otherwise reset Zero flag to 0 and store bit 7 of temp in SR carry flag
 			if temp == 0 {
-				SR |= 0x01
+				setSRBitOn(1)
 			} else {
-				SR &= 0xFE
+				setSRBitOff(1)
 				if temp&0x80 == 0x80 {
-					SR |= 0x01
+					setSRBitOn(0)
 				} else {
-					SR &= 0xFE
+					setSRBitOff(0)
 				}
 			}
 			// Update memory[temp] with the new value
 			memory[temp] = byte(temp)
-
 			incCount(3)
 		case 0x0F:
 			/*
@@ -2389,9 +2257,7 @@ func execute(file string) {
 				fileposition = (fileposition + 3 + int(operand2())) & 0xFF
 				PC = fileposition
 			}
-
 			incCount(3)
-
 		case 0x13:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, currentByte(), operand1(), operand2())
@@ -2454,9 +2320,7 @@ func execute(file string) {
 			memory[SP] = byte(PC)
 			// Set PC to address stored in operand 1 and operand 2
 			PC = int(operand1()) + int(operand2())<<8
-
 			incCount(3)
-
 		case 0x22:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t((Indirect) Z)\t\n", PC, currentByte(), operand1(), operand2())
@@ -2498,11 +2362,13 @@ func execute(file string) {
 			SR = (SR & 0xBF) | (temp & 0x40)
 			// If temp==0 then set the SR Zero flag bit 1 to the result of temp else set SR negative flag to 0
 			if temp == 0 {
-				SR |= 0x02
+				// If bit 7 of temp is 1 then set SR negative flag to 1
+				if temp&0x80 == 0x80 {
+					setSRBitOn(7)
+				}
 			} else {
-				SR &= 0xFD
+				setSRBitOff(7)
 			}
-
 			incCount(3)
 		case 0x2D:
 			/*
@@ -2525,17 +2391,16 @@ func execute(file string) {
 			A &= memory[int(operand1())+int(operand2())<<8]
 			// If A==0 set the SR zero flag to 1
 			if A == 0 {
-				SR |= 0x02
+				setSRBitOn(1)
 			} else {
-				SR &= 0xFD
+				setSRBitOff(1)
 			}
 			// If bit 7 of A is 1 then set the SR negative flag to 1 else set negative flag to 0
 			if A&1 == 1 {
-				SR |= 0x80
+				setSRBitOn(7)
 			} else {
-				SR &= 0x7F
+				setSRBitOff(7)
 			}
-
 			incCount(3)
 		case 0x2E:
 			if printHex {
@@ -2608,7 +2473,6 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, currentByte(), operand1(), operand2())
 			}
 			fmt.Printf("JMP $%02X%02X\n", operand2(), operand1())
-
 			incCount(3)
 		case 0x4D:
 			if printHex {
@@ -2692,30 +2556,28 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, currentByte(), operand1(), operand2())
 			}
 			fmt.Printf("ADC $%02X%02X\n", operand2(), operand1())
-
 			// Read bit 7 of the accumulator into a temp var
 			temp := (A & 0x80) >> 7
 			// If SR carry bit is set, add 1 to A
-			if SR&0x01 == 0x01 {
+			if getSRBit(0) == 1 {
 				A++
 			}
 			// Add the value of operand
 			A += operand1()
 			// If bit 7 of accumulator is not equal to bit 7 of temp then set SR overflow flag bit 6 to 1
 			if (A&0x80)>>7 != (temp&0x80)>>7 {
-				SR |= 0x40
+				setSRBitOn(6)
 			}
 			// If bit 7 of accumulator is 1 then set negative flag
 			if (A & 0x80) == 0x80 {
-				SR |= 0x80
+				setSRBitOn(7)
 			}
 			// If accumulator is 0 then set zero flag else set SR zero flag to 0
 			if A == 0 {
-				SR |= 0x02
+				setSRBitOn(1)
 			} else {
-				SR &= 0xFD
+				setSRBitOff(1)
 			}
-
 			incCount(3)
 		case 0x6E:
 			if printHex {
@@ -2913,17 +2775,16 @@ func execute(file string) {
 			// If bit 7 of Y is 1 then set bit 7 of SR to 1
 			// else set bit 7 of SR to 0
 			if Y&1 == 1 {
-				SR |= 1 << 7
+				setSRBitOn(7)
 			} else {
-				SR |= 0 << 7
+				setSRBitOff(7)
 			}
 
 			// If value loaded to Y is 0 set bit 1 of SR to 0
 			if Y == 0 {
-				SR |= 0 << 1
+				setSRBitOff(1)
 			}
 			incCount(3)
-
 		case 0xBD:
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, currentByte(), operand1(), operand2())
@@ -3079,7 +2940,6 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, currentByte(), operand1(), operand2())
 			}
 			fmt.Printf("BBS7 $%02X, $%02X\n", operand1(), operand2())
-			// incCount(3)
 			incCount(3)
 		}
 	}
