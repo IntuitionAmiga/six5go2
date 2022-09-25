@@ -1096,10 +1096,6 @@ func execute(file string) {
 			}
 			fmt.Printf("BPL $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
-			fmt.Printf("SR Negative bit 7 is %b\n", getSRBit(7))
-			fmt.Printf("Fileposition is %02X\n", fileposition)
-			fmt.Printf("Opcode is %02X\n", opcode())
-			fmt.Printf("PC is %04X\n", PC)
 			// If SR negative flag bit 7 is 0 then branch
 			if getSRBit(7) == 0 {
 				// Branch
