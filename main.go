@@ -65,6 +65,9 @@ func incCount(amount int) {
 		fileposition += amount
 	}
 	PC += amount
+	// ANSI escape code hack to clear the screen
+	// fmt.Print("\033[H\033[2J") // Enable to display "realtime" machine state
+
 	printMachineState()
 }
 func printMachineState() {
