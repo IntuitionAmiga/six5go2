@@ -2892,10 +2892,21 @@ func execute(file string) {
 			fmt.Printf("STY $%02X%02X\n", operand2(), operand1())
 			incCount(3)
 		case 0x8D:
+			/*
+				STA - Store Accumulator in Memory
+				Operation: A → M
+
+				This instruction transfers the contents of the accumulator to memory.
+
+				This instruction affects none of the flags in the processor status register and
+				does not affect the accumulator.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("STA $%04X\n", operand1()|uint8(int(operand2())<<8))
+			//Update the memory at the address stored in operand 1 and operand 2 with the value of the accumulator
+			memory[int(operand1())+int(operand2())] = A
 			incCount(3)
 		case 0x8E:
 			if printHex {
@@ -3368,10 +3379,56 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0xED:
+			/*
+				SBC - Subtract Memory from Accumulator with Borrow
+				Operation: A - M - ~C → A
+
+				This instruction subtracts the value of memory and borrow from the value of the accumulator,
+				using two's complement arithmetic, and stores the result in the accumulator.
+
+				Borrow is defined as the carry flag complemented;
+				therefore, a resultant carry flag indicates that a borrow has not occurred.
+
+				This instruction affects the accumulator.
+				The carry flag is set if the result is greater than or equal to 0.
+				The carry flag is reset when the result is less than 0, indicating a borrow.
+				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
+				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
+				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("SBC $%02X%02X\n", operand2(), operand1())
+
+			// Store value stored in addressed memory location in temp variable
+			temp := memory[operand2()+operand1()]
+			// Update accumulator with value of accumulator - value in memory - carry
+			A -= temp - getSRBit(0)
+			// If accumulator >= 0 then set SR carry bit 0 to 1 else set SR carry bit 0 to 0
+			if A >= 0 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If accumulator<0 then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
+			if A < 0 {
+				setSRBitOff(0)
+			} else {
+				setSRBitOn(0)
+			}
+			// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
+			if int(A) > 127 || int(A) < -127 {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
+			// If bit 7 of accumulator is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(3)
 		case 0xEE:
 			/*
