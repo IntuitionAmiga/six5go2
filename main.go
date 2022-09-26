@@ -2159,7 +2159,7 @@ func execute(file string) {
 			// Update the accumulator
 			A = A - operand1() - (1 - SR&1)
 			// Set carry flag bit 0 if result is greater than or equal to 1
-			if A >= 1 {
+			if A > 0 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
@@ -2909,10 +2909,21 @@ func execute(file string) {
 			memory[int(operand1())+int(operand2())] = A
 			incCount(3)
 		case 0x8E:
+			/*
+				STX - Store Index Register X In Memory
+				Operation: X → M
+
+				Transfers value of X register to addressed memory location.
+
+				No flags or registers in the microprocessor are affected by the store operation.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("STX $%02X%02X\n", operand2(), operand1())
+
+			//Update the memory at the address stored in operand 1 and operand 2 with the value of the X register
+			memory[int(operand1())+int(operand2())] = X
 			incCount(3)
 		case 0x8F:
 			if printHex {
@@ -3406,7 +3417,7 @@ func execute(file string) {
 			// Update accumulator with value of accumulator - value in memory - carry
 			A -= temp - getSRBit(0)
 			// If accumulator >= 0 then set SR carry bit 0 to 1 else set SR carry bit 0 to 0
-			if A >= 0 {
+			if A > 0 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
