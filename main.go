@@ -2886,10 +2886,21 @@ func execute(file string) {
 			fmt.Printf("STY $%02X%02X,X\n", operand2(), operand1())
 			incCount(3)
 		case 0x8C:
+			/*
+				STY - Store Index Register Y In Memory
+				Operation: Y → M
+
+				Transfer the value of the Y register to the addressed memory location.
+
+				STY does not affect any flags or registers in the microprocessor.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("STY $%02X%02X\n", operand2(), operand1())
+
+			// Update the memory at the address stored in operand 1 and operand 2 with the value of the Y register
+			memory[int(operand1())+int(operand2())] = Y
 			incCount(3)
 		case 0x8D:
 			/*
@@ -2905,7 +2916,7 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("STA $%04X\n", operand1()|uint8(int(operand2())<<8))
-			//Update the memory at the address stored in operand 1 and operand 2 with the value of the accumulator
+			// Update the memory at the address stored in operand 1 and operand 2 with the value of the accumulator
 			memory[int(operand1())+int(operand2())] = A
 			incCount(3)
 		case 0x8E:
@@ -2922,7 +2933,7 @@ func execute(file string) {
 			}
 			fmt.Printf("STX $%02X%02X\n", operand2(), operand1())
 
-			//Update the memory at the address stored in operand 1 and operand 2 with the value of the X register
+			// Update the memory at the address stored in operand 1 and operand 2 with the value of the X register
 			memory[int(operand1())+int(operand2())] = X
 			incCount(3)
 		case 0x8F:
