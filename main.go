@@ -2532,6 +2532,14 @@ func execute(file string) {
 			fmt.Printf("BBR3 $%02X, $%02X\n", operand1(), operand2())
 			incCount(3)
 		case 0x4C:
+			/*
+				JMP - JMP Indirect
+				Operation: [PC + 1] → PCL, [PC + 2] → PCH
+
+				This instruction establishes a new valne for the program counter.
+
+				It affects only the program counter in the microprocessor and affects no flags in the status register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, opcode(), operand1(), operand2())
 			}
@@ -2806,10 +2814,36 @@ func execute(file string) {
 			fmt.Printf("LDY $%02X%02X\n", operand2(), operand1())
 			incCount(3)
 		case 0xAD:
+			/*
+				LDA - Load Accumulator with Memory
+				Operation: M → A
+
+				When instruction LDA is executed by the microprocessor, data is transferred from memory to
+				the accumulator and stored in the accumulator.
+
+				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
+				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
+				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("LDA $%02X%02X\n", operand2(), operand1())
+
+			// Update A with the value stored at the address in the operands
+			A = memory[operand1()+(operand2())]
+			// If A==0 then set SR zero flag bit 1 to 1 else set it to 0
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If bit 7 of A is 1 then set SR negative flag bit 7 to 1 else set it to 0
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(3)
 		case 0xAE:
 			if printHex {
