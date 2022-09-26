@@ -2878,10 +2878,59 @@ func execute(file string) {
 			fmt.Printf("CPY $%02X%02X\n", operand2(), operand1())
 			incCount(3)
 		case 0xCD:
+			/*
+				CMP - Compare Memory and Accumulator
+				Operation: A - M
+
+				This instruction subtracts the contents of memory from the contents of the accumulator.
+
+				The use of the CMP affects the following flags:
+				Z flag is set on an equal comparison, reset otherwise;
+				the N flag is set or reset by the result bit 7,
+				the carry flag is set when the value in memory is less than or equal to the accumulator,
+				reset when it is greater than the accumulator.
+				The accumulator is not affected.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("CMP $%02X%02X\n", operand2(), operand1())
+
+			// Set X to Operand 2 and Y to the X indexed value stored in operand 1
+			X = operand2()
+			Y = memory[int(operand1())+int(X)]
+			// If value in memory is less than or equal to the accumulator set bit 0 of SR to 1
+			// else set bit 0 of SR to 0
+			if Y <= A {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If bit 7 of Y is 1 then set SR Negative bit 7 of SR to 1
+			// else set bit 7 of SR to 0
+			if getYBit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If value loaded to Y is 0 set SR Zero flag bit 1 to 0
+			if Y == 0 {
+				setSRBitOff(1)
+			}
+			// If value in memory is equal to the accumulator set SR Zero flag bit 1 of SR to 0
+			if Y == A {
+				setSRBitOff(1)
+			}
+			// If value in memory is greater than the accumulator set SR Zero flag bit 1 of SR to 1
+			if Y > A {
+				setSRBitOn(1)
+			}
+			// If bit 7 of Y is 1 then set SR negative bit 7 of to 1 else set SR negative bit 7 to 0
+			if getYBit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(3)
 		case 0xCE:
 			if printHex {
