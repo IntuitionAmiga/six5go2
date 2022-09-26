@@ -2872,10 +2872,56 @@ func execute(file string) {
 			fmt.Printf("ASW $%02X%02X\n", operand2(), operand1())
 			incCount(3)
 		case 0xCC:
+			/*
+				CPY - Compare Index Register Y To Memory
+				Operation: Y - M
+
+				This instruction performs a two's complement subtraction between the index register Y and the specified
+				memory location. The results of the subtraction are not stored anywhere. The instruction is strictly
+				used to set the flags.
+
+				CPY affects no registers in the microprocessor and also does not affect the overflow flag.
+				If the value in the index register Y is equal to or greater than the value in the memory,
+				the carry flag will be set, otherwise it will be cleared.
+				If the results of the subtracttion contain bit 7 on the N bit will be set, otherwise it will be cleared.
+				If the value in the index register Y and the value in the memory are equal, the zero flag will be set,
+				otherwise it will be cleared.
+
+
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("CPY $%02X%02X\n", operand2(), operand1())
+
+			// Store value stored in addressed memory location in temp variable
+			temp := memory[operand2()+operand1()]
+			// If Y >= to the value in memory then set SR carry bit 0 to 1 else set SR carry bit 0 to 0
+			if Y >= temp {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			/*
+				// If value in memory > Y then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
+				if temp > Y {
+					setSRBitOff(0)
+				} else {
+					setSRBitOn(0)
+				}
+			*/
+			// If bit 7 of temp is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
+			if temp&0x80 == 0x80 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If temp == Y then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
+			if temp == Y {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(3)
 		case 0xCD:
 			/*
@@ -3036,7 +3082,6 @@ func execute(file string) {
 			} else {
 				setSRBitOff(1)
 			}
-
 			incCount(3)
 		case 0xED:
 			if printHex {
