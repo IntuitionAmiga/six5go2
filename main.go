@@ -3140,10 +3140,34 @@ func execute(file string) {
 			fmt.Printf("SBC $%02X%02X\n", operand2(), operand1())
 			incCount(3)
 		case 0xEE:
+			/*
+				INC - Increment Memory By One
+				Operation: M + 1 → M
+
+				This instruction adds 1 to the contents of the addressed memory location.
+
+				The increment memory instruction does not affect any internal registers and does not affect the carry
+				or overflow flags.
+				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
+				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("INC $%02X%02X\n", operand2(), operand1())
+			// Increment the value stored in memory at the address stored in operand 1 and operand 2
+			memory[operand2()+operand1()] = memory[operand2()+operand1()] + 1
+			// If bit 7 of the value stored in memory is 1 then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
+			if memory[operand2()+operand1()] == 0b10000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			if memory[operand2()+operand1()] == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(3)
 		case 0xEF:
 			if printHex {
