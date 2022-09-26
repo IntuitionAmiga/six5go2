@@ -2987,10 +2987,56 @@ func execute(file string) {
 			fmt.Printf("ROW $%02X%02X\n", operand2(), operand1())
 			incCount(3)
 		case 0xEC:
+			/*
+				CPX - Compare Index Register X To Memory
+				Operation: X - M
+
+				This instruction subtracts the value of the addressed memory location from the content of
+				index register X using the adder but does not store the result;
+				therefore, its only use is to set the N, Z and C flags to allow for comparison between the
+				index register X and the value in memory.
+
+				The CPX instruction does not affect any register in the machine;
+				it also does not affect the overflow flag.
+				It causes the carry to be set on if the absolute value of the index register X is equal to
+				or greater than the data from memory.
+				If the value of the memory is greater than the content of the index register X, carry is reset.
+				If the results of the subtraction contain a bit 7, then the N flag is set, if not, it is reset.
+				If the value in memory is equal to the value in index register X, the Z flag is set,
+				otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("CPX $%02X%02X\n", operand2(), operand1())
+
+			// Store value stored in addressed memory location in temp variable
+			temp := memory[operand2()+operand1()]
+			// If X >= to the value in memory then set SR carry bit 0 to 1 else set SR carry bit 0 to 0
+			if X >= temp {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If value in memory > X then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
+			if temp > X {
+				setSRBitOff(0)
+			} else {
+				setSRBitOn(0)
+			}
+			// If bit 7 of temp is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
+			if temp&0x80 == 0x80 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If temp == X then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
+			if temp == X {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+
 			incCount(3)
 		case 0xED:
 			if printHex {
