@@ -2846,10 +2846,35 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0xAE:
+			/*
+				LDX - Load Index Register X From Memory
+				Operation: M → X
+
+				Load the index register X from memory.
+
+				LDX does not affect the C or V flags;
+				sets Z if the value loaded was zero, otherwise resets it;
+				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("LDX $%02X%02X\n", operand2(), operand1())
+
+			// Update X with the value stored at the address in the operands
+			X = memory[operand1()+(operand2())]
+			// If X==0 then set SR zero flag bit 1 to 1 else set it to 0
+			if X == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If bit 7 of X is 1 then set SR negative flag bit 7 to 1 else set it to 0
+			if getXBit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(3)
 		case 0xAF:
 			if printHex {
