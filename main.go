@@ -1400,10 +1400,45 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x46:
+			/*
+				LSR - Logical Shift Right
+				Operation: 0 → /M7...M0/ → C
+
+				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
+				with the higher bit of the result always being set to 0, and the low bit which is shifted out of the
+				field being stored in the carry flag.
+
+				The shift right instruction either affects the accumulator by shifting it right 1 or is a
+				read/modify/write instruction which changes a specified memory location but does not affect any
+				internal registers.
+				The shift right does not affect the overflow flag.
+				The N flag is always reset.
+				The Z flag is set if the result of the shift is 0 and reset otherwise.
+				The carry is set equal to bit 0 of the input.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("LSR $%02X\n", operand1())
+
+			// Store the value of the operand in a temporary variable
+			temp := operand1()
+			// Update the value stored at the operand address with itself shifted right 1 bit
+			memory[operand1()] = temp >> 1
+			// Update SR carry flag bit 0 with bit 0 of temp variable
+			if temp&1 == 1 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// Set the SR Negative flag to 0
+			setSRBitOff(7)
+			// If the result of the shift is 0, set the SR Zero flag
+			if temp>>1 == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
 		case 0x47:
 			if printHex {
