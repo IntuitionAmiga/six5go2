@@ -1325,12 +1325,12 @@ func execute(file string) {
 				setSRBitOff(0)
 			}
 			// Shift temp left 1 bit
-			temp = temp << 1
+			temp <<= 1
 			// If SR carry flag is set then set bit 0 of temp to 1 else set it to 0
 			if getSRBit(0) == 1 {
-				temp = temp | 0b00000001
+				temp |= 0b00000001
 			} else {
-				temp = temp & 0b11111110
+				temp &= 0b11111110
 			}
 			// Store temp in memory at address in operand
 			memory[operand1()] = temp
@@ -1859,10 +1859,21 @@ func execute(file string) {
 			memory[operand1()] = A
 			incCount(2)
 		case 0x86:
+			/*
+				STX - Store Index Register X In Memory
+				Operation: X → M
+
+				Transfers value of X register to addressed memory location.
+
+				No flags or registers in the microprocessor are affected by the store operation.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("STX $%02X\n", operand1())
+
+			// Store contents of X register in memory address at operand1()
+			memory[operand1()] = X
 			incCount(2)
 		case 0x87:
 			if printHex {
