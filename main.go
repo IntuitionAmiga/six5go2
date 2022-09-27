@@ -1665,10 +1665,57 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x66:
+			/*
+				ROR - Rotate Right
+				Operation: C → /M7...M0/ → C
+
+				The rotate right instruction shifts either the accumulator or addressed memory right 1 bit with
+				bit 0 shifted into the carry and carry shifted into bit 7.
+
+				The ROR instruction either shifts the accumulator right 1 bit and stores the carry in accumulator bit 7
+				or does not affect the internal registers at all.
+				The ROR instruction sets carry equal to input bit 0,
+				sets N equal to the input carry and
+				sets the Z flag if the result of the rotate is 0; otherwise it resets Z and
+				does not affect the overflow flag at all.
+
+				(Available on Microprocessors after June, 1976)
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("ROR $%02X\n", operand1())
+
+			// Store memory[operand1()] in temp
+			temp := memory[operand1()]
+			// If bit 0 of temp is set then set SR carry flag bit 0 else clear it
+			if temp&0x01 == 1 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// Shift temp right 1 bit
+			temp >>= 1
+			// If SR carry flag bit 0 is set then set temp bit 7 else clear it
+			if getSRBit(0) == 1 {
+				temp |= 0x80
+			} else {
+				temp &= 0x7F
+			}
+			// Update memory[operand1()] with temp
+			memory[operand1()] = temp
+			// If SR carry flag bit 0 is set then set SR negative flag bit 7 else clear it
+			if getSRBit(0) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If temp=0 then set SR zero flag bit 1 else clear it
+			if temp == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
 		case 0x67:
 			if printHex {
