@@ -1373,10 +1373,57 @@ func execute(file string) {
 			fmt.Printf("STZ $%02X\n", operand1())
 			incCount(2)
 		case 0x65:
+			/*
+				ADC - Add Memory to Accumulator with Carry
+				Operation: A + M + C → A, C
+
+				This instruction adds the value of memory and carry from the previous operation to the value of the
+				accumulator and stores the result in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add
+				exceeds 99, otherwise carry is reset.
+				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
+				otherwise overflow is reset.
+				The negative flag is set if the accumulator result contains bit 7 on,
+				otherwise the negative flag is reset.
+				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
+
+				Note on the MOS 6502:
+
+				In decimal mode, the N, V and Z flags are not consistent with the decimal result.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("ADC $%02X\n", operand1())
+
+			// If A+memory > 255, set SR carry flag
+			if int(A)+int(operand1()) > 255 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If bit 7 of A+memory is different from bit 7 of A, set SR overflow flag bit 6
+			if (A&0x80)^(operand1()&0x80) != 0 {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
+			// Update A with a+memory
+			A += memory[operand1()]
+			// If bit 7 of A is set then set SR negative flag bit 7 else clear it
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If A=0 then set SR zero flag bit 1 else clear it
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
 		case 0x66:
 			if printHex {
@@ -2733,7 +2780,7 @@ func execute(file string) {
 				JMP - JMP Indirect
 				Operation: [PC + 1] → PCL, [PC + 2] → PCH
 
-				This instruction establishes a new valne for the program counter.
+				This instruction establishes a new value for the program counter.
 
 				It affects only the program counter in the microprocessor and affects no flags in the status register.
 			*/
