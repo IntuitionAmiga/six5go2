@@ -1098,7 +1098,7 @@ func execute(file string) {
 			// Get the value of the memory location at operand1
 			value := memory[operand1()]
 			// Shift the value left by 1 bit
-			value = value << 1
+			value <<= 1
 			// If the value bit 7 is 1, set the SR carry flag bit 0 to 1 and negative bit 7 to 1  else set bothto 0
 			if value&0b10000000 == 0b10000000 {
 				setSRBitOn(0)
@@ -2641,10 +2641,59 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xE5:
+			/*
+				SBC - Subtract Memory from Accumulator with Borrow
+				Operation: A - M - ~C → A
+
+				This instruction subtracts the value of memory and borrow from the value of the accumulator,
+				using two's complement arithmetic, and stores the result in the accumulator.
+				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates that
+				a borrow has not occurred.
+
+				This instruction affects the accumulator.
+				The carry flag is set if the result is greater than or equal to 0.
+				The carry flag is reset when the result is less than 0, indicating a borrow.
+				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
+				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
+				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("SBC $%02X\n", operand1())
+
+			// Store result of A-memory stored at operand1() in temp variable
+			temp := A - memory[operand1()]
+			// If temp is greater than or equal to 0, set carry flag to 1
+			if temp > 0 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If temp is less than 0, set carry flag to 0
+			if temp < 0 {
+				setSRBitOff(0)
+			}
+			// If temp is greater than 127 or less than -127, set overflow flag to 1
+			if int(temp) > 127 || int(temp) < (-127) {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
+			// If bit 7 of temp is set, set N flag to 1 else reset it
+			if temp&0b10000000 == 0b10000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If temp is equal to 0, set Z flag to 1 else reset it
+			if temp == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// Set A to temp
+			A = temp
 			incCount(2)
 		case 0xE6:
 			/*
@@ -4002,7 +4051,7 @@ func execute(file string) {
 				setSRBitOn(0)
 			}
 			// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
-			if int(A) > 127 || int(A) < -127 {
+			if int(A) > 127 || int(A) < (-127) {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
