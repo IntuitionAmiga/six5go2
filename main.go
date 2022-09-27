@@ -2282,10 +2282,53 @@ func execute(file string) {
 			fmt.Printf("INW $%02X\n", operand1())
 			incCount(2)
 		case 0xE4:
+			/*
+				CPX - Compare Index Register X To Memory
+				Operation: X - M
+
+				This instruction subtracts the value of the addressed memory location from the content of
+				index register X using the adder but does not store the result;
+				therefore, its only use is to set the N, Z and C flags to allow for comparison between the
+				index register X and the value in memory.
+
+				The CPX instruction does not affect any register in the machine;
+				it also does not affect the overflow flag.
+				It causes the carry to be set on if the absolute value of the index register X is equal to
+				or greater than the data from memory.
+				If the value of the memory is greater than the content of the index register X, carry is reset.
+				If the results of the subtraction contain a bit 7, then the N flag is set, if not, it is reset.
+				If the value in memory is equal to the value in index register X, the Z flag is set,
+				otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("CPX $%02X\n", operand1())
+
+			// Store result of X-memory stored at operand1() in temp variable
+			temp := X - memory[operand1()]
+			// If X >= memory[operand1()], set carry flag to 1
+			if X >= memory[operand1()] {
+				setSRBitOn(0)
+			}
+			// If memory stored at operand1() is greater than X, set carry flag to 0
+			if memory[operand1()] > X {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If bit 7 of temp is set, set N flag to 1 else reset it
+			if temp&0b10000000 == 0b10000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If memory stored at operand1() is equal to X, set Z flag to 1 else reset it
+			if memory[operand1()] == X {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
 		case 0xE5:
 			if printHex {
