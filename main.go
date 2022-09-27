@@ -2093,10 +2093,50 @@ func execute(file string) {
 			fmt.Printf("DEW $%02X\n", operand1())
 			incCount(2)
 		case 0xC4:
+			/*
+				CPY - Compare Index Register Y To Memory
+				Operation: Y - M
+
+				This instruction performs a two's complement subtraction between the index register Y and the
+				specified memory location.
+				The results of the subtraction are not stored anywhere.
+				The instruction is strictly used to set the flags.
+
+				CPY affects no registers in the microprocessor and also does not affect the overflow flag.
+				If the value in the index register Y is equal to or greater than the value in the memory,
+				the carry flag will be set, otherwise it will be cleared.
+				If the results of the subtraction contain bit 7 on the N bit will be set, otherwise it will be cleared.
+				If the value in the index register Y and the value in the memory are equal, the zero flag will be set,
+				otherwise it will be cleared.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("CPY $%02X\n", operand1())
+			// Store result of Y-memory stored at operand1() in temp variable
+			temp := Y - memory[operand1()]
+			// If Y >= memory[operand1()], set carry flag to 1
+			if Y >= memory[operand1()] {
+				setSRBitOn(0)
+			}
+			// If memory stored at operand1() is greater than Y, set carry flag to 0
+			if memory[operand1()] > Y {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If bit 7 of temp is set, set N flag to 1 else reset it
+			if temp&0b10000000 == 0b10000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If memory stored at operand1() is equal to Y, set Z flag to 1 else reset it
+			if memory[operand1()] == Y {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
 		case 0xC5:
 			/*
