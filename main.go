@@ -1991,10 +1991,21 @@ func execute(file string) {
 			memory[(operand1())+X] = A
 			incCount(2)
 		case 0x96:
+			/*
+				STX - Store Index Register X In Memory
+				Operation: X → M
+
+				Transfers value of X register to addressed memory location.
+
+				No flags or registers in the microprocessor are affected by the store operation.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("STX $%02X,Y\n", operand1())
+
+			// Store contents of X register in Y indexed memory address
+			memory[(operand1())+Y] = X
 			incCount(2)
 		case 0x97:
 			if printHex {
@@ -2207,10 +2218,24 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xB0:
+			/*
+				BCS - Branch on Carry Set
+				Operation: Branch on C = 1
+
+				This instruction takes the conditional branch if the carry flag is on.
+
+				BCS does not affect any of the flags or registers except for the program counter and only
+				then if the carry flag is on.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("BCS $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+
+			// If the carry flag is set, branch to the address in the operand
+			if getSRBit(0) == 1 {
+				PC = (fileposition + 2 + int(operand1())) & 0xFF
+			}
 			incCount(2)
 		case 0xB1:
 			if printHex {
