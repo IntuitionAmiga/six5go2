@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
 var (
@@ -65,13 +66,20 @@ func incCount(amount int) {
 		fileposition += amount
 	}
 	PC += amount
-	// ANSI escape code hack to clear the screen
-	// fmt.Print("\033[H\033[2J") // Enable to display "realtime" machine state
-
 	printMachineState()
 }
 func printMachineState() {
+	fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
 	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X\n\n", A, X, Y, SR, SP, PC)
+
+	fmt.Printf("Zero Page RAM dump:\n\n")
+	for i := 0; i < 16; i++ {
+		for j := 0; j < 16; j++ {
+			fmt.Printf("%02X ", memory[i*32+j])
+		}
+		fmt.Printf("\n")
+	}
+	time.Sleep(10 * time.Millisecond)
 }
 func getSRBit(x byte) byte {
 	return (SR >> x) & 1
@@ -486,10 +494,16 @@ func execute(file string) {
 			}
 			fmt.Printf("RTS\n")
 
-			// Update PC with the value stored at the address pointed to by SP+1
-			PC = int(memory[SP] + 1)
-			// Increment the stack pointer twice
-			SP += 2
+			fmt.Printf("SP = %d\n", SP)
+			// Increment the stack pointer by 1 byte
+			SP++
+			// Set PC to the value stored in memory at the address pointed to by SP
+			PC = int(memory[SP])
+			// Increment the stack pointer by 1 byte
+			SP++
+			// Set PC to the value stored in memory at the address pointed to by SP
+			PC = int(memory[SP])
+			fmt.Printf("SP = %d\n", SP)
 			incCount(1)
 		case 0x68:
 			/*
@@ -723,7 +737,7 @@ func execute(file string) {
 			fmt.Printf("TXS\n")
 
 			// Set stack pointer to value of X register
-			SP = int(X)
+			memory[SP] = X
 			incCount(1)
 		case 0xA8:
 			/*
