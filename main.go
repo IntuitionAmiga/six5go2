@@ -1406,10 +1406,27 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x30:
+			/*
+				BMI - Branch on Result Minus
+				Operation: Branch on N = 1
+
+				This instruction takes the conditional branch if the N bit is set.
+
+				BMI does not affect any of the flags or any other part of the machine other than the program counter
+				and then only if the N bit is on.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("BMI $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+
+			// If negative flag is set then branch
+			if getSRBit(7) == 1 {
+				// Branch to address in operand
+				PC = (fileposition + 2 + int(operand1())) & 0xFF
+				// Add 1 to count
+				incCount(1)
+			}
 			incCount(2)
 		case 0x31:
 			if printHex {
@@ -2583,10 +2600,26 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xD0:
+			/*
+				BNE - Branch on Result Not Zero
+				Operation: Branch on Z = 0
+
+				This instruction could also be called "Branch on Not Equal."
+				It tests the Z flag and takes the conditional branch if the Z flag is not on,
+				indicating that the previous result was not zero.
+
+				BNE does not affect any of the flags or registers other than the program counter
+				and only then if the Z flag is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("BNE $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+
+			// If Z flag is not set, branch to address
+			if getSRBit(1) != 1 {
+				PC = (fileposition + 2 + int(operand1())) & 0xFF
+			}
 			incCount(2)
 		case 0xD1:
 			if printHex {
