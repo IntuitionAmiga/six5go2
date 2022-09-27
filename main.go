@@ -1909,7 +1909,6 @@ func execute(file string) {
 			} else {
 				setSRBitOff(1)
 			}
-
 			// If bit 7 of A is 1, set the negative flag else reset the negative flag
 			if getABit(7) == 1 {
 				setSRBitOn(7)
@@ -1918,10 +1917,35 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xA6:
+			/*
+				LDX - Load Index Register X From Memory
+				Operation: M → X
+
+				Load the index register X from memory.
+
+				LDX does not affect the C or V flags;
+				sets Z if the value loaded was zero, otherwise resets it;
+				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("LDX $%02X\n", operand1())
+
+			// Load the value of the operand1() into the X register.
+			X = operand1()
+			// If X=0, set the SR zero flag else reset it to 0
+			if X == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If bit 7 of X is set, set the SR negative flag else reset it to 0
+			if getXBit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(2)
 		case 0xA7:
 			if printHex {
