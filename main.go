@@ -2729,10 +2729,21 @@ func execute(file string) {
 			fmt.Printf("BSR $%02X\n", operand1())
 			incCount(3)
 		case 0x6C:
+			/*
+				JMP - JMP Indirect
+				Operation: [PC + 1] → PCL, [PC + 2] → PCH
+
+				This instruction establishes a new valne for the program counter.
+
+				It affects only the program counter in the microprocessor and affects no flags in the status register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute Indirect)\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("JMP ($%02X%02X)\n", operand2(), operand1())
+
+			// Update the PC with the memory location
+			PC = int(memory[operand1()+(operand2())])
 			incCount(3)
 		case 0x6D:
 			/*
