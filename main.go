@@ -2291,8 +2291,33 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xB6:
+			/*
+				LDX - Load Index Register X From Memory
+				Operation: M → X
+
+				Load the index register X from memory.
+
+				LDX does not affect the C or V flags;
+				sets Z if the value loaded was zero, otherwise resets it;
+				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, opcode(), operand1())
+			}
+
+			// Load the X register with the Y indexed value in the operand
+			X = memory[int(operand1())+int(Y)]
+			// If bit 7 of X is 1, set the SR negative flag bit 7 else reset the SR negative flag
+			if getXBit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If X is zero, set the SR zero flag else reset the SR zero flag
+			if X == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
 			}
 			fmt.Printf("LDX $%02X,Y\n", operand1())
 			incCount(2)
@@ -3756,10 +3781,9 @@ func execute(file string) {
 			fmt.Printf("LDA $%02X%02X,Y\n", operand2(), operand1())
 			incCount(3)
 		case 0xBB:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("LDZ $%02X%02X,X\n", operand2(), operand1())
+			// NOP
+			// 65CE02 only LDZ instruction
+
 			incCount(1)
 		case 0xBC:
 			/*
@@ -3779,7 +3803,6 @@ func execute(file string) {
 			//  Set X to Operand 2 and Y to the X indexed value stored in operand 1
 			X = operand2()
 			Y = memory[int(operand1())+int(X)]
-
 			// If bit 7 of Y is 1 then set bit 7 of SR to 1
 			// else set bit 7 of SR to 0
 			if getYBit(7) == 1 {
