@@ -105,7 +105,6 @@ func setABitOn(x byte) {
 func setABitOff(x byte) {
 	A &= ^(1 << x)
 }
-
 func execute(file string) {
 	PC += fileposition
 	if printHex {
@@ -115,10 +114,31 @@ func execute(file string) {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		case 0x00:
+			/*
+				BRK - Break Command
+				Operation: PC + 2↓, [FFFE] → PCL, [FFFF] → PCH
+
+				The break command causes the microprocessor to go through an interrupt sequence under program control.
+
+				This means that the program counter of the second byte after the BRK is automatically stored on the
+				stack along with the processor status at the beginning of the break instruction.
+
+				The microprocessor then transfers control to the interrupt vector.
+
+				Other than changing the program counter, the break instruction changes no values in either the
+				registers or the flags.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
 			}
 			fmt.Printf("BRK\n")
+
+			//  Push PC onto stack
+			memory[SP] = byte(PC >> 8)
+			SP--
+			memory[SP] = byte(PC & 0xff)
+			SP--
+			PC += 2
 			incCount(1)
 		case 0x02:
 			/*
