@@ -1036,10 +1036,44 @@ func execute(file string) {
 			fmt.Printf("ORA $%02x\n", operand1())
 			incCount(2)
 		case 0x06:
+			/*
+				ASL - Arithmetic Shift Left
+				Operation: C ← /M7...M0/ ← 0
+
+				The shift left instruction shifts either the accumulator or the address memory location 1 bit to
+				the left, with the bit 0 always being set to 0 and the the input bit 7 being stored in the carry flag.
+
+				ASL either shifts the accumulator left 1 bit or is a read/modify/write instruction that affects only memory.
+
+				The instruction does not affect the overflow bit,
+				sets N equal to the result bit 7 (bit 6 in the input),
+				sets Z flag if the result is equal to 0, otherwise resets Z and stores the input bit 7 in the carry flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("ASL $%02x\n", operand1())
+
+			// Get the value of the memory location at operand1
+			value := memory[operand1()]
+			// Shift the value left by 1 bit
+			value = value << 1
+			// If the value bit 7 is 1, set the SR carry flag bit 0 to 1 and negative bit 7 to 1  else set bothto 0
+			if value&0b10000000 == 0b10000000 {
+				setSRBitOn(0)
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(0)
+				setSRBitOff(7)
+			}
+			// If the value is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if value == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// Store the value in memory at operand1
+			memory[operand1()] = value
 			incCount(2)
 		case 0x07:
 			if printHex {
