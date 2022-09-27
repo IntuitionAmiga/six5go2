@@ -1589,10 +1589,24 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x50:
+			/*
+				BVC - Branch on Overflow Clear
+				Operation: Branch on V = 0
+
+				This instruction tests the status of the V flag and takes the conditional branch if the flag is not set.
+
+				BVC does not affect any of the flags and registers other than the program counter and only
+				when the overflow flag is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("BVC $%02X\n", fileposition+2+int(operand1()))
+
+			// If the overflow flag is not set, branch to the address specified by the operand
+			if getSRBit(6) == 0 {
+				PC = fileposition + 2 + int(operand1())
+			}
 			incCount(2)
 		case 0x51:
 			if printHex {
