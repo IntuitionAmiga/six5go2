@@ -1222,7 +1222,6 @@ func execute(file string) {
 			if temp == 0 {
 				setSRBitOn(1)
 			}
-
 			incCount(2)
 		case 0x25:
 			/*
@@ -2086,10 +2085,43 @@ func execute(file string) {
 			fmt.Printf("CPY $%02X\n", operand1())
 			incCount(2)
 		case 0xC5:
+			/*
+				CMP - Compare Memory and Accumulator
+				Operation: A - M
+
+				This instruction subtracts the contents of memory from the contents of the accumulator.
+
+				The use of the CMP affects the following flags: Z flag is set on an equal comparison, reset otherwise;
+				the N flag is set or reset by the result bit 7,
+				the carry flag is set when the value in memory is less than or equal to the accumulator,
+				reset when it is greater than the accumulator.
+				The accumulator is not affected.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("CMP $%02X\n", operand1())
+
+			// Subtract operand from A
+			TempResult := A - operand1()
+			// If temp result == 0 then set SR Zero flag bit 1
+			if TempResult == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If bit 7 of temp result is set, set SR Negative flag bit 7
+			if TempResult&0b10000000 == 0b10000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If operand is <=  A, set SR Carry flag bit 0 else set it to 0
+			if operand1() > A {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
 			incCount(2)
 		case 0xC6:
 			if printHex {
