@@ -1281,7 +1281,7 @@ func execute(file string) {
 			}
 			fmt.Printf("AND $%02X\n", operand1())
 
-			//Update A with A+memory stored at address in operand
+			// Update A with A+memory stored at address in operand
 			A += memory[operand1()]
 			// If A is 0 then set zero flag
 			if A == 0 {
@@ -1834,10 +1834,21 @@ func execute(file string) {
 			fmt.Printf("STA ($%02X,S),Y\n", operand1())
 			incCount(2)
 		case 0x84:
+			/*
+				STY - Store Index Register Y In Memory
+				Operation: Y → M
+
+				Transfer the value of the Y register to the addressed memory location.
+
+				STY does not affect any flags or registers in the microprocessor.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("STY $%02X\n", operand1())
+
+			// Store Y register in memory at address in operand1()
+			memory[operand1()] = Y
 			incCount(2)
 		case 0x85:
 			/*
