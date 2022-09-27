@@ -1879,10 +1879,35 @@ func execute(file string) {
 			fmt.Printf("LDZ #$%02X\n", operand1())
 			incCount(2)
 		case 0xA4:
+			/*
+				LDY - Load Index Register Y From Memory
+				Operation: M → Y
+
+				Load the index register Y from memory.
+
+				LDY does not affect the C or V flags,
+				sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
+				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("LDY $%02X\n", operand1())
+
+			// Load the value of the operand1() into the Y register.
+			Y = memory[operand1()]
+			// If bit 7 of Y is set, set the SR negative flag else reset it to 0
+			if getYBit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If Y is zero, set the SR zero flag else reset it to 0
+			if Y == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
 		case 0xA5:
 			/*
