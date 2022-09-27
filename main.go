@@ -1186,10 +1186,43 @@ func execute(file string) {
 			fmt.Printf("AND ($%02X,X)\n", operand1())
 			incCount(2)
 		case 0x24:
+			/*
+				BIT - Test Bits in Memory with Accumulator
+				Operation: A ∧ M, M7 → N, M6 → V
+
+				This instruction performs an AND between a memory location and the accumulator but does not store
+				the result of the AND into the accumulator.
+
+				The bit instruction affects the N flag with N being set to the value of bit 7 of the memory being tested
+				the V flag with V being set equal to bit 6 of the memory being tested and
+				Z being set by the result of the AND operation between the accumulator and the memory if
+				the result is Zero, Z is reset otherwise.
+				It does not affect the accumulator.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("BIT $%02X\n", operand1())
+
+			// Store result of AND between A and memory stored at location in operand in a temp variable
+			temp := A & memory[operand1()]
+			// If bit 7 of temp is set then set SR negative value to 1 else set it to 0
+			if temp&0b10000000 == 0b10000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If bit 6 of temp is set then set SR overflow flag to 1 else set it to 0
+			if temp&0b01000000 == 0b01000000 {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
+			// If temp is 0 then set SR zero flag to 1 else set it to 0
+			if temp == 0 {
+				setSRBitOn(1)
+			}
+
 			incCount(2)
 		case 0x25:
 			/*
