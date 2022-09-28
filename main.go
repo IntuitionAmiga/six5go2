@@ -1540,17 +1540,17 @@ func execute(file string) {
 			temp := memory[address]
 			// If address is 0xFF then get value from memory at 0x00
 			if address == 0xFF {
-				temp |= memory[0x00] << 8
+				temp |= memory[0x00]
 			} else {
-				temp |= memory[address+1] << 8
+				temp |= memory[address+1]
 			}
 			// Add Y to address
 			address += Y
 			// If address is 0xFF then get value from memory at 0x00
 			if address == 0xFF {
-				temp |= memory[0x00] << 8
+				temp |= memory[0x00]
 			} else {
-				temp |= memory[address+1] << 8
+				temp |= memory[address+1]
 			}
 			// AND the accumulator with the operand
 			A &= temp
@@ -1836,10 +1836,38 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x51:
+			/*
+				EOR - "Exclusive OR" Memory with Accumulator
+				Operation: A ⊻ M → A
+
+				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
+				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
+				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("EOR ($%02X),Y\n", operand1())
+
+			// Get the zero pages indirect Y indexed address of the operand
+			address := memory[operand1()] + memory[operand1()+1] + Y
+			// XOR the accumulator with the value stored at the address
+			A ^= memory[address]
+			// If accumulator is 0 then set Zero flag to 1 else set Zero flag to 0
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If bit 7 of accumulator is set, set SR Negative flag to 1
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(2)
 		case 0x52:
 			// NOP
