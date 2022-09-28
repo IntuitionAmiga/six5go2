@@ -1772,10 +1772,36 @@ func execute(file string) {
 			// NOP
 			incCount(2)
 		case 0x55:
+			/*
+				EOR - "Exclusive OR" Memory with Accumulator
+				Operation: A ⊻ M → A
+
+				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
+				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
+				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("EOR $%02X,X\n", operand1())
+
+			// XOR the accumulator with the X Indexed Zero Page value from the memory at the operand address
+			A ^= memory[operand1()+X]
+			// If accumulator is 0 then set Zero flag to 1 else set Zero flag to 0
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If bit 7 of accumulator is set, set SR Negative flag to 1
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(2)
 		case 0x56:
 			if printHex {
