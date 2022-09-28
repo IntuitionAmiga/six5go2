@@ -2472,10 +2472,23 @@ func execute(file string) {
 				incCount(2)
 			}
 		case 0x91:
+			/*
+				STA - Store Accumulator in Memory
+				Operation: A → M
+
+				This instruction transfers the contents of the accumulator to memory.
+
+				This instruction affects none of the flags in the processor status register and does not affect the accumulator.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("STA ($%02X),Y\n", operand1())
+
+			// Store Zero Page Indirect Y Indexed Address in temporary variable
+			temp := operand1() + Y
+			// Store accumulator at address stored in temporary variable
+			memory[temp] = A
 			incCount(2)
 		case 0x92:
 			// NOP
