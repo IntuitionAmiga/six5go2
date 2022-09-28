@@ -3982,10 +3982,77 @@ func execute(file string) {
 			fmt.Printf("JMP ($%02X%02X,X)\n", operand2(), operand1())
 			incCount(3)
 		case 0x7D:
+			/*
+				ADC - Add Memory to Accumulator with Carry
+				Operation: A + M + C → A, C
+
+				This instruction adds the value of memory and carry from the previous operation to the value of the
+				accumulator and stores the result in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99
+				otherwise carry is reset.
+				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
+				otherwise overflow is reset.
+				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset
+				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
+
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("ADC $%02X%02X,X\n", operand2(), operand1())
+
+			// Add the X indexed address from the operands plus the carry bit to the accumulator
+			A += memory[int(operand1())+int(operand2())+int(X)]
+			// If the carry flag is 1 then add 1 to the accumulator else reset it
+			if getSRBit(0) == 1 {
+				A++
+			} else {
+				setSRBitOff(0)
+			}
+			// If the accumulator is greater than 255 then set the carry flag else reset it
+			if A > 255 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If the accumulator is greater than 99 then set the decimal flag else reset it
+			if A > 99 {
+				setSRBitOn(3)
+			} else {
+				setSRBitOff(3)
+			}
+			// If the accumulator is greater than 127 then set the overflow flag else reset it
+			if A > 127 {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
+			// If the accumulator is less than 0 then set the overflow flag else reset it
+			if A < 0 {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
+			// If the accumulator is greater than 127 then set the negative flag else reset it
+			if A > 127 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If the accumulator is less than 0 then set the negative flag else reset it
+			if A < 0 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If the accumulator is 0 then set the zero flag else reset it
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(3)
 		case 0x7E:
 			/*
