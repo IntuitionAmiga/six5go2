@@ -1887,10 +1887,24 @@ func execute(file string) {
 			fmt.Printf("BRA $%04X\n", fileposition+2+int(operand1()))
 			incCount(2)
 		case 0x81:
+			/*
+				STA - Store Accumulator in Memory
+				Operation: A → M
+
+				This instruction transfers the contents of the accumulator to memory.
+
+				This instruction affects none of the flags in the processor status register and does not
+				affect the accumulator.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("STA ($%02X,X)\n", operand1())
+
+			// Store X-Indexed Zero Page Indirect Address in temporary variable
+			temp := operand1() + X
+			// Store accumulator at address stored in temporary variable
+			memory[temp] = A
 			incCount(2)
 		case 0x82:
 			if printHex {
