@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	printHex     bool
-	file         []byte
-	fileposition = 0 //  Byte position counter
+	printHex       bool
+	file           []byte
+	fileposition   int // Byte position counter
+	machineMonitor     = false
 
 	// CPURegisters and RAM
 	A      byte        = 0x0000     // Accumulator
@@ -36,6 +37,9 @@ func main() {
 	if len(os.Args) > 3 && os.Args[3] == "hex" {
 		printHex = true
 	}
+	if len(os.Args) > 3 && os.Args[3] == "mon" {
+		machineMonitor = true
+	}
 
 	//  Read file
 	file, _ = os.ReadFile(os.Args[1])
@@ -52,7 +56,7 @@ func main() {
 
 	// Start emulation
 	printMachineState()
-	execute(string(file))
+	execute()
 }
 func opcode() byte {
 	return memory[fileposition]
@@ -71,18 +75,21 @@ func incCount(amount int) {
 	printMachineState()
 }
 func printMachineState() {
-	fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
+	if machineMonitor {
+		fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
+	}
 	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
 
-	fmt.Printf("Zero Page RAM dump:\n\n")
-	for i := 0; i < 16; i++ {
-		for j := 0; j < 16; j++ {
-			fmt.Printf("%02X ", memory[i*32+j])
+	if machineMonitor {
+		fmt.Printf("Zero Page RAM dump:\n\n")
+		for i := 0; i < 16; i++ {
+			for j := 0; j < 16; j++ {
+				fmt.Printf("%02X ", memory[i*32+j])
+			}
+			fmt.Printf("\n")
 		}
-		fmt.Printf("\n")
+		time.Sleep(10 * time.Millisecond)
 	}
-	time.Sleep(10 * time.Millisecond)
-
 }
 func getSRBit(x byte) byte {
 	return (SR >> x) & 1
@@ -108,12 +115,12 @@ func setABitOn(x byte) {
 func setABitOff(x byte) {
 	A &= ^(1 << x)
 }
-func execute(file string) {
-	PC += fileposition
+func execute() {
+	//PC += fileposition
 	if printHex {
 		fmt.Printf(" * = $%04X\n\n", PC)
 	}
-	for fileposition = PC; fileposition < PC+len(file); {
+	for fileposition = PC; fileposition < len(memory); {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		case 0x00:
@@ -485,16 +492,11 @@ func execute(file string) {
 			}
 			fmt.Printf("RTS\n")
 
-			fmt.Printf("SP = %d\n", SP)
+			// Update PC with the value stored at the address pointed to by SP+1
+			PC = int(memory[SP] + 1)
 			// Increment the stack pointer by 1 byte
 			SP++
-			// Set PC to the value stored in memory at the address pointed to by SP
-			PC = int(memory[SP])
-			// Increment the stack pointer by 1 byte
 			SP++
-			// Set PC to the value stored in memory at the address pointed to by SP
-			PC = int(memory[SP])
-			fmt.Printf("SP = %d\n", SP)
 			incCount(1)
 		case 0x68:
 			/*
