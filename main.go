@@ -4075,18 +4075,18 @@ func execute(file string) {
 			}
 			fmt.Printf("LDY $%02X%02X,X\n", operand2(), operand1())
 
-			//  Set X to Operand 2 and Y to the X indexed value stored in operand 1
-			X = operand2()
-			Y = memory[int(operand1())+int(X)]
-			// If bit 7 of Y is 1 then set bit 7 of SR to 1
-			// else set bit 7 of SR to 0
+			// Update Y with the X indexed value stored at the address in the operands
+			Y = memory[operand1()+(operand2())+X]
+			// If bit 7 of Y is 1 then set SR negative flag bit 7 to 1 else set it to 0
 			if getYBit(7) == 1 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			// If value loaded to Y is 0 set bit 1 of SR to 0
+			// If Y==0 then set SR zero flag bit 1 to 1 else set it to 0
 			if Y == 0 {
+				setSRBitOn(1)
+			} else {
 				setSRBitOff(1)
 			}
 			incCount(3)
