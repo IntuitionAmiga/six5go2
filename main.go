@@ -3866,29 +3866,29 @@ func execute(file string) {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("ASL $%02X%02X\n", operand2(), operand1())
-			// Update temp var with the values of Operands 1 and 2
-			temp := (int(operand2()) << 8) + int(operand1())
-			// Shift left 1 bit
-			temp <<= 1
-			// Set SR negative flag 7 to 1 if the result bit 7 is 1
-			if temp&0b10000000 == 0b10000000 {
+
+			// Store the address of the operands in a temp variable
+			temp := operand2() | operand1()
+			// If bit 7 is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
+			if getABit(7) == 1 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// Shift the value at the address stored in temp left 1 bit
+			memory[temp] <<= 1
+			// If bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if getABit(7) == 1 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			// Set SR zero flag 1 to 1 if the result is equal to 0, otherwise reset Zero flag to 0 and store bit 7 of temp in SR carry flag
-			if temp == 0 {
+			// If the result is equal to 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if memory[temp] == 0 {
 				setSRBitOn(1)
 			} else {
 				setSRBitOff(1)
-				if temp&0b10000000 == 0b10000000 {
-					setSRBitOn(0)
-				} else {
-					setSRBitOff(0)
-				}
 			}
-			// Update memory[temp] with the new value
-			memory[temp] = byte(temp)
 			incCount(3)
 		case 0x0F:
 			/*
