@@ -17,7 +17,7 @@ var (
 	X      byte        = 0x0000     // X register
 	Y      byte        = 0x0000     // Y register		(76543210) SR Bit 5 is always set
 	SR     byte        = 0b00100010 // Status Register	(NVEBDIZC)
-	SP                 = 0x01ff     // Stack Pointer
+	SP     uint        = 0x01ff     // Stack Pointer
 	PC                 = 0x0000     // Program Counter
 	memory [65536]byte              // Memory
 )
@@ -157,10 +157,7 @@ func execute(file string) {
 			setSRBitOff(5)
 			incCount(1)
 		case 0x03:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("SEE\n")
+			// NOP
 			incCount(1)
 		case 0x08:
 			/*
@@ -216,10 +213,7 @@ func execute(file string) {
 			}
 			incCount(1)
 		case 0x0B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("TSY\n")
+			//NOP
 			incCount(1)
 		case 0x18:
 			/*
@@ -240,16 +234,10 @@ func execute(file string) {
 			setSRBitOff(0)
 			incCount(1)
 		case 0x1A:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
-			}
-			fmt.Printf("INC\n")
+			// NOP
 			incCount(1)
 		case 0x1B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("INZ\n")
+			// NOP
 			incCount(1)
 		case 0x28:
 			/*
@@ -315,10 +303,7 @@ func execute(file string) {
 			}
 			incCount(1)
 		case 0x2B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("TYS\n")
+			// NOP
 			incCount(1)
 		case 0x38:
 			/*
@@ -341,10 +326,7 @@ func execute(file string) {
 			setSRBitOn(0)
 			incCount(1)
 		case 0x3A:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
-			}
-			fmt.Printf("DEC\n")
+			// NOP
 			incCount(1)
 		case 0x3B:
 			// NOP
@@ -378,16 +360,10 @@ func execute(file string) {
 			PC = int(memory[SP] + 1)
 			incCount(1)
 		case 0x42:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
-			}
-			fmt.Printf("NEG\n")
+			// NOP
 			incCount(1)
 		case 0x43:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
-			}
-			fmt.Printf("ASR\n")
+			// NOP
 			incCount(1)
 		case 0x48:
 			/*
@@ -449,10 +425,7 @@ func execute(file string) {
 			}
 			incCount(1)
 		case 0x4B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("TAZ\n")
+			// NOP
 			incCount(1)
 		case 0x58:
 			/*
@@ -480,10 +453,7 @@ func execute(file string) {
 			fmt.Printf("PHY\n")
 			incCount(1)
 		case 0x5B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("TAB\n")
+			// NOP
 			incCount(1)
 		case 0x5C:
 			/*
@@ -612,10 +582,7 @@ func execute(file string) {
 			}
 			incCount(1)
 		case 0x6B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("TZA\n")
+			// NOP
 			incCount(1)
 		case 0x78:
 			/*
@@ -636,16 +603,10 @@ func execute(file string) {
 			setSRBitOn(2)
 			incCount(1)
 		case 0x7A:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("PLY\n")
+			// NOP
 			incCount(1)
 		case 0x7B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(TBA - Absolute,Y)\n", PC, opcode())
-			}
-			fmt.Printf("TBA\n")
+			// NOP
 			incCount(1)
 		case 0x88:
 			/*
@@ -959,16 +920,10 @@ func execute(file string) {
 			setSRBitOff(3)
 			incCount(1)
 		case 0xDA:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("PHX\n")
+			// NOP
 			incCount(1)
 		case 0xDB:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("PHZ\n")
+			// NOP
 			incCount(1)
 		case 0xE8:
 			/*
@@ -1004,7 +959,6 @@ func execute(file string) {
 			} else {
 				setSRBitOff(1)
 			}
-
 			incCount(1)
 		case 0xEA:
 			/*
@@ -1036,16 +990,10 @@ func execute(file string) {
 			setSRBitOn(3)
 			incCount(1)
 		case 0xFA:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("PLX\n")
+			// NOP
 			incCount(1)
 		case 0xFB:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-			}
-			fmt.Printf("PLZ\n")
+			// NOP
 			incCount(1)
 		}
 
@@ -1094,11 +1042,7 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x04:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("TSB $%02x\n", operand1())
-
+			// NOP
 			incCount(2)
 		case 0x05:
 			/*
@@ -1174,10 +1118,7 @@ func execute(file string) {
 			memory[operand1()] = value
 			incCount(2)
 		case 0x07:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("RMB0 $%02x\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x09:
 			/*
@@ -1248,16 +1189,10 @@ func execute(file string) {
 			fmt.Printf("ORA ($%02x),Y\n", operand1())
 			incCount(2)
 		case 0x12:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page),Indirect Z)\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("ORA ($%02x),Z\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x14:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("TRB $%02x\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x15:
 			if printHex {
@@ -1272,10 +1207,7 @@ func execute(file string) {
 			fmt.Printf("ASL $%02X,X\n", operand1())
 			incCount(2)
 		case 0x17:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("RMB1 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x21:
 			/*
@@ -1437,10 +1369,7 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x27:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("RMB2 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x29:
 			/*
@@ -1504,16 +1433,10 @@ func execute(file string) {
 			fmt.Printf("AND ($%02X),Y\n", operand1())
 			incCount(2)
 		case 0x32:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Indirect),Z)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("AND ($%02X),Z\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x34:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("BIT $%02X,X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x35:
 			if printHex {
@@ -1528,10 +1451,7 @@ func execute(file string) {
 			fmt.Printf("ROL $%02X,X\n", operand1())
 			incCount(2)
 		case 0x37:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("RMB3 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x41:
 			/*
@@ -1580,10 +1500,7 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x44:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("ASR $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x45:
 			/*
@@ -1659,10 +1576,7 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x47:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("RMB4 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x49:
 			/*
@@ -1724,16 +1638,10 @@ func execute(file string) {
 			fmt.Printf("EOR ($%02X),Y\n", operand1())
 			incCount(2)
 		case 0x52:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Indirect),Z)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("EOR ($%02X),Z\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x54:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("ASR $%02X,X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x55:
 			if printHex {
@@ -1748,10 +1656,7 @@ func execute(file string) {
 			fmt.Printf("LSR $%02X,X\n", operand1())
 			incCount(2)
 		case 0x57:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("RMB5 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x61:
 			/*
@@ -1812,16 +1717,10 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x62:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("RTN #$%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x64:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("STZ $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x65:
 			/*
@@ -1930,10 +1829,7 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x67:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("RMB6 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x69:
 			/*
@@ -2012,16 +1908,10 @@ func execute(file string) {
 			fmt.Printf("ADC ($%02X),Y\n", operand1())
 			incCount(2)
 		case 0x72:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Indirect,Z)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("ADC ($%02X),Z\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x74:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("STZ $%02X,X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x75:
 			if printHex {
@@ -2036,16 +1926,10 @@ func execute(file string) {
 			fmt.Printf("ROR $%02X,X\n", operand1())
 			incCount(2)
 		case 0x77:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("RMB7 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x80:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("BRA $%04X\n", fileposition+2+int(operand1()))
+			// NOP
 			incCount(2)
 		case 0x81:
 			/*
@@ -2068,10 +1952,7 @@ func execute(file string) {
 			memory[temp] = A
 			incCount(2)
 		case 0x82:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Stack Relative Indirect,Y)\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("STA ($%02X,S),Y\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x84:
 			/*
@@ -2127,16 +2008,10 @@ func execute(file string) {
 			memory[operand1()] = X
 			incCount(2)
 		case 0x87:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("SMB0 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x89:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("BIT #$%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x90:
 			/*
@@ -2170,10 +2045,7 @@ func execute(file string) {
 			fmt.Printf("STA ($%02X),Y\n", operand1())
 			incCount(2)
 		case 0x92:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Indirect,Z)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("STA ($%02X)\n", operand1())
+			// NOP
 			incCount(2)
 		case 0x94:
 			/*
@@ -2228,10 +2100,7 @@ func execute(file string) {
 			memory[(operand1())+Y] = X
 			incCount(2)
 		case 0x97:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("SMB1 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xA0:
 			/*
@@ -2330,10 +2199,7 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xA3:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("LDZ #$%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xA4:
 			/*
@@ -2430,10 +2296,7 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xA7:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("SMB2 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xA9:
 			/*
@@ -2494,10 +2357,7 @@ func execute(file string) {
 			fmt.Printf("LDA ($%02X),Y\n", operand1())
 			incCount(2)
 		case 0xB2:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Indirect)\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("LDA ($%02X)\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xB4:
 			/*
@@ -2530,7 +2390,6 @@ func execute(file string) {
 				setSRBitOff(1)
 			}
 			incCount(2)
-
 		case 0xB5:
 			/*
 				LDA - Load Accumulator with Memory
@@ -2597,10 +2456,7 @@ func execute(file string) {
 			fmt.Printf("LDX $%02X,Y\n", operand1())
 			incCount(2)
 		case 0xB7:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("SMB3 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xC0:
 			/*
@@ -2691,16 +2547,10 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xC2:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("CPZ #$%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xC3:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("DEW $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xC4:
 			/*
@@ -2821,10 +2671,7 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xC7:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("SMB4 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xC9:
 			/*
@@ -2900,16 +2747,10 @@ func execute(file string) {
 			fmt.Printf("CMP ($%02X),Y\n", operand1())
 			incCount(2)
 		case 0xD2:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Indirect) Z)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("CMP ($%02X)\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xD4:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("CPZ $%02x\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xD5:
 			if printHex {
@@ -2924,10 +2765,7 @@ func execute(file string) {
 			fmt.Printf("DEC $%02X,X\n", operand1())
 			incCount(2)
 		case 0xD7:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("SMB5 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xE0:
 			/*
@@ -3036,16 +2874,10 @@ func execute(file string) {
 			A = TempResult
 			incCount(2)
 		case 0xE2:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("LDA #$%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xE3:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("INW $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xE4:
 			/*
@@ -3184,10 +3016,7 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xE7:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("SMB6 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xE9:
 			/*
@@ -3269,10 +3098,7 @@ func execute(file string) {
 			fmt.Printf("SBC ($%02X),Y\n", operand1())
 			incCount(2)
 		case 0xF2:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Indirect) Z)\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("SBC ($%02X)\n", operand1())
+			// NOP
 			incCount(2)
 		case 0xF5:
 			if printHex {
@@ -3287,20 +3113,14 @@ func execute(file string) {
 			fmt.Printf("INC $%02X,X\n", operand1())
 			incCount(2)
 		case 0xF7:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-			}
-			fmt.Printf("SMB7 $%02X\n", operand1())
+			// NOP
 			incCount(2)
 		}
 
 		// 3 byte instructions with 2 operands
 		switch opcode() {
 		case 0x0C:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("TSB $%02x%02x\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x0D:
 			/*
@@ -3396,10 +3216,7 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0x13:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BPL $%02X%02X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x19:
 			/*
@@ -3436,10 +3253,7 @@ func execute(file string) {
 
 			incCount(3)
 		case 0x1C:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("TRB $%02X%02X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x1D:
 			/*
@@ -3526,10 +3340,7 @@ func execute(file string) {
 			memory[operand2()|operand1()+X] = temp
 			incCount(3)
 		case 0x1F:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBR1 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0x20:
 			/*
@@ -3559,16 +3370,10 @@ func execute(file string) {
 			PC = int(operand1()) + int(operand2())<<8
 			incCount(3)
 		case 0x22:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t((Indirect) Z)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("JSR ($%02X%02X)\n", operand2(), operand1())
+			// NOP
 			incCount(0)
 		case 0x23:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute X Indirect)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("JSR ($%02X%02X,X)\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x2C:
 			/*
@@ -3697,22 +3502,13 @@ func execute(file string) {
 			memory[int(operand1())+int(operand2())] = temp
 			incCount(3)
 		case 0x2F:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBR2 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0x33:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BMI $%02X%02X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x34:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page,X)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BIT $%02X,X\n", operand1())
+			// NOP
 			incCount(3)
 		case 0x35:
 			if printHex {
@@ -3765,10 +3561,7 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0x3C:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("AND $%02X%02X,X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x3D:
 			/*
@@ -3860,10 +3653,7 @@ func execute(file string) {
 			memory[int(operand1())+int(operand2())+int(X)] = temp
 			incCount(3)
 		case 0x3F:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBR3 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0x4C:
 			/*
@@ -3952,16 +3742,10 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0x4F:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBR4 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0x53:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BVC $%02X\n", operand1())
+			// NOP
 			incCount(3)
 		case 0x59:
 			/*
@@ -4069,16 +3853,10 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0x5F:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBR5 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0x63:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BSR $%02X\n", operand1())
+			// NOP
 			incCount(3)
 		case 0x6C:
 			/*
@@ -4195,16 +3973,10 @@ func execute(file string) {
 			memory[int(operand1())+int(operand2())] = temp
 			incCount(3)
 		case 0x6F:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBR6 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0x73:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BVS $%02X\n", operand1())
+			// NOP
 			incCount(3)
 		case 0x79:
 			/*
@@ -4279,10 +4051,7 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0x7C:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X Indirect)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("JMP ($%02X%02X,X)\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x7D:
 			/*
@@ -4410,22 +4179,13 @@ func execute(file string) {
 			memory[int(operand1())+int(operand2())+int(X)] = byte(temp)
 			incCount(3)
 		case 0x7F:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBR7 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0x83:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BRA $%02X\n", operand1())
+			// NOP
 			incCount(3)
 		case 0x8B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("STY $%02X%02X,X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x8C:
 			/*
@@ -4479,16 +4239,10 @@ func execute(file string) {
 			memory[int(operand1())+int(operand2())] = X
 			incCount(3)
 		case 0x8F:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(BBS0- Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBS0 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0x93:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BCC $%02X\n", operand1())
+			// NOP
 			incCount(3)
 		case 0x99:
 			/*
@@ -4509,16 +4263,10 @@ func execute(file string) {
 			memory[int(operand1())+int(operand2())+int(Y)] = A
 			incCount(3)
 		case 0x9B:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("STX $%02X%02X,Y\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x9C:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("STZ $%02X%02X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x9D:
 			/*
@@ -4538,22 +4286,13 @@ func execute(file string) {
 			memory[int(operand1())+int(operand2())+int(X)] = A
 			incCount(3)
 		case 0x9E:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("STZ $%02X%02X,X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0x9F:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBS1 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0xAB:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("LDZ $%02X%02X,X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0xAC:
 			/*
@@ -4650,16 +4389,10 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0xAF:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBS2 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0xB3:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BCS $%02X\n", operand1())
+			// NOP
 			incCount(3)
 		case 0xB9:
 			/*
@@ -4695,8 +4428,6 @@ func execute(file string) {
 			incCount(3)
 		case 0xBB:
 			// NOP
-			// 65CE02 only LDZ instruction
-
 			incCount(1)
 		case 0xBC:
 			/*
@@ -4791,16 +4522,10 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0xBF:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBS3 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0xCB:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("ASW $%02X%02X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0xCC:
 			/*
@@ -4941,16 +4666,10 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0xCF:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBS4 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0xD3:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BNE $%02X\n", operand1())
+			// NOP
 			incCount(3)
 		case 0xD9:
 			/*
@@ -4993,10 +4712,7 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0xDC:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("CPZ $%02X%02X,X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0xDD:
 			/*
@@ -5075,16 +4791,10 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0xDF:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBS5 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0xEB:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("ROW $%02X%02X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0xEC:
 			/*
@@ -5220,22 +4930,13 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0xEF:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBS6 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0xF3:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Relative (word))\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BEQ $%02X\n", operand1())
+			// NOP
 			incCount(3)
 		case 0xF4:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Immediate (word))\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("PHW #$%02X%02X\n", operand2(), operand1())
+			// NOP
 			incCount(3)
 		case 0xF9:
 			/*
@@ -5294,10 +4995,7 @@ func execute(file string) {
 			A = A - temp - (1 - getSRBit(0))
 			incCount(3)
 		case 0xFC:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("PHW #$%02X%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		case 0xFD:
 			/*
@@ -5390,10 +5088,7 @@ func execute(file string) {
 			memory[operand2()+operand1()+X]++
 			incCount(3)
 		case 0xFF:
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBS7 $%02X, $%02X\n", operand1(), operand2())
+			// NOP
 			incCount(3)
 		}
 	}
