@@ -2797,10 +2797,36 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xB1:
+			/*
+				LDA - Load Accumulator with Memory
+				Operation: M → A
+
+				When instruction LDA is executed by the microprocessor, data is transferred from memory to the
+				accumulator and stored in the accumulator.
+
+				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
+				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
+				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("LDA ($%02X),Y\n", operand1())
+
+			// Load the accumulator with the zero page indirect y indexed value in the operand
+			A = memory[operand1()+Y]
+			// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(2)
 		case 0xB2:
 			// NOP
