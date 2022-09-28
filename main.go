@@ -3713,10 +3713,22 @@ func execute(file string) {
 			fmt.Printf("BCC $%02X\n", operand1())
 			incCount(3)
 		case 0x99:
+			/*
+				STA - Store Accumulator in Memory
+				Operation: A → M
+
+				This instruction transfers the contents of the accumulator to memory.
+
+				This instruction affects none of the flags in the processor status register
+				and does not affect the accumulator.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("STA $%02X%02X,Y\n", operand2(), operand1())
+
+			// Update the memory at the Y indexed address stored in operand 1 and operand 2 with the value of the accumulator
+			memory[int(operand1())+int(operand2())+int(Y)] = A
 			incCount(3)
 		case 0x9B:
 			if printHex {
