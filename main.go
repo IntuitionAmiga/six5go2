@@ -1530,10 +1530,53 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x36:
+			/*
+				ROL - Rotate Left
+				Operation: C ← /M7...M0/ ← C
+
+				The rotate left instruction shifts either the accumulator or addressed memory left 1 bit, with the
+				input carry being stored in bit 0 and with the input bit 7 being stored in the carry flags.
+
+				The ROL instruction either shifts the accumulator left 1 bit and stores the carry in accumulator bit 0
+				or does not affect the internal registers at all.
+				The ROL instruction sets carry equal to the input bit 7,
+				sets N equal to the input bit 6 ,
+				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and
+				does not affect the overflow flag at all.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("ROL $%02X,X\n", operand1())
+
+			// Get the value from the X Indexed Zero Paged memory from the address in the operand
+			value := memory[(operand1()+X)&0xFF]
+			// Shift left 1 bit
+			value = value << 1
+			// If carry flag is set, set accumulator bit 0 to 1
+			if getSRBit(0) == 1 {
+				setABitOn(0)
+			}
+			// If accumulator bit 7 is 1, set carry SR flag
+			if getABit(7) == 1 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If accumulator bit 6 is 1, set negative SR flag
+			if getABit(6) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If accumulator is 0, set zero SR flag
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// Store the value in the X Indexed Zero Paged memory from the address in the operand
+			memory[(operand1()+X)&0xFF] = value
 			incCount(2)
 		case 0x37:
 			// NOP
