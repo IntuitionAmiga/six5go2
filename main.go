@@ -2152,10 +2152,63 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x76:
+			/*
+				ROR - Rotate Right
+				Operation: C → /M7...M0/ → C
+
+				The rotate right instruction shifts either the accumulator or addressed memory right 1 bit with bit 0
+				shifted into the carry and carry shifted into bit 7.
+
+				The ROR instruction either shifts the accumulator right 1 bit and stores the carry in accumulator
+				bit 7 or does not affect the internal registers at all.
+				The ROR instruction sets carry equal to input bit 0,
+				sets N equal to the input carry and
+				sets the Z flag if the result of the rotate is 0; otherwise it resets Z and
+				does not affect the overflow flag at all.
+
+				(Available on Microprocessors after June, 1976)
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("ROR $%02X,X\n", operand1())
+
+			// Store the X Indexed Zero Page value at the operand 1 address in a temp variable
+			temp := memory[operand1()+X]
+			// If SR carry flag bit 0 is set then set temp bit 7 to 1 else set temp bit 7 to 0
+			if getSRBit(0) == 1 {
+				setABitOn(7)
+			} else {
+				setABitOff(7)
+			}
+			// If temp bit 0 is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
+			if temp&0b00000001 == 1 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// Shift temp right 1 bit
+			temp >>= 1
+			// If SR carry flag bit 0 is set then set temp bit 7 to 1 else set temp bit 7 to 0
+			if getSRBit(0) == 1 {
+				setABitOn(7)
+			} else {
+				setABitOff(7)
+			}
+			// If temp is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if temp == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If temp bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// Store temp in memory at the X Indexed operand 1 address
+			memory[operand1()+X] = temp
 			incCount(2)
 		case 0x77:
 			// NOP
