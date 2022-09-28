@@ -3090,25 +3090,25 @@ func execute() {
 			}
 			fmt.Printf("CMP $%02X\n", operand1())
 
-			// Subtract operand from A
-			TempResult := A - operand1()
-			// If temp result == 0 then set SR Zero flag bit 1
-			if TempResult == 0 {
-				setSRBitOn(1)
+			// Subtract the operand from the accumulator
+			TempResult := A - memory[operand1()]
+			// If the operand is greater than the accumulator, set the carry flag to 0 else set to 1
+			if memory[operand1()] > A {
+				setSRBitOff(0)
 			} else {
-				setSRBitOff(1)
+				setSRBitOn(0)
 			}
-			// If bit 7 of temp result is set, set SR Negative flag bit 7
+			// If bit 7 of TempResult is set, set N flag to 1
 			if TempResult&0b10000000 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			// If operand is <=  A, set SR Carry flag bit 0 else set it to 0
-			if operand1() > A {
-				setSRBitOn(0)
+			// If operand value is equal to accumulator, set Z flag to 1 else set Zero flag to 0
+			if memory[operand1()] == A {
+				setSRBitOn(1)
 			} else {
-				setSRBitOff(0)
+				setSRBitOff(1)
 			}
 			incCount(2)
 		case 0xC6:
