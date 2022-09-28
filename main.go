@@ -3499,10 +3499,38 @@ func execute(file string) {
 			A = result
 			incCount(2)
 		case 0xF6:
+			/*
+				INC - Increment Memory By One
+				Operation: M + 1 → M
+
+				This instruction adds 1 to the contents of the addressed memory location.
+
+				The increment memory instruction does not affect any internal registers and does not affect the
+				carry or overflow flags.
+				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
+				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("INC $%02X,X\n", operand1())
+
+			// Store the X Indexed Zero Page address in a temp variable
+			temp := operand1() + X
+			// Increment the value at the address stored in temp
+			memory[temp]++
+			// If bit 7 is on as the result of the increment, N is set, otherwise it is reset
+			if memory[temp] > 127 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If the increment causes the result to become 0, the Z flag is set on, otherwise it is reset
+			if memory[temp] == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
 		case 0xF7:
 			// NOP
