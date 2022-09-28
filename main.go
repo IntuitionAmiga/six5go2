@@ -70,7 +70,7 @@ func incCount(amount int) {
 }
 func printMachineState() {
 	fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
-	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X\n\n", A, X, Y, SR, SP, PC)
+	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
 
 	fmt.Printf("Zero Page RAM dump:\n\n")
 	for i := 0; i < 16; i++ {
@@ -3194,7 +3194,7 @@ func execute(file string) {
 			// Get the value of the memory at the X indexed absolute address in the operands
 			temp := memory[operand2()|operand1()+X]
 			// Shift the value left 1 bit
-			temp = temp << 1
+			temp <<= 1
 			// Set negative flag if bit 7 is 1
 			if temp&0b10000000 == 0b10000000 {
 				setSRBitOn(7)
@@ -3213,7 +3213,7 @@ func execute(file string) {
 			} else {
 				setSRBitOff(1)
 			}
-			//If bit 7 of temp is 1 then set carry flag bit 0 to 1 else set carry flag bit 0 to 0
+			// If bit 7 of temp is 1 then set carry flag bit 0 to 1 else set carry flag bit 0 to 0
 			if temp&0b10000000 == 0b10000000 {
 				setSRBitOn(0)
 			} else {
@@ -4083,13 +4083,13 @@ func execute(file string) {
 			} else {
 				setSRBitOff(0)
 			}
-			//If the carry flag is 1 then shift temp right 1 bit and set bit 7 to 1 else shift temp right 1 bit and set bit 7 to 0
+			// If the carry flag is 1 then shift temp right 1 bit and set bit 7 to 1 else shift temp right 1 bit and set bit 7 to 0
 			if getSRBit(0) == 1 {
-				temp = temp >> 1
-				temp = temp | 0b10000000
+				temp >>= 1
+				temp |= 0b10000000
 			} else {
-				temp = temp >> 1
-				temp = temp & 0b01111111
+				temp >>= 1
+				temp &= 0b01111111
 			}
 			// If the carry flag is 1 then set the negative flag else reset it
 			if getSRBit(0) == 1 {
