@@ -3963,10 +3963,53 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0x36:
+			/*
+				ROL - Rotate Left
+				Operation: C ← /M7...M0/ ← C
+
+				The rotate left instruction shifts either the accumulator or addressed memory left 1 bit,
+				with the input carry being stored in bit 0 and with the input bit 7 being stored in the carry flags.
+
+				The ROL instruction either shifts the accumulator left 1 bit and stores the carry in accumulator bit 0
+				or does not affect the internal registers at all.
+				The ROL instruction sets carry equal to the input bit 7,
+				sets N equal to the input bit 6 ,
+				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and
+				does not affect the overflow flag at all.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page,X)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("ROL $%02X,X\n", operand1())
+
+			// Store value of memory at address stored in operand 1 and operand 2 in temp
+			temp := memory[int(operand1())+int(X)]
+			// Store the value of the carry flag in temp2
+			temp2 := getSRBit(0)
+			// Shift temp left 1 bit
+			temp <<= 1
+			// Set the carry flag to the value of bit 7 of temp
+			if temp&0b10000000 == 0b10000000 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// Set the negative flag to the value of bit 6 of temp
+			if temp&0b01000000 == 0b01000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If temp==0 then set the SR zero flag to 1 else set SR zero flag to 0
+			if temp == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// Set the value of bit 0 of temp to the value of temp2
+			temp |= temp2
+			// Store the value of temp in memory at the address stored in operand 1 and operand 2
+			memory[int(operand1())+int(X)] = temp
 			incCount(3)
 		case 0x39:
 			/*
