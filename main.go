@@ -213,7 +213,7 @@ func execute(file string) {
 			}
 			incCount(1)
 		case 0x0B:
-			//NOP
+			// NOP
 			incCount(1)
 		case 0x18:
 			/*
@@ -1552,7 +1552,7 @@ func execute(file string) {
 			// Get the value from the X Indexed Zero Paged memory from the address in the operand
 			value := memory[(operand1()+X)&0xFF]
 			// Shift left 1 bit
-			value = value << 1
+			value <<= 1
 			// If carry flag is set, set accumulator bit 0 to 1
 			if getSRBit(0) == 1 {
 				setABitOn(0)
@@ -1804,10 +1804,45 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0x56:
+			/*
+				LSR - Logical Shift Right
+				Operation: 0 → /M7...M0/ → C
+
+				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
+				with the higher bit of the result always being set to 0, and the low bit which is shifted out of the
+				field being stored in the carry flag.
+
+				The shift right instruction either affects the accumulator by shifting it right 1 or is a read/modify/write
+				instruction which changes a specified memory location but does not affect any internal registers.
+
+				The shift right does not affect the overflow flag.
+				The N flag is always reset.
+				The Z flag is set if the result of the shift is 0 and reset otherwise.
+				The carry is set equal to bit 0 of the input.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("LSR $%02X,X\n", operand1())
+
+			// Store the value of the memory at the operand address in a temporary variable
+			temp := memory[operand1()+X]
+			// Shift the X Indexed Xero Page value in memory at the operand address right 1 bit
+			memory[operand1()+X] >>= 1
+			// If the result is 0, set the Zero flag to 1
+			if memory[operand1()+X] == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// Set the Negative flag to 0
+			setSRBitOff(7)
+			// Set the Carry flag to the value of bit 0 of the temporary variable
+			if temp&0b00000001 == 1 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
 			incCount(2)
 		case 0x57:
 			// NOP
