@@ -1497,10 +1497,50 @@ func execute(file string) {
 			fmt.Printf("RMB3 $%02X\n", operand1())
 			incCount(2)
 		case 0x41:
+			/*
+				EOR - "Exclusive OR" Memory with Accumulator
+				Operation: A ⊻ M → A
+
+				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
+				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
+				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page, Indirect))\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("EOR ($%02X,X)\n", operand1())
+
+			// Store the value at the X Indexed Zero Pages Indirect address in a variable
+			indirectAddress := int(operand1()) + int(X)
+			// If the indirect address is greater than 255, wrap around
+			if indirectAddress > 255 {
+				indirectAddress -= 256
+			}
+			// Get the value at the indirect address
+			indirectValue := memory[uint16(indirectAddress)]
+			// Get the value at the indirect address + 1
+			indirectValue2 := memory[uint16(indirectAddress+1)]
+			// Combine the two values to get the address
+			indirectAddress = int(indirectValue) + (int(indirectValue2) << 8)
+			// Get the value at the address
+			value := memory[uint16(indirectAddress)]
+			// XOR the accumulator with the value
+			A ^= value
+			// If A==0, set zero flag
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If A bit 7 is 1, set negative flag
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(2)
 		case 0x44:
 			if printHex {
