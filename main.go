@@ -3447,10 +3447,56 @@ func execute(file string) {
 			// NOP
 			incCount(2)
 		case 0xF5:
+			/*
+				SBC - Subtract Memory from Accumulator with Borrow
+				Operation: A - M - ~C → A
+
+				This instruction subtracts the value of memory and borrow from the value of the accumulator,
+				using two's complement arithmetic, and stores the result in the accumulator.
+				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates
+				that a borrow has not occurred.
+
+				This instruction affects the accumulator.
+				The carry flag is set if the result is greater than or equal to 0.
+				The carry flag is reset when the result is less than 0, indicating a borrow.
+				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
+				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
+				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("SBC $%02X,X\n", operand1())
+
+			// Store the X Indexed Zero Page address in a temp variable
+			temp := operand1() + X
+			result := A - memory[temp] - (1 - SR&1)
+			// If result is greater than or equal to 1 then set carry flag bit 0 to 1 else set carry flag bit 0 to 0
+			if result > 0 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If result is > 127 or < -127 then set overflow flag bit 6 to 1 else set overflow flag bit 6 to 0
+			if int(result) > 127 || int(result) < -127 {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
+			// If result is < 0 then set Negative flag bit 7 to 1 else set Negative flag bit 7 to 0
+			if result < 0 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If result is 0 then set Z flag bit 1 to 1 else set Z flag bit 1 to 0
+			if result == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// Update the accumulator
+			A = result
 			incCount(2)
 		case 0xF6:
 			if printHex {
