@@ -3139,10 +3139,36 @@ func execute(file string) {
 			fmt.Printf("TRB $%02X%02X\n", operand2(), operand1())
 			incCount(3)
 		case 0x1D:
+			/*
+				ORA - "OR" Memory with Accumulator
+				Operation: A ∨ M → A
+
+				The ORA instruction transfers the memory and the accumulator to the adder which performs a binary
+				"OR" on a bit-by-bit basis and stores the result in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
+				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("ORA $%02X%02X,X\n", operand2(), operand1())
+
+			// Update A with the result of an OR operation between A and the X indexed memory at the address in the operands
+			A |= memory[operand2()|operand1()+X]
+			// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(3)
 		case 0x1E:
 			/*
