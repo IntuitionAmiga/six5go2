@@ -4736,10 +4736,40 @@ func execute(file string) {
 			}
 			incCount(3)
 		case 0xDE:
+			/*
+				DEC - Decrement Memory By One
+				Operation: M - 1 → M
+
+				This instruction subtracts 1, in two's complement, from the contents of the addressed memory location.
+
+				The decrement instruction does not affect any internal register in the microprocessor.
+				It does not affect the carry or overflow flags.
+				If bit 7 is on as a result of the decrement, then the N flag is set, otherwise it is reset.
+				If the result of the decrement is 0, the Z flag is set, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("DEC $%02X%02X,X\n", operand2(), operand1())
+
+			// Store the value of the X indexed memory address in a temp variable
+			temp := memory[int(operand1())+int(X)]
+			// Decrement temp by 1
+			temp--
+			// Store the decremented value back into memory
+			memory[int(operand1())+int(X)] = temp
+			// If bit 7 of temp is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
+			if temp&0b10000000 == 0b10000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If temp is 0 set SR Zero flag bit 1 to 1 else set SR Zero flag bit 1 to 0
+			if temp == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(3)
 		case 0xDF:
 			if printHex {
