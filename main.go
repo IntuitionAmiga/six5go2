@@ -1754,10 +1754,62 @@ func execute(file string) {
 			fmt.Printf("RMB5 $%02X\n", operand1())
 			incCount(2)
 		case 0x61:
+			/*
+				ADC - Add Memory to Accumulator with Carry
+				Operation: A + M + C → A, C
+
+				This instruction adds the value of memory and carry from the previous operation to the value of the
+				accumulator and stores the result in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99
+				otherwise carry is reset.
+				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
+				otherwise overflow is reset.
+				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
+				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("ADC ($%02X,X)\n", operand1())
+
+			// Get the X Indexed Zero Page Indirect address from the operand
+			indirectAddress := int(operand1()) + int(X)
+			// Get the address from the indirect address
+			address := int(memory[indirectAddress]) + int(memory[indirectAddress+1])<<8
+			// Get the value from the address
+			value := memory[address]
+			// Add the value to the accumulator
+			A += value
+			// If the carry flag is set, add 1 to the accumulator
+			if getSRBit(0) == 1 {
+				A += 1
+			}
+			// If the accumulator is 0, set the Zero flag to 1
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If bit 7 of accumulator is set, set SR Negative flag to 1
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If the accumulator is greater than 255, set the carry flag to 1
+			if A > 255 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If the accumulator is greater than 127 or less than -128, set the overflow flag to 1
+			if int(A) > 127 || int(A) < (-128) {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
 			incCount(2)
 		case 0x62:
 			if printHex {
