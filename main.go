@@ -116,7 +116,6 @@ func setABitOff(x byte) {
 	A &= ^(1 << x)
 }
 func execute() {
-	//PC += fileposition
 	if printHex {
 		fmt.Printf(" * = $%04X\n\n", PC)
 	}
@@ -4058,11 +4057,16 @@ func execute() {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("JSR $%02X%02X\n", operand2(), operand1())
-			// Store PC at address stored in SP
-			memory[SP] = byte(PC)
-			// Set PC to address stored in operand 1 and operand 2
-			PC = int(operand1()) + int(operand2())<<8
+
+			// Push the program counter onto the stack
+			memory[0x0100|SP] = byte(PC >> 8)
+			SP--
+			memory[0x0100|SP] = byte(PC & 0xFF)
+			SP--
+			// Set the program counter to the address in the operands
+			PC = int(operand2()) | int(operand1())
 			incCount(3)
+
 		case 0x22:
 			// NOP
 			incCount(0)
