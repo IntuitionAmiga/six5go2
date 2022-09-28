@@ -3931,10 +3931,36 @@ func execute(file string) {
 			// NOP
 			incCount(3)
 		case 0x35:
+			/*
+				AND - "AND" Memory with Accumulator
+				Operation: A ∧ M → A
+
+				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
+				AND operation and stores the result back in the accumulator.
+
+				This instruction affects the accumulator;
+				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
+				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page,X)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("AND $%02X,X\n", operand1())
+
+			// AND the accumulator with the value stored at the address stored in operand 1 and operand 2
+			A &= memory[int(operand1())+int(X)]
+			// If A==0 set the SR zero flag to 1
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// If bit 7 of A is 1 then set the SR negative flag to 1 else set negative flag to 0
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
 			incCount(3)
 		case 0x36:
 			if printHex {
