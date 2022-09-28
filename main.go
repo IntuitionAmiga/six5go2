@@ -3892,21 +3892,7 @@ func execute() {
 			}
 			incCount(3)
 		case 0x0F:
-			/*
-				BBR0 - Branch on Bit 0 Reset
-				Operation: Branch on M0 = 0
-
-				This instruction tests the specified zero page location and branches if bit 0 is clear.
-			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page, Relative)\n", PC, opcode(), operand1(), operand2())
-			}
-			fmt.Printf("BBR0 $%02X, $%02X\n", operand1(), operand2())
-
-			if memory[operand1()]&1 == 0 {
-				fileposition = (fileposition + 3 + int(operand2())) & 0xFF
-				PC = fileposition
-			}
+			// NOP
 			incCount(3)
 		case 0x13:
 			// NOP
