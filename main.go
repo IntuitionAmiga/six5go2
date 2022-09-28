@@ -46,8 +46,10 @@ func main() {
 
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
-	//  Copy file into memory
-	copy(memory[:], file)
+	//Copy file into memory at PC
+	fmt.Printf("Copying file into memory at $%04X\n\n", PC)
+	copy(memory[PC:], file)
+
 	// Start emulation
 	printMachineState()
 	execute(string(file))
@@ -80,6 +82,7 @@ func printMachineState() {
 		fmt.Printf("\n")
 	}
 	time.Sleep(10 * time.Millisecond)
+
 }
 func getSRBit(x byte) byte {
 	return (SR >> x) & 1
@@ -110,7 +113,7 @@ func execute(file string) {
 	if printHex {
 		fmt.Printf(" * = $%04X\n\n", PC)
 	}
-	for fileposition = 0; fileposition < len(file); {
+	for fileposition = PC; fileposition < PC+len(file); {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		case 0x00:
@@ -134,9 +137,7 @@ func execute(file string) {
 			fmt.Printf("BRK\n")
 
 			//  Push PC onto stack
-			memory[SP] = byte(PC >> 8)
-			SP--
-			memory[SP] = byte(PC & 0xff)
+			memory[SP] = byte(PC)
 			SP--
 			PC += 2
 			incCount(1)
