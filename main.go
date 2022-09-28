@@ -2103,10 +2103,53 @@ func execute(file string) {
 			// NOP
 			incCount(2)
 		case 0x75:
+			/*
+				ADC - Add Memory to Accumulator with Carry
+				Operation: A + M + C → A, C
+
+				This instruction adds the value of memory and carry from the previous operation to the value of the
+				accumulator and stores the result in the accumulator.
+
+				This instruction affects the accumulator; sets the carry flag when the sum of a binary add exceeds
+				255 or when the sum of a decimal add exceeds 99, otherwise carry is reset.
+				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
+				otherwise overflow is reset.
+				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
+				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("ADC $%02X,X\n", operand1())
+
+			// Store the X Indexed Zero Page value at the operand 1 address in a temp variable
+			temp := memory[operand1()+X]
+			// Add temp to accumulator
+			A += temp
+			// If temp>255 then set SR carry flag bit 0 to 1
+			if A > 255 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If temp>127 or temp<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
+			if A > 127 || A < 128 {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
+			// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			if getABit(7) == 1 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
 		case 0x76:
 			if printHex {
