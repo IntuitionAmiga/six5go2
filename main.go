@@ -2971,10 +2971,69 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xE1:
+			/*
+				SBC - Subtract Memory from Accumulator with Borrow
+				Operation: A - M - ~C → A
+
+				This instruction subtracts the value of memory and borrow from the value of the accumulator,
+				using two's complement arithmetic, and stores the result in the accumulator.
+				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates that
+				a borrow has not occurred.
+
+				This instruction affects the accumulator.
+				The carry flag is set if the result is greater than or equal to 0.
+				The carry flag is reset when the result is less than 0, indicating a borrow.
+				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
+				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
+				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("SBC ($%02X,X)\n", operand1())
+
+			// Get the value of the X Indexed Zero Page Address from operand
+			indirectAddress := operand1() + X
+			// Get the value of the memory location pointed to by the indirect address
+			indirectValue := memory[indirectAddress]
+			// Get the value of the memory location pointed to by the indirect value
+			indirectValue2 := memory[indirectValue]
+			// Combine the two values to get the final address
+			finalAddress := uint16(indirectValue2) + uint16(indirectValue)<<8
+			//  Get the value of the memory location pointed to by the final address
+			finalValue := memory[finalAddress]
+			// Subtract operand from A
+			TempResult := A - finalValue
+			// If operand is greater than A, set carry flag to 0
+			if finalValue > A {
+				setSRBitOff(0)
+			}
+			// If tempresult <0 Set the carry flag
+			if TempResult < 0 {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
+			// If bit 7 of TempResult is set, set N flag to 1
+			if TempResult&0b10000000 == 0b10000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If operand is equal to A, set Z flag to 1 else set Zero flag to 0
+			if finalValue == A {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
+			// Set the overflow flag
+			if int(TempResult) > 127 || int(TempResult) < (-128) {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
+			}
+			// Set A to the result of the subtraction
+			A = TempResult
 			incCount(2)
 		case 0xE2:
 			if printHex {
