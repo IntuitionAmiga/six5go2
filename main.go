@@ -5837,22 +5837,26 @@ func execute() {
 			}
 			fmt.Printf("INC $%02X%02X,X\n", operand2(), operand1())
 
+			// Get the X Indexed absolute memory address
+			address := operand2() + operand1() + X
 			// Get the value in memory at the address stored in operand 1 and operand 2
-			temp := memory[operand2()+operand1()+X]
-			// If bit 7 of temp is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-			if temp&0b10000000 == 0b10000000 {
+			temp := memory[address]
+			// Increment the value in memory
+			temp++
+			// Store the incremented value in memory
+			memory[address] = temp
+			// If bit 7 of the value in memory is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
+			if memory[address]&0b10000000 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			// If temp is 0 then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
-			if temp == 0 {
+			// If the value in memory is 0 then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
+			if memory[address] == 0 {
 				setSRBitOn(1)
 			} else {
 				setSRBitOff(1)
 			}
-			// Increment the value in memory by 1
-			memory[operand2()+operand1()+X]++
 			incCount(3)
 		case 0xFF:
 			// NOP
