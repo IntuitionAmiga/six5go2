@@ -1068,17 +1068,17 @@ func execute(file string) {
 			}
 			fmt.Printf("ORA ($%02x,X)\n", operand1())
 
-			//Store the X Indexed Zero Page address in a variable
+			// Store the X Indexed Zero Page address in a variable
 			indirectAddress := uint16(operand1()) + uint16(X)
-			//Get the value at the indirect address
-			indirectValue := memory[uint16(indirectAddress)]
-			//Get the value at the indirect address + 1
+			// Get the value at the indirect address
+			indirectValue := memory[indirectAddress]
+			// Get the value at the indirect address + 1
 			indirectValue2 := memory[uint16(indirectAddress)+1]
-			//Combine the two values to get the final address
+			// Combine the two values to get the final address
 			finalAddress := uint16(indirectValue) + uint16(indirectValue2)<<8
-			//Get the value at the final address
+			// Get the value at the final address
 			finalValue := memory[finalAddress]
-			//Perform the ORA operation and store in the accumulator
+			// Perform the ORA operation and store in the accumulator
 			A |= finalValue
 			// If A==0 set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
@@ -1297,7 +1297,7 @@ func execute(file string) {
 			// Store the X-Indexed Zero Page Indirect address in a variable
 			indirectAddress := operand1() + X
 			// Get the address of the operand from the Zero Page
-			operandAddress := uint16(memory[uint16(indirectAddress)])
+			operandAddress := uint16(memory[indirectAddress])
 			// Get the operand from the Zero Page
 			operand := memory[operandAddress]
 			// AND the accumulator with the operand
@@ -1784,7 +1784,7 @@ func execute(file string) {
 			A += value
 			// If the carry flag is set, add 1 to the accumulator
 			if getSRBit(0) == 1 {
-				A += 1
+				A++
 			}
 			// If the accumulator is 0, set the Zero flag to 1
 			if A == 0 {
@@ -2646,10 +2646,49 @@ func execute(file string) {
 			}
 			incCount(2)
 		case 0xC1:
+			/*
+				CMP - Compare Memory and Accumulator
+				Operation: A - M
+
+				This instruction subtracts the contents of memory from the contents of the accumulator.
+
+				The use of the CMP affects the following flags:
+				Z flag is set on an equal comparison, reset otherwise;
+				the N flag is set or reset by the result bit 7,
+				the carry flag is set when the value in memory is less than or equal to the accumulator,
+				reset when it is greater than the accumulator.
+				The accumulator is not affected.
+
+			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("CMP ($%02X,X)\n", operand1())
+
+			// Get the address of the operand
+			operandAddress := int(operand1()) + int(X)
+			// Get the value of the operand
+			operandValue := memory[operandAddress]
+			// Subtract the operand from the accumulator
+			TempResult := A - operandValue
+			// If the operand is greater than the accumulator, set the carry flag to 0 else set to 1
+			if operandValue > A {
+				setSRBitOff(0)
+			} else {
+				setSRBitOn(0)
+			}
+			// If bit 7 of TempResult is set, set N flag to 1
+			if TempResult&0b10000000 == 0b10000000 {
+				setSRBitOn(7)
+			} else {
+				setSRBitOff(7)
+			}
+			// If operand value is equal to accumulator, set Z flag to 1 else set Zero flag to 0
+			if operandValue == A {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
 		case 0xC2:
 			if printHex {
