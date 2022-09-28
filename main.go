@@ -1093,6 +1093,13 @@ func execute(file string) {
 				setSRBitOff(7)
 			}
 			incCount(2)
+		case 0x04:
+			if printHex {
+				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			}
+			fmt.Printf("TSB $%02x\n", operand1())
+
+			incCount(2)
 		case 0x05:
 			/*
 				ORA - "OR" Memory with Accumulator
