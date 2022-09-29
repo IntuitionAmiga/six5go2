@@ -75,7 +75,7 @@ func incCount(amount int) {
 }
 func printMachineState() {
 	if machineMonitor {
-		//fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
+		// fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
 		//Clear the screen
 		fmt.Printf("\033[2J")
 		//Move cursor to top left
@@ -1113,17 +1113,32 @@ func execute() {
 
 				The instruction affects no flags or other registers other than the P counter and only affects the
 				P counter when the N bit is reset.
+
+				Relative addressing is used only with branch instructions and establishes a destination for
+				the conditional branch.
+
+				The second byte of-the instruction becomes the operand which is an “Offset" added to the
+				contents of the lower eight bits of the program counter when the counter is set at the next
+				instruction.
+				The range of the offset is —128 to +127 bytes from the next instruction.
 			*/
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 			}
 			fmt.Printf("BPL $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
+			// Get offset from relative address in operand
+			offset := int(operand1())
 			// If SR negative flag bit 7 is 0 then branch
 			if getSRBit(7) == 0 {
 				// Branch
-				fileposition += 2 + int(operand1())
-				PC = fileposition
+				// Add offset to lower 8bits of PC
+				PC += offset
+				// If the offset is negative, decrement the PC by 1
+				if offset < 0 {
+					PC--
+				}
+				fileposition += 2
 				incCount(0)
 			} else {
 				// Don't branch
@@ -3442,32 +3457,38 @@ func execute() {
 			}
 			fmt.Printf("SBC #$%02X\n", operand1())
 
-			// Update the accumulator
-			A = A - operand1() - (1 - SR&1)
-			// Set carry flag bit 0 if result is greater than or equal to 1
-			if A > 0 {
+			// Store result of A-memory stored at operand1() in temp variable
+			temp := A - operand1()
+			// If temp is greater than or equal to 0, set carry flag to 1
+			if temp > 0 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
 			}
-			// Set overflow flag bit 6 if accumulator is greater than 127 or less than -127
-			if int(A) > 127 || int(A) < -127 {
+			// If temp is less than 0, set carry flag to 0
+			if temp < 0 {
+				setSRBitOff(0)
+			}
+			// If temp is greater than 127 or less than -127, set overflow flag to 1
+			if int(temp) > 127 || int(temp) < (-127) {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
 			}
-			// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-			if getABit(7) == 1 {
+			// If bit 7 of temp is set, set N flag to 1 else reset it
+			if temp&0b10000000 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			// Set Z flag bit 1 if accumulator is 0 else set Z flag bit 1 to 0
-			if A == 0 {
+			// If temp is equal to 0, set Z flag to 1 else reset it
+			if temp == 0 {
 				setSRBitOn(1)
 			} else {
 				setSRBitOff(1)
 			}
+			// Set A to temp
+			A = temp
 			incCount(2)
 		case 0xF0:
 			/*
@@ -3484,14 +3505,20 @@ func execute() {
 			if printHex {
 				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 			}
-			fmt.Printf("BEQ $%02X\n", (fileposition+2+int(operand1()))&0xFF) // If SR zero flag 1 is set or the previous result is equal to 0, then branch to the address specified by the operand.
-			if getSRBit(1) == 1 || A == 0 {
-				fileposition = (fileposition + 2 + int(operand1())) & 0xFF
-				PC += fileposition
-				fmt.Printf("XXXXX")
-			} else {
-				incCount(2)
+			fmt.Printf("BEQ $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+
+			// Get relative address from operand
+			relativeAddress := operand1()
+			// If Z flag is set, branch to relative address
+			if getSRBit(1) == 1 {
+				// If relative address is negative, subtract from fileposition
+				if relativeAddress&0b10000000 == 0b10000000 {
+					fileposition -= int(relativeAddress ^ 0xFF)
+				} else {
+					fileposition += int(relativeAddress)
+				}
 			}
+			incCount(2)
 		case 0xF1:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
