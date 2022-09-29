@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 )
 
 var (
@@ -82,7 +81,7 @@ func printMachineState() {
 		//Move cursor to top left
 		fmt.Printf("\033[0;0H")
 	}
-	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
+	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%02X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
 
 	if machineMonitor {
 		fmt.Printf("Zero Page RAM dump:\n\n")
@@ -92,7 +91,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		time.Sleep(10 * time.Millisecond)
+		//time.Sleep(10 * time.Millisecond)
 		//Wait for keypress
 		//var input string
 		//fmt.Scanln(&input)
@@ -2470,7 +2469,7 @@ func execute() {
 			}
 			fmt.Printf("BCC $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
-			//Get offset from relative address in operand
+			// Get offset from relative address in operand
 			offset := operand1()
 			// If carry flag is not set then branch to offset
 			if getSRBit(0) == 0 {
@@ -4050,13 +4049,13 @@ func execute() {
 			SP--
 			memory[0x0100|SP] = byte(PC & 0xFF)
 			SP--
-			// Set the program counter to the address in the operands
-			PC = int(operand2()) | int(operand1())
+			// Set the program counter to the absolute address from the operands
+			PC = int(operand2())<<8 | int(operand1())
 			incCount(3)
 
 		case 0x22:
 			// NOP
-			incCount(0)
+			incCount(1)
 		case 0x23:
 			// NOP
 			incCount(3)
