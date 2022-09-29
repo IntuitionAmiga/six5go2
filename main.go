@@ -169,9 +169,6 @@ func execute() {
 			// Set bit 5 of SR to 0
 			setSRBitOff(5)
 			incCount(1)
-		case 0x03:
-			// NOP
-			incCount(1)
 		case 0x08:
 			/*
 				PHP - Push Processor Status On Stack
@@ -225,9 +222,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(1)
-		case 0x0B:
-			// NOP
-			incCount(1)
 		case 0x18:
 			/*
 				CLC - Clear Carry Flag
@@ -245,12 +239,6 @@ func execute() {
 
 			// Set SR carry flag bit 0 to 0
 			setSRBitOff(0)
-			incCount(1)
-		case 0x1A:
-			// NOP
-			incCount(1)
-		case 0x1B:
-			// NOP
 			incCount(1)
 		case 0x28:
 			/*
@@ -315,9 +303,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(1)
-		case 0x2B:
-			// NOP
-			incCount(1)
 		case 0x38:
 			/*
 				SEC - Set Carry Flag
@@ -337,13 +322,6 @@ func execute() {
 
 			// Set SR carry flag bit 0 to 1
 			setSRBitOn(0)
-			incCount(1)
-		case 0x3A:
-			// NOP
-			incCount(1)
-		case 0x3B:
-			// NOP
-			// 65CE02 only - DEZ - Decrement Z Register
 			incCount(1)
 		case 0x40:
 			/*
@@ -371,12 +349,6 @@ func execute() {
 			SR = memory[SP]
 			// Update PC with the value stored at the address pointed to by SP+1
 			PC = int(memory[SP] + 1)
-			incCount(1)
-		case 0x42:
-			// NOP
-			incCount(1)
-		case 0x43:
-			// NOP
 			incCount(1)
 		case 0x48:
 			/*
@@ -437,9 +409,6 @@ func execute() {
 				setSRBitOff(0)
 			}
 			incCount(1)
-		case 0x4B:
-			// NOP
-			incCount(1)
 		case 0x58:
 			/*
 				CLI - Clear Interrupt Disable
@@ -464,9 +433,6 @@ func execute() {
 				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
 			}
 			fmt.Printf("PHY\n")
-			incCount(1)
-		case 0x5B:
-			// NOP
 			incCount(1)
 		case 0x5C:
 			/*
@@ -589,9 +555,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(1)
-		case 0x6B:
-			// NOP
-			incCount(1)
 		case 0x78:
 			/*
 				SEI - Set Interrupt Disable
@@ -609,12 +572,6 @@ func execute() {
 
 			// Set SR interrupt disable bit 2 to 1
 			setSRBitOn(2)
-			incCount(1)
-		case 0x7A:
-			// NOP
-			incCount(1)
-		case 0x7B:
-			// NOP
 			incCount(1)
 		case 0x88:
 			/*
@@ -927,12 +884,6 @@ func execute() {
 
 			setSRBitOff(3)
 			incCount(1)
-		case 0xDA:
-			// NOP
-			incCount(1)
-		case 0xDB:
-			// NOP
-			incCount(1)
 		case 0xE8:
 			/*
 				INX - Increment Index Register X By One
@@ -997,12 +948,6 @@ func execute() {
 			// Set SR decimal mode flag to 1
 			setSRBitOn(3)
 			incCount(1)
-		case 0xFA:
-			// NOP
-			incCount(1)
-		case 0xFB:
-			// NOP
-			incCount(1)
 		}
 
 		// 2 byte instructions with 1 operand
@@ -1048,9 +993,6 @@ func execute() {
 			} else {
 				setSRBitOff(7)
 			}
-			incCount(2)
-		case 0x04:
-			// NOP
 			incCount(2)
 		case 0x05:
 			/*
@@ -1124,9 +1066,6 @@ func execute() {
 			}
 			// Store the value in memory at operand1
 			memory[operand1()] = value
-			incCount(2)
-		case 0x07:
-			// NOP
 			incCount(2)
 		case 0x09:
 			/*
@@ -1228,12 +1167,6 @@ func execute() {
 				setSRBitOff(7)
 			}
 			incCount(2)
-		case 0x12:
-			// NOP
-			incCount(2)
-		case 0x14:
-			// NOP
-			incCount(2)
 		case 0x15:
 			/*
 				ORA - "OR" Memory with Accumulator
@@ -1304,9 +1237,6 @@ func execute() {
 			} else {
 				setSRBitOff(7)
 			}
-			incCount(2)
-		case 0x17:
-			// NOP
 			incCount(2)
 		case 0x21:
 			/*
@@ -1467,9 +1397,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(2)
-		case 0x27:
-			// NOP
-			incCount(2)
 		case 0x29:
 			/*
 				AND - "AND" Memory with Accumulator
@@ -1575,12 +1502,6 @@ func execute() {
 				setSRBitOff(7)
 			}
 			incCount(2)
-		case 0x32:
-			// NOP
-			incCount(2)
-		case 0x34:
-			// NOP
-			incCount(2)
 		case 0x35:
 			/*
 				AND - "AND" Memory with Accumulator
@@ -1662,9 +1583,6 @@ func execute() {
 			// Store the value in the X Indexed Zero Paged memory from the address in the operand
 			memory[(operand1()+X)&0xFF] = value
 			incCount(2)
-		case 0x37:
-			// NOP
-			incCount(2)
 		case 0x41:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
@@ -1710,9 +1628,6 @@ func execute() {
 			} else {
 				setSRBitOff(7)
 			}
-			incCount(2)
-		case 0x44:
-			// NOP
 			incCount(2)
 		case 0x45:
 			/*
@@ -1786,9 +1701,6 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			incCount(2)
-		case 0x47:
-			// NOP
 			incCount(2)
 		case 0x49:
 			/*
@@ -1877,12 +1789,6 @@ func execute() {
 				setSRBitOff(7)
 			}
 			incCount(2)
-		case 0x52:
-			// NOP
-			incCount(2)
-		case 0x54:
-			// NOP
-			incCount(2)
 		case 0x55:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
@@ -1956,9 +1862,6 @@ func execute() {
 				setSRBitOff(0)
 			}
 			incCount(2)
-		case 0x57:
-			// NOP
-			incCount(2)
 		case 0x61:
 			/*
 				ADC - Add Memory to Accumulator with Carry
@@ -2016,12 +1919,6 @@ func execute() {
 			} else {
 				setSRBitOff(6)
 			}
-			incCount(2)
-		case 0x62:
-			// NOP
-			incCount(2)
-		case 0x64:
-			// NOP
 			incCount(2)
 		case 0x65:
 			/*
@@ -2128,9 +2025,6 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			incCount(2)
-		case 0x67:
-			// NOP
 			incCount(2)
 		case 0x69:
 			/*
@@ -2252,12 +2146,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(2)
-		case 0x72:
-			// NOP
-			incCount(2)
-		case 0x74:
-			// NOP
-			incCount(2)
 		case 0x75:
 			/*
 				ADC - Add Memory to Accumulator with Carry
@@ -2366,12 +2254,6 @@ func execute() {
 			// Store temp in memory at the X Indexed operand 1 address
 			memory[operand1()+X] = temp
 			incCount(2)
-		case 0x77:
-			// NOP
-			incCount(2)
-		case 0x80:
-			// NOP
-			incCount(2)
 		case 0x81:
 			/*
 				STA - Store Accumulator in Memory
@@ -2391,9 +2273,6 @@ func execute() {
 			temp := operand1() + X
 			// Store accumulator at address stored in temporary variable
 			memory[temp] = A
-			incCount(2)
-		case 0x82:
-			// NOP
 			incCount(2)
 		case 0x84:
 			/*
@@ -2448,12 +2327,6 @@ func execute() {
 			// Store contents of X register in memory address at operand1()
 			memory[operand1()] = X
 			incCount(2)
-		case 0x87:
-			// NOP
-			incCount(2)
-		case 0x89:
-			// NOP
-			incCount(2)
 		case 0x90:
 			/*
 				BCC - Branch on Carry Clear
@@ -2495,9 +2368,6 @@ func execute() {
 			temp := operand1() + Y
 			// Store accumulator at address stored in temporary variable
 			memory[temp] = A
-			incCount(2)
-		case 0x92:
-			// NOP
 			incCount(2)
 		case 0x94:
 			/*
@@ -2550,9 +2420,6 @@ func execute() {
 
 			// Store contents of X register in Y indexed memory address
 			memory[(operand1())+Y] = X
-			incCount(2)
-		case 0x97:
-			// NOP
 			incCount(2)
 		case 0xA0:
 			/*
@@ -2650,9 +2517,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(2)
-		case 0xA3:
-			// NOP
-			incCount(2)
 		case 0xA4:
 			/*
 				LDY - Load Index Register Y From Memory
@@ -2747,9 +2611,6 @@ func execute() {
 				setSRBitOff(7)
 			}
 			incCount(2)
-		case 0xA7:
-			// NOP
-			incCount(2)
 		case 0xA9:
 			/*
 				LDA - Load Accumulator with Memory
@@ -2833,9 +2694,6 @@ func execute() {
 			} else {
 				setSRBitOff(7)
 			}
-			incCount(2)
-		case 0xB2:
-			// NOP
 			incCount(2)
 		case 0xB4:
 			/*
@@ -2933,9 +2791,6 @@ func execute() {
 			}
 			fmt.Printf("LDX $%02X,Y\n", operand1())
 			incCount(2)
-		case 0xB7:
-			// NOP
-			incCount(2)
 		case 0xC0:
 			/*
 				CPY - Compare Index Register Y To Memory
@@ -3023,12 +2878,6 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			incCount(2)
-		case 0xC2:
-			// NOP
-			incCount(2)
-		case 0xC3:
-			// NOP
 			incCount(2)
 		case 0xC4:
 			/*
@@ -3148,9 +2997,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(2)
-		case 0xC7:
-			// NOP
-			incCount(2)
 		case 0xC9:
 			/*
 				CMP - Compare Memory and Accumulator
@@ -3258,12 +3104,6 @@ func execute() {
 				setSRBitOff(7)
 			}
 			incCount(2)
-		case 0xD2:
-			// NOP
-			incCount(2)
-		case 0xD4:
-			// NOP
-			incCount(2)
 		case 0xD5:
 			/*
 				CMP - Compare Memory and Accumulator
@@ -3336,9 +3176,6 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			incCount(2)
-		case 0xD7:
-			// NOP
 			incCount(2)
 		case 0xE0:
 			/*
@@ -3445,12 +3282,6 @@ func execute() {
 			}
 			// Set A to the result of the subtraction
 			A = TempResult
-			incCount(2)
-		case 0xE2:
-			// NOP
-			incCount(2)
-		case 0xE3:
-			// NOP
 			incCount(2)
 		case 0xE4:
 			/*
@@ -3588,9 +3419,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(2)
-		case 0xE7:
-			// NOP
-			incCount(2)
 		case 0xE9:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
@@ -3716,9 +3544,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(2)
-		case 0xF2:
-			// NOP
-			incCount(2)
 		case 0xF5:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
@@ -3805,16 +3630,10 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(2)
-		case 0xF7:
-			// NOP
-			incCount(2)
 		}
 
 		// 3 byte instructions with 2 operands
 		switch opcode() {
-		case 0x0C:
-			// NOP
-			incCount(3)
 		case 0x0D:
 			/*
 				ORA - "OR" Memory with Accumulator
@@ -3891,12 +3710,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(3)
-		case 0x0F:
-			// NOP
-			incCount(3)
-		case 0x13:
-			// NOP
-			incCount(3)
 		case 0x19:
 			/*
 				ORA - "OR" Memory with Accumulator
@@ -3930,9 +3743,6 @@ func execute() {
 				setSRBitOff(7)
 			}
 
-			incCount(3)
-		case 0x1C:
-			// NOP
 			incCount(3)
 		case 0x1D:
 			/*
@@ -4018,9 +3828,6 @@ func execute() {
 			// Store value of temp at the X indexed absolute address in the operands
 			memory[operand2()|operand1()+X] = temp
 			incCount(3)
-		case 0x1F:
-			// NOP
-			incCount(3)
 		case 0x20:
 			/*
 				JSR - Jump To Subroutine
@@ -4053,12 +3860,6 @@ func execute() {
 			PC = int(operand2())<<8 | int(operand1())
 			incCount(3)
 
-		case 0x22:
-			// NOP
-			incCount(1)
-		case 0x23:
-			// NOP
-			incCount(3)
 		case 0x2C:
 			/*
 				BIT - Test Bits in Memory with Accumulator
@@ -4185,15 +3986,7 @@ func execute() {
 			// Store the value of temp in memory at the address stored in operand 1 and operand 2
 			memory[int(operand1())+int(operand2())] = temp
 			incCount(3)
-		case 0x2F:
-			// NOP
-			incCount(3)
-		case 0x33:
-			// NOP
-			incCount(3)
-		case 0x34:
-			// NOP
-			incCount(3)
+
 		case 0x35:
 			/*
 				AND - "AND" Memory with Accumulator
@@ -4313,9 +4106,6 @@ func execute() {
 				setSRBitOff(7)
 			}
 			incCount(3)
-		case 0x3C:
-			// NOP
-			incCount(3)
 		case 0x3D:
 			/*
 				AND - "AND" Memory with Accumulator
@@ -4405,9 +4195,6 @@ func execute() {
 			// Store the value of temp in memory at the X indexed address stored in operand 1 and operand 2
 			memory[int(operand1())+int(operand2())+int(X)] = temp
 			incCount(3)
-		case 0x3F:
-			// NOP
-			incCount(3)
 		case 0x4C:
 			/*
 				JMP - JMP Indirect
@@ -4493,12 +4280,6 @@ func execute() {
 			} else {
 				setSRBitOff(0)
 			}
-			incCount(3)
-		case 0x4F:
-			// NOP
-			incCount(3)
-		case 0x53:
-			// NOP
 			incCount(3)
 		case 0x59:
 			/*
@@ -4604,12 +4385,6 @@ func execute() {
 			} else {
 				setSRBitOff(0)
 			}
-			incCount(3)
-		case 0x5F:
-			// NOP
-			incCount(3)
-		case 0x63:
-			// NOP
 			incCount(3)
 		case 0x6C:
 			/*
@@ -4725,12 +4500,6 @@ func execute() {
 			// Store the value of temp in memory at the address stored in operand 1 and operand 2
 			memory[int(operand1())+int(operand2())] = temp
 			incCount(3)
-		case 0x6F:
-			// NOP
-			incCount(3)
-		case 0x73:
-			// NOP
-			incCount(3)
 		case 0x79:
 			/*
 				ADC - Add Memory to Accumulator with Carry
@@ -4802,9 +4571,6 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			incCount(3)
-		case 0x7C:
-			// NOP
 			incCount(3)
 		case 0x7D:
 			/*
@@ -4931,15 +4697,6 @@ func execute() {
 			// Store temp in the X indexed memory address from the operands
 			memory[int(operand1())+int(operand2())+int(X)] = byte(temp)
 			incCount(3)
-		case 0x7F:
-			// NOP
-			incCount(3)
-		case 0x83:
-			// NOP
-			incCount(3)
-		case 0x8B:
-			// NOP
-			incCount(3)
 		case 0x8C:
 			/*
 				STY - Store Index Register Y In Memory
@@ -4991,12 +4748,6 @@ func execute() {
 			// Update the memory at the address stored in operand 1 and operand 2 with the value of the X register
 			memory[int(operand1())+int(operand2())] = X
 			incCount(3)
-		case 0x8F:
-			// NOP
-			incCount(3)
-		case 0x93:
-			// NOP
-			incCount(3)
 		case 0x99:
 			/*
 				STA - Store Accumulator in Memory
@@ -5015,12 +4766,6 @@ func execute() {
 			// Update the memory at the Y indexed address stored in operand 1 and operand 2 with the value of the accumulator
 			memory[int(operand1())+int(operand2())+int(Y)] = A
 			incCount(3)
-		case 0x9B:
-			// NOP
-			incCount(3)
-		case 0x9C:
-			// NOP
-			incCount(3)
 		case 0x9D:
 			/*
 				STA - Store Accumulator in Memory
@@ -5037,15 +4782,6 @@ func execute() {
 
 			// Update the memory at the X indexed absolute address stored in operand 1 and operand 2 with the value of the accumulator
 			memory[int(operand1())+int(operand2())+int(X)] = A
-			incCount(3)
-		case 0x9E:
-			// NOP
-			incCount(3)
-		case 0x9F:
-			// NOP
-			incCount(3)
-		case 0xAB:
-			// NOP
 			incCount(3)
 		case 0xAC:
 			/*
@@ -5141,12 +4877,6 @@ func execute() {
 				setSRBitOff(7)
 			}
 			incCount(3)
-		case 0xAF:
-			// NOP
-			incCount(3)
-		case 0xB3:
-			// NOP
-			incCount(3)
 		case 0xB9:
 			/*
 				LDA - Load Accumulator with Memory
@@ -5179,9 +4909,6 @@ func execute() {
 				setSRBitOff(7)
 			}
 			incCount(3)
-		case 0xBB:
-			// NOP
-			incCount(1)
 		case 0xBC:
 			/*
 				LDY - Load Index Register Y From Memory
@@ -5273,12 +5000,6 @@ func execute() {
 			if X == 0 {
 				setSRBitOff(1)
 			}
-			incCount(3)
-		case 0xBF:
-			// NOP
-			incCount(3)
-		case 0xCB:
-			// NOP
 			incCount(3)
 		case 0xCC:
 			/*
@@ -5418,12 +5139,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(3)
-		case 0xCF:
-			// NOP
-			incCount(3)
-		case 0xD3:
-			// NOP
-			incCount(3)
 		case 0xD9:
 			/*
 				CMP - Compare Memory and Accumulator
@@ -5463,9 +5178,6 @@ func execute() {
 			} else {
 				setSRBitOff(0)
 			}
-			incCount(3)
-		case 0xDC:
-			// NOP
 			incCount(3)
 		case 0xDD:
 			/*
@@ -5542,12 +5254,6 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			incCount(3)
-		case 0xDF:
-			// NOP
-			incCount(3)
-		case 0xEB:
-			// NOP
 			incCount(3)
 		case 0xEC:
 			/*
@@ -5682,15 +5388,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(3)
-		case 0xEF:
-			// NOP
-			incCount(3)
-		case 0xF3:
-			// NOP
-			incCount(3)
-		case 0xF4:
-			// NOP
-			incCount(3)
 		case 0xF9:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
@@ -5746,9 +5443,6 @@ func execute() {
 			}
 			// Subtract the value in memory from the accumulator with borrow
 			A = A - temp - (1 - getSRBit(0))
-			incCount(3)
-		case 0xFC:
-			// NOP
 			incCount(3)
 		case 0xFD:
 			/*
@@ -5843,9 +5537,6 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			incCount(3)
-		case 0xFF:
-			// NOP
 			incCount(3)
 		}
 	}
