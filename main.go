@@ -19,7 +19,7 @@ var (
 	Y      byte        = 0x0000     // Y register		(76543210) SR Bit 5 is always set
 	SR     byte        = 0b00100010 // Status Register	(NVEBDIZC)
 	SP     uint        = 0x01ff     // Stack Pointer
-	PC                 = 0x0000     // Program Counter
+	PC     int                      // Program Counter
 	memory [65536]byte              // Memory
 )
 
@@ -50,7 +50,7 @@ func main() {
 
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
-	//Copy file into memory at PC
+	// Copy file into memory at PC
 	fmt.Printf("Copying file into memory at $%04X\n\n", PC)
 	copy(memory[PC:], file)
 
@@ -2697,19 +2697,19 @@ func execute() {
 			}
 			fmt.Printf("LDA $%02X\n", operand1())
 
-			// Load the accumulator with the value in the operand
-			A = operand1()
-			// If A is zero, set the zero flag else reset the zero flag
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			// If bit 7 of A is 1, set the negative flag else reset the negative flag
+			// Load the value of the operand1() into the Accumulator.
+			A = memory[operand1()]
+			// If bit 7 of A is set, set the SR negative flag else reset it to 0
 			if getABit(7) == 1 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
+			}
+			// If A is zero, set the SR zero flag else reset it to 0
+			if A == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
 			}
 			incCount(2)
 		case 0xA6:
@@ -3166,32 +3166,28 @@ func execute() {
 			}
 			fmt.Printf("CMP #$%02X\n", operand1())
 
-			// Compare memory and accumulator
-			if operand1() == A {
-				setSRBitOn(1)
-				setSRBitOn(7)
-			}
-			// Set carry flag to true if A is greater than or equal to operand
-			if A >= operand1() {
+			// Subtract the operand from the accumulator
+			TempResult := A - operand1()
+			// If the operand is greater than the accumulator, set the carry flag to 0 else set to 1
+			if operand1() > A {
+				setSRBitOff(0)
+			} else {
 				setSRBitOn(0)
 			}
-			// Set carry flag to false if A is less than operand
-			if A < operand1() {
-				setSRBitOff(0)
-			}
-			// Set Z flag to false if A is not equal to operand
-			if A != operand1() {
-				setSRBitOff(1)
-			}
-			// Set N flag to true if A minus operand results in most significant bit being set
-			if (A-operand1())&0b10000000 == 0b10000000 {
+			// If bit 7 of TempResult is set, set N flag to 1
+			if TempResult&0b10000000 == 0b10000000 {
 				setSRBitOn(7)
-			}
-			// Set N flag to false if A minus operand results in most significant bit being unset
-			if (A-operand1())&0b10000000 == 0b00000000 {
+			} else {
 				setSRBitOff(7)
 			}
+			// If operand value is equal to accumulator, set Z flag to 1 else set Zero flag to 0
+			if operand1() == A {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
+			}
 			incCount(2)
+
 		case 0xD0:
 			/*
 				BNE - Branch on Result Not Zero
