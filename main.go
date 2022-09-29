@@ -17,7 +17,7 @@ var (
 	A      byte        = 0x0000     // Accumulator
 	X      byte        = 0x0000     // X register
 	Y      byte        = 0x0000     // Y register		(76543210) SR Bit 5 is always set
-	SR     byte        = 0b00100010 // Status Register	(NVEBDIZC)
+	SR     byte        = 0b00110010 // Status Register	(NVEBDIZC)
 	SP     uint        = 0x01ff     // Stack Pointer
 	PC     int                      // Program Counter
 	memory [65536]byte              // Memory
@@ -76,7 +76,11 @@ func incCount(amount int) {
 }
 func printMachineState() {
 	if machineMonitor {
-		fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
+		//fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
+		//Clear the screen
+		fmt.Printf("\033[2J")
+		//Move cursor to top left
+		fmt.Printf("\033[0;0H")
 	}
 	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%08X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
 
@@ -89,6 +93,9 @@ func printMachineState() {
 			fmt.Printf("\n")
 		}
 		time.Sleep(10 * time.Millisecond)
+		//Wait for keypress
+		//var input string
+		//fmt.Scanln(&input)
 	}
 }
 func getSRBit(x byte) byte {
@@ -2463,16 +2470,14 @@ func execute() {
 			}
 			fmt.Printf("BCC $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
-			// If SR negative flag bit 0 is 0 then branch
+			//Get offset from relative address in operand
+			offset := operand1()
+			// If carry flag is not set then branch to offset
 			if getSRBit(0) == 0 {
-				// Branch
-				fileposition += 2 + int(operand1())
-				PC = fileposition
-				incCount(0)
-			} else {
-				// Don't branch
-				incCount(2)
+				// Add offset to program counter
+				PC += int(offset)
 			}
+			incCount(2)
 		case 0x91:
 			/*
 				STA - Store Accumulator in Memory
