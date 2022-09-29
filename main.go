@@ -125,7 +125,7 @@ func execute() {
 	if printHex {
 		fmt.Printf(" * = $%04X\n\n", PC)
 	}
-	for fileposition = PC; fileposition < len(memory); {
+	for fileposition = PC; fileposition < len(file); {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		case 0x00:
@@ -2049,27 +2049,27 @@ func execute() {
 			}
 			fmt.Printf("ADC #$%02X\n", operand1())
 
-			// Add operand 1 to accumulator
-			A += operand1()
-			// If accumulator>255 then set SR carry flag bit 0 to 1
-			if A > 255 {
+			// If A+memory > 255, set SR carry flag
+			if int(A)+int(operand1()) > 255 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
 			}
-			// If accumulator>127 or accumulator<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
-			if A > 127 || A < 128 {
+			// If bit 7 of A+memory is different from bit 7 of A, set SR overflow flag bit 6
+			if (A&0x80)^(operand1()&0x80) != 0 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
 			}
-			// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+			// Update A with A+memory
+			A += operand1()
+			// If bit 7 of A is set then set SR negative flag bit 7 else clear it
 			if getABit(7) == 1 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			// If A=0 then set SR zero flag bit 1 else clear it
 			if A == 0 {
 				setSRBitOn(1)
 			} else {
@@ -2597,18 +2597,18 @@ func execute() {
 			fmt.Printf("LDX $%02X\n", operand1())
 
 			// Load the value of the operand1() into the X register.
-			X = operand1()
-			// If X=0, set the SR zero flag else reset it to 0
-			if X == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
+			X = memory[operand1()]
 			// If bit 7 of X is set, set the SR negative flag else reset it to 0
 			if getXBit(7) == 1 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
+			}
+			// If X is zero, set the SR zero flag else reset it to 0
+			if X == 0 {
+				setSRBitOn(1)
+			} else {
+				setSRBitOff(1)
 			}
 			incCount(2)
 		case 0xA9:
