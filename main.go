@@ -45,7 +45,7 @@ func main() {
 	file, _ = os.ReadFile(os.Args[1])
 
 	fmt.Printf("USAGE   - six5go2 <target_filename> <entry_point> (Hex memory address) <hex> (Print hex values above each instruction) \n")
-	fmt.Printf("EXAMPLE - six5go2 c64kernal.bin 0e00 hex\n\n")
+	fmt.Printf("EXAMPLE - six5go2 c64kernal.bin 0200 hex\n\n")
 	fmt.Printf("Length of file %s is %v ($%04X) bytes\n\n", os.Args[1], len(file), len(file))
 
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
@@ -2205,6 +2205,7 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(2)
+
 		case 0x35:
 			/*
 				AND - "AND" Memory with Accumulator
@@ -2218,27 +2219,25 @@ func execute() {
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
 			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
+				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page,X)\t\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("AND $%02X,X\n", operand1())
 
-			// Get X indexed zero page address from operand
-			address := (operand1() + X) & 0xFF
-			// AND the accumulator with the value stored at the address
-			A &= memory[address]
-			// If A==0, set zero flag
+			// AND the accumulator with the value stored at the address stored in operand 1 and operand 2
+			A &= memory[int(operand1())+int(X)]
+			// If A==0 set the SR zero flag to 1
 			if A == 0 {
 				setSRBitOn(1)
 			} else {
 				setSRBitOff(1)
 			}
-			// If accumulator bit 7 is 1, set negative SR flag
+			// If bit 7 of A is 1 then set the SR negative flag to 1 else set negative flag to 0
 			if getABit(7) == 1 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			incCount(2)
+			incCount(3)
 		case 0x16:
 			/*
 				ASL - Arithmetic Shift Left
