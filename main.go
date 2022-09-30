@@ -3498,14 +3498,23 @@ func execute() {
 			}
 			fmt.Printf("BMI $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
-			// If negative flag is set then branch
+			// Get offset from relative address in operand
+			offset := int(operand1())
+			// If SR negative flag bit 7 is 1 then branch
 			if getSRBit(7) == 1 {
-				// Branch to address in operand
-				PC = (fileposition + 2 + int(operand1())) & 0xFF
-				// Add 1 to count
-				incCount(1)
+				// Branch
+				// Add offset to lower 8bits of PC
+				PC += offset
+				// If the offset is negative, decrement the PC by 1
+				if offset < 0 {
+					PC--
+				}
+				fileposition += 2
+				incCount(0)
+			} else {
+				// Don't branch
+				incCount(2)
 			}
-			incCount(2)
 		case 0x50:
 			/*
 				BVC - Branch on Overflow Clear
