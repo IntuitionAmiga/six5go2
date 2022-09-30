@@ -3530,11 +3530,23 @@ func execute() {
 			}
 			fmt.Printf("BVC $%02X\n", fileposition+2+int(operand1()))
 
+			// Get offset from relative address in operand
+			offset := int(operand1())
 			// If the overflow flag is not set, branch to the address specified by the operand
 			if getSRBit(6) == 0 {
-				PC = fileposition + 2 + int(operand1())
+				// Branch
+				// Add offset to lower 8bits of PC
+				PC += offset
+				// If the offset is negative, decrement the PC by 1
+				if offset < 0 {
+					PC--
+				}
+				fileposition += 2
+				incCount(0)
+			} else {
+				// Don't branch
+				incCount(2)
 			}
-			incCount(2)
 		case 0x55:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
