@@ -12,6 +12,7 @@ var (
 	file           []byte
 	fileposition   int // Byte position counter
 	machineMonitor     = false
+	disassemble        = false
 
 	// CPURegisters and RAM
 	A      byte        = 0x0000     // Accumulator
@@ -27,25 +28,25 @@ func main() {
 	fmt.Printf("Six5go2 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley\n\n")
 
 	if len(os.Args) <= 2 {
-		fmt.Printf("USAGE - %s <target_filename> <entry_point_address> <hex>\n", os.Args[0])
+		instructions()
 		os.Exit(0)
 	}
 	if len(os.Args) > 2 {
 		parseUint, _ := strconv.ParseUint(os.Args[2], 16, 16)
 		PC = int(parseUint)
 	}
-	if len(os.Args) > 3 && os.Args[3] == "hex" {
-		printHex = true
+	if len(os.Args) > 3 && os.Args[3] == "dis" {
+		disassemble = true
 	}
 	if len(os.Args) > 3 && os.Args[3] == "mon" {
 		machineMonitor = true
 	}
+	if len(os.Args) > 4 && os.Args[4] == "hex" {
+		printHex = true
+	}
 
 	//  Read file
 	file, _ = os.ReadFile(os.Args[1])
-
-	fmt.Printf("USAGE   - six5go2 <target_filename> <entry_point> (Hex memory address) <hex> (Print hex values above each instruction) \n")
-	fmt.Printf("EXAMPLE - six5go2 c64kernal.bin 0200 hex\n\n")
 	fmt.Printf("Length of file %s is %v ($%04X) bytes\n\n", os.Args[1], len(file), len(file))
 
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
@@ -55,8 +56,14 @@ func main() {
 	copy(memory[PC:], file)
 
 	// Start emulation
+	fmt.Printf("Starting emulation at $%04X\n\n", PC)
 	printMachineState()
 	execute()
+}
+func instructions() {
+	fmt.Printf("USAGE   - %s <target_filename> <hex_entry_point> <dis>/<mon> (Disassembler/Machine Monitor) <hex> (Hex opcodes as comments with disassembly)\n\n", os.Args[0])
+	fmt.Printf("EXAMPLE - %s c64kernal.bin 0200 dis hex\n\n", os.Args[0])
+	fmt.Printf("EXAMPLE - %s apple1basic.bin 0100 mon\n\n", os.Args[0])
 }
 func opcode() byte {
 	return memory[fileposition]
@@ -79,10 +86,10 @@ func printMachineState() {
 		// fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
 		//Clear the screen
 		fmt.Printf("\033[2J")
-		//Move cursor to top left
+		// Move cursor to top left
 		fmt.Printf("\033[0;0H")
 	}
-	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
+	fmt.Printf(";; A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
 
 	if machineMonitor {
 		fmt.Printf("Zero Page RAM dump:\n\n")
@@ -93,9 +100,9 @@ func printMachineState() {
 			fmt.Printf("\n")
 		}
 		time.Sleep(10 * time.Millisecond)
-		//Wait for keypress
-		//var input string
-		//fmt.Scanln(&input)
+		// Wait for keypress
+		// var input string
+		// fmt.Scanln(&input)
 	}
 }
 func getSRBit(x byte) byte {
@@ -123,8 +130,8 @@ func setABitOff(x byte) {
 	A &= ^(1 << x)
 }
 func execute() {
-	if printHex {
-		fmt.Printf(" * = $%04X\n\n", PC)
+	if disassemble {
+		fmt.Printf(" *= $%04X\n\n", PC)
 	}
 	for fileposition = PC; fileposition < len(file); {
 		//  1 byte instructions with no operands
@@ -150,10 +157,12 @@ func execute() {
 				Other than changing the program counter, the break instruction changes no values in either the
 				registers or the flags.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("BRK\n")
 			}
-			fmt.Printf("BRK\n")
 
 			//  Push PC onto stack
 			memory[SP] = byte(PC + 2)
@@ -171,10 +180,12 @@ func execute() {
 
 				This instruction affects no registers in the microprocessor and no flags other than the carry flag which is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("CLC\n")
 			}
-			fmt.Printf("CLC\n")
 
 			// Set SR carry flag bit 0 to 0
 			setSRBitOff(0)
@@ -190,10 +201,12 @@ func execute() {
 				CLD affects no registers in the microprocessor and no flags other than the decimal mode flag which
 				is set to a 0.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("CLD\n")
 			}
-			fmt.Printf("CLD\n")
 
 			setSRBitOff(3)
 			incCount(1)
@@ -208,10 +221,12 @@ func execute() {
 				It affects no registers in the microprocessor and no flags other than the interrupt disable
 				which is cleared.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("CLI\n")
 			}
-			fmt.Printf("CLI\n")
 
 			// Set SR interrupt disable bit 2 to 0
 			setSRBitOff(2)
@@ -227,10 +242,12 @@ func execute() {
 				CLV affects no registers in the microprocessor and no flags other than the overflow flag which
 				is set to a 0.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("CLV\n")
 			}
-			fmt.Printf("CLV\n")
 
 			// Set SR overflow flag bit 6 to 0
 			setSRBitOff(6)
@@ -247,10 +264,12 @@ func execute() {
 				sets the N flag if it has bit 7 on as a result of the decrement, otherwise it resets the N flag;
 				sets the Z flag if X is a 0 as a result of the decrement, otherwise it resets the Z flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("DEX\n")
 			}
-			fmt.Printf("DEX\n")
 
 			// Decrement the X register by 1
 			X--
@@ -282,10 +301,12 @@ func execute() {
 				If the Y register is 0 as a result of the decrement, the Z flag is set otherwise the Z flag is reset.
 				This instruction only affects the index register Y.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("DEY\n")
 			}
-			fmt.Printf("DEY\n")
 
 			// Decrement the  Y register by 1
 			Y--
@@ -311,10 +332,12 @@ func execute() {
 
 				INX does not affect any other register other than the X register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("INX\n")
 			}
-			fmt.Printf("INX\n")
 
 			// Increment the X register by 1
 			X++
@@ -345,10 +368,12 @@ func execute() {
 				has a one in bit 7, otherwise resets N,
 				sets Z if as a result of the increment the Y register is zero otherwise resets the Z flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("INY\n")
 			}
-			fmt.Printf("INY\n")
 
 			// Increment the  Y register by 1
 			Y++
@@ -370,10 +395,12 @@ func execute() {
 				NOP - No Operation
 				Operation: No operation
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("NOP\n")
 			}
-			fmt.Printf("NOP\n")
 			incCount(1)
 		case 0x48:
 			/*
@@ -386,10 +413,12 @@ func execute() {
 				The Push A instruction only affects the stack pointer register which is decremented by 1 as a result of
 				the operation. It affects no flags.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("PHA\n")
 			}
-			fmt.Printf("PHA\n")
 
 			// Update memory address pointed to by SP with value stored in accumulator
 			memory[SP] = A
@@ -406,10 +435,12 @@ func execute() {
 
 				The PHP instruction affects no registers or flags in the microprocessor.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("PHP\n")
 			}
-			fmt.Printf("PHP\n")
 
 			// Push SR to stack
 			memory[SP] = SR
@@ -431,10 +462,12 @@ func execute() {
 				The PLA instruction changes content of the accumulator A to the contents of the memory location at
 				stack register plus 1 and also increments the stack register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("PLA\n")
 			}
-			fmt.Printf("PLA\n")
 
 			// Increment the stack pointer by 1 byte
 			SP++
@@ -465,10 +498,12 @@ func execute() {
 
 				This instruction could affect all flags in the status register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("PLP\n")
 			}
-			fmt.Printf("PLP\n")
 
 			// Update SR with the value stored at the address pointed to by SP
 			SR = memory[SP]
@@ -490,10 +525,12 @@ func execute() {
 
 				It affects no other registers in the microprocessor.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("RTI\n")
 			}
-			fmt.Printf("RTI\n")
 
 			// Update SR with the value stored at the address pointed to by SP
 			SR = memory[SP]
@@ -512,10 +549,12 @@ func execute() {
 
 				The RTS instruction does not affect any flags and affects only PCL and PCH.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("RTS\n")
 			}
-			fmt.Printf("RTS\n")
 
 			// Update PC with the value stored at the address pointed to by SP+1
 			PC = int(memory[SP] + 1)
@@ -534,10 +573,12 @@ func execute() {
 				This instruction affects no registers in the microprocessor and no flags other than the carry
 				flag which is set.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+				}
+				fmt.Printf("SEC\n")
 			}
-			fmt.Printf("SEC\n")
 
 			// Set SR carry flag bit 0 to 1
 			setSRBitOn(0)
@@ -553,10 +594,12 @@ func execute() {
 				SED affects no registers in the microprocessor and no flags other than the decimal mode which
 				is set to a 1.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("SED\n")
 			}
-			fmt.Printf("SED\n")
 
 			// Set SR decimal mode flag to 1
 			setSRBitOn(3)
@@ -571,10 +614,12 @@ func execute() {
 
 				It affects no registers in the microprocessor and no flags other than the interrupt disable which is set.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("SEI\n")
 			}
-			fmt.Printf("SEI\n")
 
 			// Set SR interrupt disable bit 2 to 1
 			setSRBitOn(2)
@@ -591,10 +636,12 @@ func execute() {
 				The N flag is set if the resultant value in the index register X has bit 7 on, otherwise N is reset.
 				The Z bit is set if the content of the register X is 0 as a result of the operation, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("TAX\n")
 			}
-			fmt.Printf("TAX\n")
 
 			// Update X with the value of A
 			X = A
@@ -623,10 +670,12 @@ func execute() {
 				If the index register Y has bit 7 on, then N is set, otherwise it is reset.
 				If the content of the index register Y equals 0 as a result of the operation, Z is set on, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("TAY\n")
 			}
-			fmt.Printf("TAY\n")
 
 			// Set Y register to the value of the accumulator
 			Y = A
@@ -655,10 +704,12 @@ func execute() {
 				If index X is zero as a result of the TSX, the Z flag is set, otherwise it is reset.
 				TSX changes the value of index X, making it equal to the content of the stack pointer.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("TSX\n")
 			}
-			fmt.Printf("TSX\n")
 
 			// Update X with the value stored at the address pointed to by SP
 			X = memory[SP]
@@ -687,10 +738,12 @@ func execute() {
 				If the result in A has bit 7 on, then the N flag is set, otherwise it is reset.
 				If the resultant value in the accumulator is 0, then the Z flag is set, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("TXA\n")
 			}
-			fmt.Printf("TXA\n")
 
 			// Set accumulator to value of X register
 			A = X
@@ -717,10 +770,12 @@ func execute() {
 				TXS changes only the stack pointer, making it equal to the content of the index register X.
 				It does not affect any of the flags.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("TXS\n")
 			}
-			fmt.Printf("TXS\n")
 
 			// Set stack pointer to value of X register
 			memory[SP] = X
@@ -738,10 +793,12 @@ func execute() {
 				If the result in the accumulator A has bit 7 on, the N flag is set, otherwise it is reset.
 				If the resultant value in the accumulator A is 0, then the Z flag is set, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
+				}
+				fmt.Printf("TYA\n")
 			}
-			fmt.Printf("TYA\n")
 
 			// Set accumulator to value of Y register
 			A = Y
@@ -780,10 +837,12 @@ func execute() {
 				The instruction does not affect the overflow bit, sets N equal to the result bit 7 (bit 6 in the input),
 				sets Z flag if the result is equal to 0, otherwise resets Z and stores the input bit 7 in the carry flag
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+				}
+				fmt.Printf("ASL\n")
 			}
-			fmt.Printf("ASL\n")
 
 			// Shift left the accumulator by 1 bit
 			A <<= 1
@@ -816,10 +875,12 @@ func execute() {
 				The Z flag is set if the result of the shift is 0 and reset otherwise.
 				The carry is set equal to bit 0 of the input.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+				}
+				fmt.Printf("LSR\n")
 			}
-			fmt.Printf("LSR\n")
 
 			// Shift A right 1 bit
 			A >>= 1
@@ -853,10 +914,12 @@ func execute() {
 				sets the Z flag if the result of the rotate is 0,
 				otherwise it resets Z and does not affect the overflow flag at all.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+				}
+				fmt.Printf("ROL\n")
 			}
-			fmt.Printf("ROL\n")
 
 			// Shift left the accumulator by 1 bit
 			A <<= 1
@@ -897,10 +960,12 @@ func execute() {
 
 				(Available on Microprocessors after June, 1976)
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
+				}
+				fmt.Printf("ROR\n")
 			}
-			fmt.Printf("ROR\n")
 
 			Atemp := A
 			// Shift accumulator right 1 bit
@@ -960,10 +1025,12 @@ func execute() {
 
 				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ADC #$%02X\n", operand1())
 			}
-			fmt.Printf("ADC #$%02X\n", operand1())
 
 			// If A+memory > 255, set SR carry flag
 			if int(A)+int(operand1()) > 255 {
@@ -1004,10 +1071,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("AND #$%02X\n", operand1())
 			}
-			fmt.Printf("AND #$%02X\n", operand1())
 
 			// AND the accumulator with the operand
 			A &= operand1()
@@ -1038,10 +1107,12 @@ func execute() {
 
 				The accumulator is not affected.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("CMP #$%02X\n", operand1())
 			}
-			fmt.Printf("CMP #$%02X\n", operand1())
 
 			// Subtract the operand from the accumulator
 			TempResult := A - operand1()
@@ -1081,10 +1152,12 @@ func execute() {
 				If the results of the subtraction contain a bit 7, then the N flag is set, if not, it is reset.
 				If the value in memory is equal to the value in index register X, the Z flag is set, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("CPX #$%02X\n", operand1())
 			}
-			fmt.Printf("CPX #$%02X\n", operand1())
 
 			// Subtract operand from X
 			TempResult := X - operand1()
@@ -1124,10 +1197,12 @@ func execute() {
 				If the value in the index register Y and the value in the memory are equal, the zero flag will be set,
 				otherwise it will be cleared.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("CPY #$%02X\n", operand1())
 			}
-			fmt.Printf("CPY #$%02X\n", operand1())
 
 			// Subtract operand from Y
 			TempResult := Y - operand1()
@@ -1160,10 +1235,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("EOR #$%02X\n", operand1())
 			}
-			fmt.Printf("EOR #$%02X\n", operand1())
 
 			// XOR the accumulator with the operand
 			A ^= operand1()
@@ -1193,10 +1270,12 @@ func execute() {
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDA #$%02X\n", operand1())
 			}
-			fmt.Printf("LDA #$%02X\n", operand1())
 
 			// Load the accumulator with the value in the operand
 			A = operand1()
@@ -1223,10 +1302,12 @@ func execute() {
 				LDX does not affect the C or V flags; sets Z if the value loaded was zero, otherwise resets it;
 				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDX #$%02X\n", operand1())
 			}
-			fmt.Printf("LDX #$%02X\n", operand1())
 			// Load the value of the operand1() into the X register.
 			X = operand1()
 			// If bit 7 of X is set, set the SR negative flag else reset it to 0
@@ -1253,10 +1334,12 @@ func execute() {
 				sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
 				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDY #$%02X\n", operand1())
 			}
-			fmt.Printf("LDY #$%02X\n", operand1())
 
 			// Load the value of the operand1() into the Y register.
 			Y = operand1()
@@ -1272,10 +1355,7 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			fmt.Printf("Opcode: %02X\n", opcode())
-
 			incCount(2)
-			fmt.Printf("Opcode: %02X\n", opcode())
 		case 0x09:
 			/*
 				ORA - "OR" Memory with Accumulator
@@ -1288,10 +1368,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ORA #$%02x\n", operand1())
 			}
-			fmt.Printf("ORA #$%02x\n", operand1())
 
 			// OR the accumulator with the operand
 			A |= operand1()
@@ -1326,10 +1408,12 @@ func execute() {
 				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
 				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("SBC #$%02X\n", operand1())
 			}
-			fmt.Printf("SBC #$%02X\n", operand1())
 
 			// Store result of A-memory stored at operand1() in temp variable
 			temp := A - operand1()
@@ -1365,7 +1449,7 @@ func execute() {
 			A = temp
 			incCount(2)
 
-		//Zero Page addressing mode instructions
+		// Zero Page addressing mode instructions
 		/*
 			$nn
 
@@ -1394,10 +1478,12 @@ func execute() {
 
 				In decimal mode, the N, V and Z flags are not consistent with the decimal result.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ADC $%02X\n", operand1())
 			}
-			fmt.Printf("ADC $%02X\n", operand1())
 
 			// If A+memory > 255, set SR carry flag
 			if int(A)+int(operand1()) > 255 {
@@ -1438,10 +1524,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("AND $%02X\n", operand1())
 			}
-			fmt.Printf("AND $%02X\n", operand1())
 
 			// Update A with A+memory stored at address in operand
 			A += memory[operand1()]
@@ -1472,10 +1560,12 @@ func execute() {
 				sets N equal to the result bit 7 (bit 6 in the input),
 				sets Z flag if the result is equal to 0, otherwise resets Z and stores the input bit 7 in the carry flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ASL $%02x\n", operand1())
 			}
-			fmt.Printf("ASL $%02x\n", operand1())
 
 			// Get the value of the memory location at operand1
 			value := memory[operand1()]
@@ -1512,10 +1602,12 @@ func execute() {
 				the result is Zero, Z is reset otherwise.
 				It does not affect the accumulator.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("BIT $%02X\n", operand1())
 			}
-			fmt.Printf("BIT $%02X\n", operand1())
 
 			// Store result of AND between A and memory stored at location in operand in a temp variable
 			temp := A & memory[operand1()]
@@ -1549,10 +1641,12 @@ func execute() {
 				reset when it is greater than the accumulator.
 				The accumulator is not affected.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("CMP $%02X\n", operand1())
 			}
-			fmt.Printf("CMP $%02X\n", operand1())
 
 			// Subtract the operand from the accumulator
 			TempResult := A - memory[operand1()]
@@ -1594,10 +1688,12 @@ func execute() {
 				If the value in memory is equal to the value in index register X, the Z flag is set,
 				otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("CPX $%02X\n", operand1())
 			}
-			fmt.Printf("CPX $%02X\n", operand1())
 
 			// Store result of X-memory stored at operand1() in temp variable
 			temp := X - memory[operand1()]
@@ -1641,10 +1737,12 @@ func execute() {
 				If the value in the index register Y and the value in the memory are equal, the zero flag will be set,
 				otherwise it will be cleared.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("CPY $%02X\n", operand1())
 			}
-			fmt.Printf("CPY $%02X\n", operand1())
 			// Store result of Y-memory stored at operand1() in temp variable
 			temp := Y - memory[operand1()]
 			// If Y >= memory[operand1()], set carry flag to 1
@@ -1683,10 +1781,12 @@ func execute() {
 				If bit 7 is on as a result of the decrement, then the N flag is set, otherwise it is reset.
 				If the result of the decrement is 0, the Z flag is set, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("DEC $%02X\n", operand1())
 			}
-			fmt.Printf("DEC $%02X\n", operand1())
 
 			// Decrement value store at memory address from operand1()
 			memory[operand1()]--
@@ -1715,10 +1815,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("EOR $%02X\n", operand1())
 			}
-			fmt.Printf("EOR $%02X\n", operand1())
 
 			// EOR the accumulator with the operand
 			A ^= operand1()
@@ -1747,10 +1849,12 @@ func execute() {
 				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
 				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("INC $%02X\n", operand1())
 			}
-			fmt.Printf("INC $%02X\n", operand1())
 
 			// Add 1 to the value stored at the address in operand
 			memory[operand1()]++
@@ -1779,10 +1883,12 @@ func execute() {
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDA $%02X\n", operand1())
 			}
-			fmt.Printf("LDA $%02X\n", operand1())
 
 			// Load the value of the operand1() into the Accumulator.
 			A = memory[operand1()]
@@ -1810,10 +1916,12 @@ func execute() {
 				sets Z if the value loaded was zero, otherwise resets it;
 				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDX $%02X\n", operand1())
 			}
-			fmt.Printf("LDX $%02X\n", operand1())
 
 			// Load the value of the operand1() into the X register.
 			X = memory[operand1()]
@@ -1841,10 +1949,12 @@ func execute() {
 				sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
 				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDY $%02X\n", operand1())
 			}
-			fmt.Printf("LDY $%02X\n", operand1())
 
 			// Load the value of the operand1() into the Y register.
 			Y = memory[operand1()]
@@ -1878,10 +1988,12 @@ func execute() {
 				The Z flag is set if the result of the shift is 0 and reset otherwise.
 				The carry is set equal to bit 0 of the input.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LSR $%02X\n", operand1())
 			}
-			fmt.Printf("LSR $%02X\n", operand1())
 
 			// Store the value of the operand in a temporary variable
 			temp := operand1()
@@ -1915,10 +2027,12 @@ func execute() {
 				sets the negative flag if the result in the accumulator has bit 7 on,
 				otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ORA $%02x\n", operand1())
 			}
-			fmt.Printf("ORA $%02x\n", operand1())
 
 			// OR the accumulator with the memory value at the address in the operand
 			A |= memory[operand1()]
@@ -1950,10 +2064,12 @@ func execute() {
 				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and does not affect
 				the overflow flag at all.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ROL $%02X\n", operand1())
 			}
-			fmt.Printf("ROL $%02X\n", operand1())
 
 			// Store value of memory at address in operand in a temp variable
 			temp := memory[operand1()]
@@ -2003,10 +2119,12 @@ func execute() {
 
 				(Available on Microprocessors after June, 1976)
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ROR $%02X\n", operand1())
 			}
-			fmt.Printf("ROR $%02X\n", operand1())
 
 			// Store memory[operand1()] in temp
 			temp := memory[operand1()]
@@ -2056,10 +2174,12 @@ func execute() {
 				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
 				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("SBC $%02X\n", operand1())
 			}
-			fmt.Printf("SBC $%02X\n", operand1())
 
 			// Store result of A-memory stored at operand1() in temp variable
 			temp := A - memory[operand1()]
@@ -2105,10 +2225,12 @@ func execute() {
 				This instruction affects none of the flags in the processor status register and does not affect the accumulator.
 			*/
 
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("STA $%02X\n", operand1())
 			}
-			fmt.Printf("STA $%02X\n", operand1())
 
 			// Store contents of Accumulator in memory
 			memory[operand1()] = A
@@ -2122,10 +2244,12 @@ func execute() {
 
 				No flags or registers in the microprocessor are affected by the store operation.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("STX $%02X\n", operand1())
 			}
-			fmt.Printf("STX $%02X\n", operand1())
 
 			// Store contents of X register in memory address at operand1()
 			memory[operand1()] = X
@@ -2139,10 +2263,12 @@ func execute() {
 
 				STY does not affect any flags or registers in the microprocessor.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("STY $%02X\n", operand1())
 			}
-			fmt.Printf("STY $%02X\n", operand1())
 
 			// Store Y register in memory at address in operand1()
 			memory[operand1()] = Y
@@ -2171,10 +2297,12 @@ func execute() {
 				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
 				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ADC $%02X,X\n", operand1())
 			}
-			fmt.Printf("ADC $%02X,X\n", operand1())
 
 			// Store the X Indexed Zero Page value at the operand 1 address in a temp variable
 			temp := memory[operand1()+X]
@@ -2218,10 +2346,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("AND $%02X,X\n", operand1())
 			}
-			fmt.Printf("AND $%02X,X\n", operand1())
 
 			// AND the accumulator with the value stored at the address stored in operand 1 and operand 2
 			A &= memory[int(operand1())+int(X)]
@@ -2251,10 +2381,12 @@ func execute() {
 				sets N equal to the result bit 7 (bit 6 in the input),
 				sets Z flag if the result is equal to 0, otherwise resets Z and stores the input bit 7 in the carry flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(ASL - Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(ASL - Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ASL $%02X,X\n", operand1())
 			}
-			fmt.Printf("ASL $%02X,X\n", operand1())
 
 			// Shift left the value at memory[operand1()+X]
 			memory[operand1()+X] <<= 1
@@ -2291,10 +2423,12 @@ func execute() {
 				is greater than the accumulator.
 				The accumulator is not affected.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("CMP $%02X,X\n", operand1())
 			}
-			fmt.Printf("CMP $%02X,X\n", operand1())
 
 			// Compare memory and accumulator
 			if memory[operand1()+X] == A {
@@ -2330,10 +2464,12 @@ func execute() {
 				If bit 7 is on as a result of the decrement, then the N flag is set, otherwise it is reset.
 				If the result of the decrement is 0, the Z flag is set, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("DEC $%02X,X\n", operand1())
 			}
-			fmt.Printf("DEC $%02X,X\n", operand1())
 
 			// Decrement X Indexed Zero Paged memory by one
 			memory[operand1()+X]--
@@ -2362,10 +2498,12 @@ func execute() {
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDA $%02X,X\n", operand1())
 			}
-			fmt.Printf("LDA $%02X,X\n", operand1())
 
 			// Load the accumulator with the X indexed value in the operand
 			A = memory[fileposition+1+int(X)]
@@ -2394,10 +2532,12 @@ func execute() {
 				LDY does not affect the C or V flags, sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
 				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDY $%02X,X\n", operand1())
 			}
-			fmt.Printf("LDY $%02X,X\n", operand1())
 
 			// Load the Y register with the X indexed value in the operand
 			Y = memory[int(operand1())+int(X)]
@@ -2432,10 +2572,12 @@ func execute() {
 				The Z flag is set if the result of the shift is 0 and reset otherwise.
 				The carry is set equal to bit 0 of the input.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LSR $%02X,X\n", operand1())
 			}
-			fmt.Printf("LSR $%02X,X\n", operand1())
 
 			// Store the value of the memory at the operand address in a temporary variable
 			temp := memory[operand1()+X]
@@ -2468,10 +2610,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ORA $%02x,X\n", operand1())
 			}
-			fmt.Printf("ORA $%02x,X\n", operand1())
 
 			// OR the accumulator with the value at memory[operand1()+X]
 			A |= memory[operand1()+X]
@@ -2503,10 +2647,12 @@ func execute() {
 				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and
 				does not affect the overflow flag at all.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ROL $%02X,X\n", operand1())
 			}
-			fmt.Printf("ROL $%02X,X\n", operand1())
 
 			// Get the value from the X Indexed Zero Paged memory from the address in the operand
 			value := memory[(operand1()+X)&0xFF]
@@ -2554,10 +2700,12 @@ func execute() {
 
 				(Available on Microprocessors after June, 1976)
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ROR $%02X,X\n", operand1())
 			}
-			fmt.Printf("ROR $%02X,X\n", operand1())
 
 			// Store the X Indexed Zero Page value at the operand 1 address in a temp variable
 			temp := memory[operand1()+X]
@@ -2613,10 +2761,12 @@ func execute() {
 				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
 				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("SBC $%02X,X\n", operand1())
 			}
-			fmt.Printf("SBC $%02X,X\n", operand1())
 
 			// Store the X Indexed Zero Page address in a temp variable
 			temp := operand1() + X
@@ -2658,10 +2808,12 @@ func execute() {
 				This instruction affects none of the flags in the processor status register and does not affect
 				the accumulator.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("STA $%02X,X\n", operand1())
 			}
-			fmt.Printf("STA $%02X,X\n", operand1())
 
 			// Store contents of Accumulator in X indexed memory
 			memory[(operand1())+X] = A
@@ -2675,10 +2827,12 @@ func execute() {
 
 				STY does not affect any flags or registers in the microprocessor.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("STY $%02X,X\n", operand1())
 			}
-			fmt.Printf("STY $%02X,X\n", operand1())
 
 			// Store contents of Y register in X indexed memory address
 			memory[(operand1())+X] = Y
@@ -2703,25 +2857,27 @@ func execute() {
 				sets Z if the value loaded was zero, otherwise resets it;
 				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, opcode(), operand1())
-			}
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, opcode(), operand1())
+				}
 
-			// Load the X register with the Y indexed value in the operand
-			X = memory[int(operand1())+int(Y)]
-			// If bit 7 of X is 1, set the SR negative flag bit 7 else reset the SR negative flag
-			if getXBit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
+				// Load the X register with the Y indexed value in the operand
+				X = memory[int(operand1())+int(Y)]
+				// If bit 7 of X is 1, set the SR negative flag bit 7 else reset the SR negative flag
+				if getXBit(7) == 1 {
+					setSRBitOn(7)
+				} else {
+					setSRBitOff(7)
+				}
+				// If X is zero, set the SR zero flag else reset the SR zero flag
+				if X == 0 {
+					setSRBitOn(1)
+				} else {
+					setSRBitOff(1)
+				}
+				fmt.Printf("LDX $%02X,Y\n", operand1())
 			}
-			// If X is zero, set the SR zero flag else reset the SR zero flag
-			if X == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			fmt.Printf("LDX $%02X,Y\n", operand1())
 			incCount(2)
 		case 0x96:
 			/*
@@ -2732,16 +2888,18 @@ func execute() {
 
 				No flags or registers in the microprocessor are affected by the store operation.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("STX $%02X,Y\n", operand1())
 			}
-			fmt.Printf("STX $%02X,Y\n", operand1())
 
 			// Store contents of X register in Y indexed memory address
 			memory[(operand1())+Y] = X
 			incCount(2)
 
-		//X Indexed Zero Page Indirect addressing mode instructions
+		// X Indexed Zero Page Indirect addressing mode instructions
 		/*
 			($nn,X)
 
@@ -2765,10 +2923,12 @@ func execute() {
 				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
 				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ADC ($%02X,X)\n", operand1())
 			}
-			fmt.Printf("ADC ($%02X,X)\n", operand1())
 
 			// Get the X Indexed Zero Page Indirect address from the operand
 			indirectAddress := int(operand1()) + int(X)
@@ -2819,10 +2979,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page Indirect))\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page Indirect))\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("AND ($%02X,X)\n", operand1())
 			}
-			fmt.Printf("AND ($%02X,X)\n", operand1())
 
 			// Store the X-Indexed Zero Page Indirect address in a variable
 			indirectAddress := operand1() + X
@@ -2860,10 +3022,12 @@ func execute() {
 				The accumulator is not affected.
 
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("CMP ($%02X,X)\n", operand1())
 			}
-			fmt.Printf("CMP ($%02X,X)\n", operand1())
 
 			// Get the address of the operand
 			operandAddress := int(operand1()) + int(X)
@@ -2902,10 +3066,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page, Indirect))\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page, Indirect))\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("EOR ($%02X,X)\n", operand1())
 			}
-			fmt.Printf("EOR ($%02X,X)\n", operand1())
 
 			// Store the value at the X Indexed Zero Pages Indirect address in a variable
 			indirectAddress := int(operand1()) + int(X)
@@ -2948,10 +3114,12 @@ func execute() {
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDA ($%02X,X)\n", operand1())
 			}
-			fmt.Printf("LDA ($%02X,X)\n", operand1())
 
 			// Load the X-Indexed Zero Page Indirect value into the Accumulator
 			A = memory[(operand1()+X)&0xFF]
@@ -2984,10 +3152,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page Indirect))\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page Indirect))\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ORA ($%02x,X)\n", operand1())
 			}
-			fmt.Printf("ORA ($%02x,X)\n", operand1())
 
 			// Store the X Indexed Zero Page address in a variable
 			indirectAddress := uint16(operand1()) + uint16(X)
@@ -3031,10 +3201,12 @@ func execute() {
 				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
 				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("SBC ($%02X,X)\n", operand1())
 			}
-			fmt.Printf("SBC ($%02X,X)\n", operand1())
 
 			// Get the value of the X Indexed Zero Page Address from operand
 			indirectAddress := operand1() + X
@@ -3089,10 +3261,12 @@ func execute() {
 				This instruction affects none of the flags in the processor status register and does not
 				affect the accumulator.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("STA ($%02X,X)\n", operand1())
 			}
-			fmt.Printf("STA ($%02X,X)\n", operand1())
 
 			// Store X-Indexed Zero Page Indirect Address in temporary variable
 			temp := operand1() + X
@@ -3124,10 +3298,12 @@ func execute() {
 				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
 				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ADC ($%02X),Y\n", operand1())
 			}
-			fmt.Printf("ADC ($%02X),Y\n", operand1())
 
 			// Get Zero Page Indirect Y-Indexed address from operand 1
 			address := operand1() + Y
@@ -3170,10 +3346,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("AND ($%02X),Y\n", operand1())
 			}
-			fmt.Printf("AND ($%02X),Y\n", operand1())
 
 			// Get address from operand
 			address := operand1()
@@ -3221,10 +3399,12 @@ func execute() {
 				reset when it is greater than the accumulator.
 				The accumulator is not affected.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("CMP ($%02X),Y\n", operand1())
 			}
-			fmt.Printf("CMP ($%02X),Y\n", operand1())
 
 			// Get address from operand1() and add Y to it
 			address := memory[operand1()] + Y
@@ -3264,10 +3444,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("EOR ($%02X),Y\n", operand1())
 			}
-			fmt.Printf("EOR ($%02X),Y\n", operand1())
 
 			// Get the zero pages indirect Y indexed address of the operand
 			address := memory[operand1()] + memory[operand1()+1] + Y
@@ -3298,10 +3480,12 @@ func execute() {
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("LDA ($%02X),Y\n", operand1())
 			}
-			fmt.Printf("LDA ($%02X),Y\n", operand1())
 
 			// Load the accumulator with the zero page indirect y indexed value in the operand
 			A = memory[operand1()+Y]
@@ -3330,10 +3514,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page),Indirect Y)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page),Indirect Y)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("ORA ($%02x),Y\n", operand1())
 			}
-			fmt.Printf("ORA ($%02x),Y\n", operand1())
 
 			// Get the value of the memory location at operand1
 			value := memory[operand1()]
@@ -3373,10 +3559,12 @@ func execute() {
 				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
 				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("SBC ($%02X),Y\n", operand1())
 			}
-			fmt.Printf("SBC ($%02X),Y\n", operand1())
 
 			// Get zero page indirect Y-indexed address
 			indirectAddress := memory[operand1()] + memory[operand1()+1]
@@ -3417,10 +3605,12 @@ func execute() {
 
 				This instruction affects none of the flags in the processor status register and does not affect the accumulator.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("STA ($%02X),Y\n", operand1())
 			}
-			fmt.Printf("STA ($%02X),Y\n", operand1())
 
 			// Store Zero Page Indirect Y Indexed Address in temporary variable
 			temp := operand1() + Y
@@ -3461,10 +3651,12 @@ func execute() {
 				instruction.
 				The range of the offset is —128 to +127 bytes from the next instruction.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("BPL $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 			}
-			fmt.Printf("BPL $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
 			// Get offset from relative address in operand
 			offset := int(operand1())
@@ -3493,10 +3685,12 @@ func execute() {
 				BMI does not affect any of the flags or any other part of the machine other than the program counter
 				and then only if the N bit is on.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("BMI $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 			}
-			fmt.Printf("BMI $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
 			// Get offset from relative address in operand
 			offset := int(operand1())
@@ -3525,10 +3719,12 @@ func execute() {
 				BVC does not affect any of the flags and registers other than the program counter and only
 				when the overflow flag is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("BVC $%02X\n", fileposition+2+int(operand1()))
 			}
-			fmt.Printf("BVC $%02X\n", fileposition+2+int(operand1()))
 
 			// Get offset from relative address in operand
 			offset := int(operand1())
@@ -3559,10 +3755,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("EOR $%02X,X\n", operand1())
 			}
-			fmt.Printf("EOR $%02X,X\n", operand1())
 
 			// XOR the accumulator with the X Indexed Zero Page value from the memory at the operand address
 			A ^= memory[operand1()+X]
@@ -3589,10 +3787,12 @@ func execute() {
 				BVS does not affect any flags or registers other than the program, counter and only
 				when the overflow flag is set.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("BVS $%04X\n", fileposition+2+int(operand1()))
 			}
-			fmt.Printf("BVS $%04X\n", fileposition+2+int(operand1()))
 
 			// If SR overflow flag bit 6 is set then branch to operand 1
 			if getSRBit(6) == 1 {
@@ -3610,10 +3810,12 @@ func execute() {
 				It affects no flags or registers other than the program fileposition and then only if the C flag is not on.
 			*/
 
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("BCC $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 			}
-			fmt.Printf("BCC $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
 			// Get offset from relative address in operand
 			offset := operand1()
@@ -3633,10 +3835,12 @@ func execute() {
 				BCS does not affect any of the flags or registers except for the program counter and only
 				then if the carry flag is on.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("BCS $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 			}
-			fmt.Printf("BCS $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
 			// If the carry flag is set, branch to the address in the operand
 			if getSRBit(0) == 1 {
@@ -3656,10 +3860,12 @@ func execute() {
 				BNE does not affect any of the flags or registers other than the program counter
 				and only then if the Z flag is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("BNE $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 			}
-			fmt.Printf("BNE $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
 			// Get offset from relative address in operand
 			offset := int(operand1())
@@ -3690,10 +3896,12 @@ func execute() {
 				BEQ does not affect any of the flags or registers other than the program fileposition and only then
 				when the Z flag is set.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("BEQ $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 			}
-			fmt.Printf("BEQ $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
 			// Get relative address from operand
 			relativeAddress := operand1()
@@ -3719,10 +3927,12 @@ func execute() {
 				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
 				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
+				}
+				fmt.Printf("INC $%02X,X\n", operand1())
 			}
-			fmt.Printf("INC $%02X,X\n", operand1())
 
 			// Store the X Indexed Zero Page address in a temp variable
 			temp := operand1() + X
@@ -3745,7 +3955,7 @@ func execute() {
 
 		// 3 byte instructions with 2 operands
 		switch opcode() {
-		//Absolute addressing mode instructions
+		// Absolute addressing mode instructions
 		/*
 			$nnnn
 
@@ -3771,10 +3981,12 @@ func execute() {
 				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
 				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ADC $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("ADC $%02X%02X\n", operand2(), operand1())
 			// Read bit 7 of the accumulator into a temp var
 			temp := getABit(7)
 			// If SR carry bit is set, add 1 to A
@@ -3810,10 +4022,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("AND $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("AND $%02X%02X\n", operand2(), operand1())
 
 			// AND the accumulator with the value stored at the address stored in operand 1 and operand 2
 			A &= memory[int(operand1())+int(operand2())<<8]
@@ -3846,10 +4060,12 @@ func execute() {
 				sets Z flag if the result is equal to 0, otherwise resets Z
 				and stores the input bit 7 in the carry flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ASL $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("ASL $%02X%02X\n", operand2(), operand1())
 
 			// Store the address of the operands in a temp variable
 			temp := operand2() | operand1()
@@ -3890,10 +4106,12 @@ func execute() {
 
 				It does not affect the accumulator.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("BIT $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("BIT $%02X%02X\n", operand2(), operand1())
 
 			// Store the result of the AND between the accumulator and the operands in a temp var
 			temp := A & memory[int(operand1())+int(operand2())<<8]
@@ -3933,10 +4151,12 @@ func execute() {
 				reset when it is greater than the accumulator.
 				The accumulator is not affected.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("CMP $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("CMP $%02X%02X\n", operand2(), operand1())
 
 			// Set X to Operand 2 and Y to the X indexed value stored in operand 1
 			X = operand2()
@@ -3993,10 +4213,12 @@ func execute() {
 				If the value in memory is equal to the value in index register X, the Z flag is set,
 				otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("CPX $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("CPX $%02X%02X\n", operand2(), operand1())
 
 			// Store value stored in addressed memory location in temp variable
 			temp := memory[operand2()+operand1()]
@@ -4043,10 +4265,12 @@ func execute() {
 
 
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("CPY $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("CPY $%02X%02X\n", operand2(), operand1())
 
 			// Store value stored in addressed memory location in temp variable
 			temp := memory[operand2()+operand1()]
@@ -4089,10 +4313,12 @@ func execute() {
 				If bit 7 is on as a result of the decrement, then the N flag is set, otherwise it is reset.
 				If the result of the decrement is 0, the Z flag is set, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("DEC $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("DEC $%02X%02X\n", operand2(), operand1())
 
 			// Decrement the value stored in memory at the address stored in operand 1 and operand 2
 			memory[operand2()+operand1()] = memory[operand2()+operand1()] - 1
@@ -4120,10 +4346,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("EOR $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("EOR $%02X%02X\n", operand2(), operand1())
 
 			// Update A with the result of an XOR operation between A and the memory location
 			A ^= memory[operand1()+(operand2())]
@@ -4151,10 +4379,12 @@ func execute() {
 				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
 				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("INC $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("INC $%02X%02X\n", operand2(), operand1())
 			// Increment the value stored in memory at the address stored in operand 1 and operand 2
 			memory[operand2()+operand1()] = memory[operand2()+operand1()] + 1
 			// If bit 7 of the value stored in memory is 1 then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
@@ -4178,10 +4408,12 @@ func execute() {
 
 				It affects only the program counter in the microprocessor and affects no flags in the status register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("JMP $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("JMP $%02X%02X\n", operand2(), operand1())
 
 			// Set PC to the absolute address stored in operand 1 and operand 2
 			PC = int(operand1()) + int(operand2())
@@ -4205,10 +4437,12 @@ func execute() {
 				The JSR instruction affects no flags, causes the stack pointer to be decremented by 2 and substitutes
 				new values into the program fileposition low and the program fileposition high.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("JSR $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("JSR $%02X%02X\n", operand2(), operand1())
 
 			// Push the program counter onto the stack
 			memory[0x0100|SP] = byte(PC >> 8)
@@ -4230,10 +4464,12 @@ func execute() {
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("LDA $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("LDA $%02X%02X\n", operand2(), operand1())
 
 			// Update A with the value stored at the address in the operands
 			A = memory[operand1()+(operand2())]
@@ -4261,10 +4497,12 @@ func execute() {
 				sets Z if the value loaded was zero, otherwise resets it;
 				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("LDX $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("LDX $%02X%02X\n", operand2(), operand1())
 
 			// Update X with the value stored at the address in the operands
 			X = memory[operand1()+(operand2())]
@@ -4292,10 +4530,12 @@ func execute() {
 				sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
 				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("LDY $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("LDY $%02X%02X\n", operand2(), operand1())
 
 			// Update Y with the value stored at the address in the operands
 			Y = memory[operand1()|uint8(int(operand2()))]
@@ -4329,10 +4569,12 @@ func execute() {
 				The Z flag is set if the result of the shift is 0 and reset otherwise.
 				The carry is set equal to bit 0 of the input.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("LSR $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("LSR $%02X%02X\n", operand2(), operand1())
 
 			// Update temp var with memory location
 			temp := memory[operand1()+(operand2())]
@@ -4365,10 +4607,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ORA $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("ORA $%02X%02X\n", operand2(), operand1())
 
 			// Update A with the result of an OR operation on value stored in the address of the operands and A
 			A |= memory[operand2()|operand1()]
@@ -4400,10 +4644,12 @@ func execute() {
 				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and
 				does not affect the overflow flag at all.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ROL $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("ROL $%02X%02X\n", operand2(), operand1())
 
 			// Store value of memory at address stored in operand 1 and operand 2 in temp
 			temp := memory[int(operand1())+int(operand2())]
@@ -4451,10 +4697,12 @@ func execute() {
 
 				(Available on Microprocessors after June, 1976)
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ROR $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("ROR $%02X%02X\n", operand2(), operand1())
 
 			// Store value of memory at address stored in operand 1 and operand 2 in temp
 			temp := memory[int(operand1())+int(operand2())]
@@ -4504,10 +4752,12 @@ func execute() {
 				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
 				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("SBC $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("SBC $%02X%02X\n", operand2(), operand1())
 
 			// Store value stored in addressed memory location in temp variable
 			temp := memory[operand2()+operand1()]
@@ -4548,10 +4798,12 @@ func execute() {
 				This instruction affects none of the flags in the processor status register and
 				does not affect the accumulator.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("STA $%04X\n", operand1()|uint8(int(operand2())<<8))
 			}
-			fmt.Printf("STA $%04X\n", operand1()|uint8(int(operand2())<<8))
 			// Update the memory at the address stored in operand 1 and operand 2 with the value of the accumulator
 			memory[int(operand1())+int(operand2())] = A
 			incCount(3)
@@ -4564,10 +4816,12 @@ func execute() {
 
 				No flags or registers in the microprocessor are affected by the store operation.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("STX $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("STX $%02X%02X\n", operand2(), operand1())
 
 			// Update the memory at the address stored in operand 1 and operand 2 with the value of the X register
 			memory[int(operand1())+int(operand2())] = X
@@ -4581,10 +4835,12 @@ func execute() {
 
 				STY does not affect any flags or registers in the microprocessor.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("STY $%02X%02X\n", operand2(), operand1())
 			}
-			fmt.Printf("STY $%02X%02X\n", operand2(), operand1())
 
 			// Update the memory at the address stored in operand 1 and operand 2 with the value of the Y register
 			memory[int(operand1())+int(operand2())] = Y
@@ -4620,10 +4876,12 @@ func execute() {
 				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ADC $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("ADC $%02X%02X,X\n", operand2(), operand1())
 
 			// Add the X indexed address from the operands plus the carry bit to the accumulator
 			A += memory[int(operand1())+int(operand2())+int(X)]
@@ -4688,10 +4946,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("AND $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("AND $%02X%02X,X\n", operand2(), operand1())
 
 			// Store the value of the accumulator in temp
 			temp := A
@@ -4730,10 +4990,12 @@ func execute() {
 				sets Z flag if the result is equal to 0, otherwise resets Z and
 				stores the input bit 7 in the carry flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ASL $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("ASL $%02X%02X,X\n", operand2(), operand1())
 
 			// Get the value of the memory at the X indexed absolute address in the operands
 			temp := memory[operand2()|operand1()+X]
@@ -4780,10 +5042,12 @@ func execute() {
 				reset when it is greater than the accumulator.
 				The accumulator is not affected.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("CMP $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("CMP $%02X%02X,X\n", operand2(), operand1())
 
 			// Store the value of the X indexed memory address in a temp variable
 			temp := memory[int(operand1())+int(X)]
@@ -4818,10 +5082,12 @@ func execute() {
 				If bit 7 is on as a result of the decrement, then the N flag is set, otherwise it is reset.
 				If the result of the decrement is 0, the Z flag is set, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("DEC $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("DEC $%02X%02X,X\n", operand2(), operand1())
 
 			// Store the value of the X indexed memory address in a temp variable
 			temp := memory[int(operand1())+int(X)]
@@ -4854,10 +5120,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("EOR $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("EOR $%02X%02X,X\n", operand2(), operand1())
 
 			// Update A with the result of an XOR operation between A and the X indexed memory location
 			A ^= memory[operand1()+(operand2())+X]
@@ -4886,10 +5154,12 @@ func execute() {
 				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
 				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("INC $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("INC $%02X%02X,X\n", operand2(), operand1())
 
 			// Get the X Indexed absolute memory address
 			address := operand2() + operand1() + X
@@ -4924,10 +5194,12 @@ func execute() {
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("LDA $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("LDA $%02X%02X,X\n", operand2(), operand1())
 
 			// Update A with the X indexed absolute value stored at the address in the operands
 			A = memory[operand1()+(operand2())+X]
@@ -4954,10 +5226,12 @@ func execute() {
 				LDY does not affect the C or V flags, sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
 				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("LDY $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("LDY $%02X%02X,X\n", operand2(), operand1())
 
 			// Update Y with the X indexed value stored at the address in the operands
 			Y = memory[operand1()+(operand2())+X]
@@ -4992,10 +5266,12 @@ func execute() {
 				The Z flag is set if the result of the shift is 0 and reset otherwise.
 				The carry is set equal to bit 0 of the input.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("LSR $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("LSR $%02X%02X,X\n", operand2(), operand1())
 
 			// Update temp var with X indexed absolute memory location
 			temp := memory[operand1()+(operand2())+X]
@@ -5028,10 +5304,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ORA $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("ORA $%02X%02X,X\n", operand2(), operand1())
 
 			// Update A with the result of an OR operation between A and the X indexed memory at the address in the operands
 			A |= memory[operand2()|operand1()+X]
@@ -5063,10 +5341,12 @@ func execute() {
 				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and
 				does not affect the overflow flag at all.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ROL $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("ROL $%02X%02X,X\n", operand2(), operand1())
 
 			// Store the value of memory at the X indexed address stored in operand 1 and operand 2 in temp
 			temp := memory[int(operand1())+int(operand2())+int(X)]
@@ -5115,10 +5395,12 @@ func execute() {
 
 				(Available on Microprocessors after June, 1976)
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ROR $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("ROR $%02X%02X,X\n", operand2(), operand1())
 
 			// Store the X indexed address from the operands in a temp variable
 			temp := int(operand1()) + int(operand2()) + int(X)
@@ -5168,10 +5450,12 @@ func execute() {
 				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
 				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("SBC $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("SBC $%02X%02X,X\n", operand2(), operand1())
 
 			// Subtract the value in the X indexed memory address from the accumulator with borrow
 			// Get the value in memory at the address stored in operand 1 and operand 2
@@ -5216,10 +5500,12 @@ func execute() {
 
 				This instruction affects none of the flags in the processor status register and does not affect the accumulator.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("STA $%02X%02X,X\n", operand2(), operand1())
 			}
-			fmt.Printf("STA $%02X%02X,X\n", operand2(), operand1())
 
 			// Update the memory at the X indexed absolute address stored in operand 1 and operand 2 with the value of the accumulator
 			memory[int(operand1())+int(operand2())+int(X)] = A
@@ -5253,10 +5539,12 @@ func execute() {
 				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
 				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ADC $%02X%02X,Y\n", operand2(), operand1())
 			}
-			fmt.Printf("ADC $%02X%02X,Y\n", operand2(), operand1())
 
 			// Add the Y indexed address from the operands plus the carry bit to the accumulator
 			A += memory[int(operand1())+int(operand2())+int(Y)]
@@ -5321,10 +5609,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("AND $%02X%02X,Y\n", operand2(), operand1())
 			}
-			fmt.Printf("AND $%02X%02X,Y\n", operand2(), operand1())
 
 			// Store the value of the accumulator in temp
 			temp := A
@@ -5361,10 +5651,12 @@ func execute() {
 				it is greater than the accumulator.
 				The accumulator is not affected.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("CMP $%02X%02X,Y\n", operand2(), operand1())
 			}
-			fmt.Printf("CMP $%02X%02X,Y\n", operand2(), operand1())
 
 			// Store the value of the Y indexed memory address in a temp variable
 			temp := memory[int(operand1())+int(Y)]
@@ -5399,10 +5691,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("EOE $%02X%02X,Y\n", operand2(), operand1())
 			}
-			fmt.Printf("EOE $%02X%02X,Y\n", operand2(), operand1())
 
 			// Update A with the result of an XOR operation between A and the Y indexed memory location
 			A ^= memory[operand1()+(operand2())+Y]
@@ -5430,10 +5724,12 @@ func execute() {
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, other­ wise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("LDA $%02X%02X,Y\n", operand2(), operand1())
 			}
-			fmt.Printf("LDA $%02X%02X,Y\n", operand2(), operand1())
 
 			// Update A with the Y indexed value stored at the address in the operands
 			A = memory[operand1()+(operand2())+Y]
@@ -5461,10 +5757,12 @@ func execute() {
 				sets Z if the value loaded was zero, otherwise resets it;
 				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("LDX $%02X%02X,Y\n", operand2(), operand1())
 			}
-			fmt.Printf("LDX $%02X%02X,Y\n", operand2(), operand1())
 
 			//  Set Y to Operand 2 and X to the Y indexed value stored in operand 1
 			Y = operand2()
@@ -5492,10 +5790,12 @@ func execute() {
 				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
 				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("ORA $%02X%02X,Y\n", operand2(), operand1())
 			}
-			fmt.Printf("ORA $%02X%02X,Y\n", operand2(), operand1())
 
 			// Update A with the result of an OR operation between A and the Y indexed memory at the address in the operands
 			A |= memory[operand2()|operand1()+Y]
@@ -5531,10 +5831,12 @@ func execute() {
 				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
 				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("SBC $%02X%02X,Y\n", operand2(), operand1())
 			}
-			fmt.Printf("SBC $%02X%02X,Y\n", operand2(), operand1())
 
 			// Subtract the value in the Y indexed memory address from the accumulator with borrow
 			// Get the value in memory at the address stored in operand 1 and operand 2
@@ -5580,10 +5882,12 @@ func execute() {
 				This instruction affects none of the flags in the processor status register
 				and does not affect the accumulator.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("STA $%02X%02X,Y\n", operand2(), operand1())
 			}
-			fmt.Printf("STA $%02X%02X,Y\n", operand2(), operand1())
 
 			// Update the memory at the Y indexed address stored in operand 1 and operand 2 with the value of the accumulator
 			memory[int(operand1())+int(operand2())+int(Y)] = A
@@ -5599,10 +5903,12 @@ func execute() {
 
 				It affects only the program counter in the microprocessor and affects no flags in the status register.
 			*/
-			if printHex {
-				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute Indirect)\n", PC, opcode(), operand1(), operand2())
+			if disassemble {
+				if printHex {
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute Indirect)\n", PC, opcode(), operand1(), operand2())
+				}
+				fmt.Printf("JMP ($%02X%02X)\n", operand2(), operand1())
 			}
-			fmt.Printf("JMP ($%02X%02X)\n", operand2(), operand1())
 
 			// Update the PC with the memory location
 			PC = int(memory[operand1()+(operand2())])
