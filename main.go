@@ -3640,13 +3640,23 @@ func execute() {
 			}
 			fmt.Printf("BNE $%02X\n", (fileposition+2+int(operand1()))&0xFF)
 
+			// Get offset from relative address in operand
+			offset := int(operand1())
 			// If Z flag is not set, branch to address
 			if getSRBit(1) != 1 {
-				PC = (fileposition + 2 + int(operand1())) & 0xFF
+				// Branch
+				// Add offset to lower 8bits of PC
+				PC += offset
+				// If the offset is negative, decrement the PC by 1
+				if offset < 0 {
+					PC--
+				}
 				fileposition += 2
+				incCount(0)
+			} else {
+				// Don't branch
+				incCount(2)
 			}
-			incCount(0)
-
 		case 0xF0:
 			/*
 				BEQ - Branch on Result Zero
