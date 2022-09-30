@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
 var (
@@ -81,7 +82,7 @@ func printMachineState() {
 		//Move cursor to top left
 		fmt.Printf("\033[0;0H")
 	}
-	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%02X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
+	fmt.Printf("A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
 
 	if machineMonitor {
 		fmt.Printf("Zero Page RAM dump:\n\n")
@@ -91,7 +92,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		//time.Sleep(10 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 		//Wait for keypress
 		//var input string
 		//fmt.Scanln(&input)
@@ -149,10 +150,11 @@ func execute() {
 			fmt.Printf("BRK\n")
 
 			//  Push PC onto stack
-			memory[SP] = byte(PC)
+			memory[SP] = byte(PC + 2)
 			SP--
-			PC += 2
-			incCount(1)
+			fileposition += 2
+			PC += fileposition
+			incCount(2)
 		case 0x02:
 			/*
 				CLE - Clear Extend Disable Flag
@@ -466,7 +468,6 @@ func execute() {
 			// Update PC with the value stored at the address pointed to by SP+1
 			PC = int(memory[SP] + 1)
 			// Increment the stack pointer by 1 byte
-			SP++
 			SP++
 			incCount(1)
 		case 0x68:
@@ -1534,8 +1535,10 @@ func execute() {
 			}
 			fmt.Printf("AND $%02X,X\n", operand1())
 
-			// AND the accumulator with the X Indexed Zero Paged memory from the address in the operand
-			A &= memory[(operand1()+X)&0xFF]
+			// Get X indexed zero page address from operand
+			address := (operand1() + X) & 0xFF
+			// AND the accumulator with the value stored at the address
+			A &= memory[address]
 			// If A==0, set zero flag
 			if A == 0 {
 				setSRBitOn(1)
@@ -2466,7 +2469,11 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
+			fmt.Printf("Opcode: %02X\n", opcode())
+
 			incCount(2)
+			fmt.Printf("Opcode: %02X\n", opcode())
+
 		case 0xA1:
 			/*
 				LDA - Load Accumulator with Memory
@@ -3073,8 +3080,10 @@ func execute() {
 			// If Z flag is not set, branch to address
 			if getSRBit(1) != 1 {
 				PC = (fileposition + 2 + int(operand1())) & 0xFF
+				fileposition += 2
 			}
-			incCount(2)
+			incCount(0)
+
 		case 0xD1:
 			/*
 				CMP - Compare Memory and Accumulator
@@ -4235,7 +4244,11 @@ func execute() {
 				fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, opcode(), operand1(), operand2())
 			}
 			fmt.Printf("JMP $%02X%02X\n", operand2(), operand1())
-			incCount(3)
+
+			// Set PC to the absolute address stored in operand 1 and operand 2
+			PC = int(operand1()) + int(operand2())
+			fileposition += 2
+			incCount(0)
 		case 0x4D:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
