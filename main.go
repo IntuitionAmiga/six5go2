@@ -84,11 +84,12 @@ func incCount(amount int) {
 func printMachineState() {
 	if machineMonitor {
 		// fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
-		//Clear the screen
+		// Clear the screen
 		fmt.Printf("\033[2J")
 		// Move cursor to top left
 		fmt.Printf("\033[0;0H")
 	}
+
 	fmt.Printf(";; A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
 
 	if machineMonitor {
@@ -167,8 +168,6 @@ func execute() {
 			//  Push PC onto stack
 			memory[SP] = byte(PC + 2)
 			SP--
-			fileposition += 2
-			PC += fileposition
 			incCount(2)
 		case 0x18:
 			/*
@@ -4454,7 +4453,9 @@ func execute() {
 			SP--
 			// Set the program counter to the absolute address from the operands
 			PC = int(operand2())<<8 | int(operand1())
-			incCount(3)
+
+			fileposition = PC
+			incCount(0)
 		case 0xAD:
 			/*
 				LDA - Load Accumulator with Memory
