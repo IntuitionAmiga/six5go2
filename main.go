@@ -167,7 +167,13 @@ func execute() {
 
 			//  Push PC onto stack
 			memory[SP] = byte(PC + 2)
-			SP--
+			// Store SR on stack
+			memory[SP-1] = SR
+			// Set PC to interrupt vector
+			PC = int(memory[0xFFFE]) + int(memory[0xFFFF])*256
+			fmt.Printf("PC = $%04X\n", PC)
+			// Decrement SP
+			SP -= 2
 			incCount(2)
 		case 0x18:
 			/*
@@ -3162,13 +3168,13 @@ func execute() {
 			}
 
 			// Store the X Indexed Zero Page address in a variable
-			indirectAddress := uint16(operand1()) + uint16(X)
+			indirectAddress := operand1() + X
 			// Get the value at the indirect address
 			indirectValue := memory[indirectAddress]
 			// Get the value at the indirect address + 1
-			indirectValue2 := memory[uint16(indirectAddress)+1]
+			indirectValue2 := memory[indirectAddress] + 1
 			// Combine the two values to get the final address
-			finalAddress := uint16(indirectValue) + uint16(indirectValue2)<<8
+			finalAddress := indirectValue + indirectValue2
 			// Get the value at the final address
 			finalValue := memory[finalAddress]
 			// Perform the ORA operation and store in the accumulator
