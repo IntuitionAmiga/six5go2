@@ -1123,7 +1123,7 @@ func execute() {
 				setSRBitOn(0)
 			}
 			// If bit 7 of TempResult is set, set N flag to 1
-			if TempResult&0b10000000 == 0b10000000 {
+			if TempResult<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -1159,25 +1159,28 @@ func execute() {
 				fmt.Printf("CPX #$%02X\n", operand1())
 			}
 
-			// Subtract operand from X
+			// Compare the operand with the X register
 			TempResult := X - operand1()
-			// If operand is greater than X, set carry flag to 0
+			// If the operand is greater than the X register, set the carry flag to 0 else set to 1
 			if operand1() > X {
 				setSRBitOff(0)
+			} else {
+				setSRBitOn(0)
 			}
 			// If bit 7 of TempResult is set, set N flag to 1
-			if TempResult&0b10000000 == 0b10000000 {
+			if TempResult<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			// If operand is equal to X, set Z flag to 1 else set Zero flag to 0
+			// If operand value is equal to X register, set Z flag to 1 else set Zero flag to 0
 			if operand1() == X {
 				setSRBitOn(1)
 			} else {
 				setSRBitOff(1)
 			}
 			incCount(2)
+
 		case 0xC0:
 			/*
 				CPY - Compare Index Register Y To Memory
@@ -1211,7 +1214,7 @@ func execute() {
 				setSRBitOff(0)
 			}
 			// If bit 7 of TempResult is set, set N flag to 1
-			if TempResult&0b10000000 == 0b10000000 {
+			if TempResult<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -1434,7 +1437,7 @@ func execute() {
 				setSRBitOff(6)
 			}
 			// If bit 7 of temp is set, set N flag to 1 else reset it
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -1572,7 +1575,7 @@ func execute() {
 			// Shift the value left by 1 bit
 			value <<= 1
 			// If the value bit 7 is 1, set the SR carry flag bit 0 to 1 and negative bit 7 to 1  else set bothto 0
-			if value&0b10000000 == 0b10000000 {
+			if value<<7 == 0b10000000 {
 				setSRBitOn(0)
 				setSRBitOn(7)
 			} else {
@@ -1612,13 +1615,13 @@ func execute() {
 			// Store result of AND between A and memory stored at location in operand in a temp variable
 			temp := A & memory[operand1()]
 			// If bit 7 of temp is set then set SR negative value to 1 else set it to 0
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
 			// If bit 6 of temp is set then set SR overflow flag to 1 else set it to 0
-			if temp&0b01000000 == 0b01000000 {
+			if temp<<6 == 0b01000000 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
@@ -1657,7 +1660,7 @@ func execute() {
 				setSRBitOn(0)
 			}
 			// If bit 7 of TempResult is set, set N flag to 1
-			if TempResult&0b10000000 == 0b10000000 {
+			if TempResult<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -1708,7 +1711,7 @@ func execute() {
 				setSRBitOff(0)
 			}
 			// If bit 7 of temp is set, set N flag to 1 else reset it
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -1756,7 +1759,7 @@ func execute() {
 				setSRBitOff(0)
 			}
 			// If bit 7 of temp is set, set N flag to 1 else reset it
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -1791,7 +1794,7 @@ func execute() {
 			// Decrement value store at memory address from operand1()
 			memory[operand1()]--
 			// If bit 7 of memory[operand1()] is set, set SR Negative flag bit 7
-			if memory[operand1()]&0b10000000 == 0b10000000 {
+			if memory[operand1()]<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -1859,7 +1862,7 @@ func execute() {
 			// Add 1 to the value stored at the address in operand
 			memory[operand1()]++
 			// If bit 7 of memory[operand1()] is set, set N flag to 1 else reset it
-			if memory[operand1()]&0b10000000 == 0b10000000 {
+			if memory[operand1()]<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -2074,7 +2077,7 @@ func execute() {
 			// Store value of memory at address in operand in a temp variable
 			temp := memory[operand1()]
 			// If bit 7 of temp is set then set SR carry flag to 1 else set it to 0
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
@@ -2090,7 +2093,7 @@ func execute() {
 			// Store temp in memory at address in operand
 			memory[operand1()] = temp
 			// If bit 6 of temp is set then set SR negative flag to 1 else set it to 0
-			if temp&0b01000000 == 0b01000000 {
+			if temp<<6 == 0b01000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -2200,7 +2203,7 @@ func execute() {
 				setSRBitOff(6)
 			}
 			// If bit 7 of temp is set, set N flag to 1 else reset it
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -2391,7 +2394,7 @@ func execute() {
 			// Shift left the value at memory[operand1()+X]
 			memory[operand1()+X] <<= 1
 			// If memory[operand1()+X] bit 7 is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
-			if memory[operand1()+X]&0b10000000 == 0b10000000 {
+			if memory[operand1()+X]<<7 == 0b10000000 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
@@ -2403,7 +2406,7 @@ func execute() {
 				setSRBitOff(1)
 			}
 			// If memory[operand1()+X] bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-			if memory[operand1()+X]&0b10000000 == 0b10000000 {
+			if memory[operand1()+X]<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -2446,7 +2449,7 @@ func execute() {
 				setSRBitOff(1)
 			}
 			// Set N flag to true if A minus operand results in SR bit 7 being set, else reset N flag
-			if (A-memory[operand1()+X])&0b10000000 == 0b10000000 {
+			if (A-memory[operand1()+X])<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -2474,7 +2477,7 @@ func execute() {
 			// Decrement X Indexed Zero Paged memory by one
 			memory[operand1()+X]--
 			// Set N flag to true if bit 7 is set else reset N flag
-			if memory[operand1()+X]&0b10000000 == 0b10000000 {
+			if memory[operand1()+X]<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -3042,7 +3045,7 @@ func execute() {
 				setSRBitOn(0)
 			}
 			// If bit 7 of TempResult is set, set N flag to 1
-			if TempResult&0b10000000 == 0b10000000 {
+			if TempResult<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -3231,7 +3234,7 @@ func execute() {
 				setSRBitOff(0)
 			}
 			// If bit 7 of TempResult is set, set N flag to 1
-			if TempResult&0b10000000 == 0b10000000 {
+			if TempResult<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -3426,7 +3429,7 @@ func execute() {
 				setSRBitOff(1)
 			}
 			// Set N flag to true if A minus address bit 7 is set
-			if (A-address)&0b10000000 == 0b10000000 {
+			if (A-address)<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -3908,7 +3911,7 @@ func execute() {
 			// If Z flag is set, branch to relative address
 			if getSRBit(1) == 1 {
 				// If relative address is negative, subtract from fileposition
-				if relativeAddress&0b10000000 == 0b10000000 {
+				if relativeAddress<<7 == 0b10000000 {
 					fileposition -= int(relativeAddress ^ 0xFF)
 				} else {
 					fileposition += int(relativeAddress)
@@ -4116,13 +4119,13 @@ func execute() {
 			// Store the result of the AND between the accumulator and the operands in a temp var
 			temp := A & memory[int(operand1())+int(operand2())<<8]
 			// Set the SR Negative flag bit 7 to the value of bit 7 of temp
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
 			// Set the SR Overflow flag bit 6 to the value of bit 6 of temp
-			if temp&0b01000000 == 0b01000000 {
+			if temp<<6 == 0b01000000 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
@@ -4130,7 +4133,7 @@ func execute() {
 			// If temp==0 then set the SR Zero flag bit 1 to the result of temp else set SR negative flag to 0
 			if temp == 0 {
 				// If bit 7 of temp is 1 then set SR negative flag to 1
-				if temp&0b10000000 == 0b10000000 {
+				if temp<<7 == 0b10000000 {
 					setSRBitOn(7)
 				}
 			} else {
@@ -4658,13 +4661,13 @@ func execute() {
 			// Shift temp left 1 bit
 			temp <<= 1
 			// Set the carry flag to the value of bit 7 of temp
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
 			}
 			// Set the negative flag to the value of bit 6 of temp
-			if temp&0b01000000 == 0b01000000 {
+			if temp<<6 == 0b01000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -4712,13 +4715,13 @@ func execute() {
 			temp >>= 1
 
 			// Set the carry flag to the value of bit 7 of temp
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
 			}
 			// Set the negative flag to the value of bit 6 of temp
-			if temp&0b01000000 == 0b01000000 {
+			if temp<<6 == 0b01000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -4968,7 +4971,7 @@ func execute() {
 				setSRBitOff(1)
 			}
 			// If temp has bit 7 on then set the negative flag to 1 else set the negative flag to 0
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -5002,7 +5005,7 @@ func execute() {
 			// Shift the value left 1 bit
 			temp <<= 1
 			// Set negative flag if bit 7 is 1
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -5020,7 +5023,7 @@ func execute() {
 				setSRBitOff(1)
 			}
 			// If bit 7 of temp is 1 then set carry flag bit 0 to 1 else set carry flag bit 0 to 0
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
@@ -5058,7 +5061,7 @@ func execute() {
 				setSRBitOn(1)
 			}
 			// If bit 7 of temp is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -5096,7 +5099,7 @@ func execute() {
 			// Store the decremented value back into memory
 			memory[int(operand1())+int(X)] = temp
 			// If bit 7 of temp is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -5170,7 +5173,7 @@ func execute() {
 			// Store the incremented value in memory
 			memory[address] = temp
 			// If bit 7 of the value in memory is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-			if memory[address]&0b10000000 == 0b10000000 {
+			if memory[address]<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -5353,7 +5356,7 @@ func execute() {
 			// Store the value of the carry flag in temp2
 			temp2 := getSRBit(0)
 			// Set the carry flag to the value of bit 7 of temp
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
@@ -5365,7 +5368,7 @@ func execute() {
 				temp |= 0b00000001
 			}
 			// Set the negative flag to the value of bit 6 of temp
-			if temp&0b01000000 == 0b01000000 {
+			if temp<<6 == 0b01000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -5631,7 +5634,7 @@ func execute() {
 				setSRBitOff(1)
 			}
 			// Set the negative flag to the value of bit 6 of temp
-			if temp&0b01000000 == 0b01000000 {
+			if temp<<6 == 0b01000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -5667,7 +5670,7 @@ func execute() {
 				setSRBitOn(1)
 			}
 			// If bit 7 of temp is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-			if temp&0b10000000 == 0b10000000 {
+			if temp<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
