@@ -4787,7 +4787,7 @@ func execute() {
 				setSRBitOn(0)
 			}
 			// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
-			if int(A) > 127 || int(A) < (-127) {
+			if A > 127 || A == 0x80 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
