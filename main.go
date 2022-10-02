@@ -55,6 +55,11 @@ func main() {
 	fmt.Printf("Copying file into memory at $%04X\n\n", PC)
 	copy(memory[PC:], file)
 
+	// For C64 cartridge files
+	// Copy file from 40 bytes until end into memory at PC
+	// fmt.Printf("Copying file into memory at $%04X\n\n", PC)
+	// copy(memory[PC:], file[40:])
+
 	// Start emulation
 	fmt.Printf("Starting emulation at $%04X\n\n", PC)
 	printMachineState()
@@ -134,7 +139,7 @@ func execute() {
 	if disassemble {
 		fmt.Printf(" *= $%04X\n\n", PC)
 	}
-	for fileposition = PC; fileposition < len(file); {
+	for fileposition = PC; fileposition < len(memory); {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		// Implied addressing mode instructions
