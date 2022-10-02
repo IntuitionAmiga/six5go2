@@ -18,7 +18,7 @@ var (
 	A      byte        = 0x0000     // Accumulator
 	X      byte        = 0x0000     // X register
 	Y      byte        = 0x0000     // Y register		(76543210) SR Bit 5 is always set
-	SR     byte        = 0b00110010 // Status Register	(NVEBDIZC)
+	SR     byte        = 0b00110100 // Status Register	(NVEBDIZC)
 	SP     uint        = 0x01ff     // Stack Pointer
 	PC     int                      // Program Counter
 	memory [65536]byte              // Memory
@@ -1288,11 +1288,11 @@ func execute() {
 			// Load the accumulator with the value in the operand
 			A = operand1()
 			// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
-			if A == 0 {
+			/*if A == 0 {
 				setSRBitOn(1)
 			} else {
 				setSRBitOff(1)
-			}
+			}*/
 			// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
 			if getABit(7) == 1 {
 				setSRBitOn(7)
