@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 )
 
 var (
@@ -13,6 +12,7 @@ var (
 	bytecounter    int // Byte position counter
 	machineMonitor     = false
 	disassemble        = false
+	once               = true
 
 	// CPURegisters and RAM
 	A      byte        = 0x0000     // Accumulator
@@ -84,8 +84,11 @@ func incCount(amount int) {
 func printMachineState() {
 	if machineMonitor {
 		// fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
-		// Clear the screen
-		fmt.Printf("\033[2J")
+		// Clear the screen once
+		if once {
+			fmt.Printf("\033[2J")
+		}
+		once = false
 		// Move cursor to top left
 		fmt.Printf("\033[0;0H")
 	}
@@ -100,7 +103,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		time.Sleep(10 * time.Millisecond)
+		//time.Sleep(10 * time.Millisecond)
 		// Wait for keypress
 		// var input string
 		// fmt.Scanln(&input)
@@ -173,7 +176,8 @@ func execute() {
 			PC = int(memory[0xFFFE]) | int(memory[0xFFFF])<<8
 			// Decrement SP
 			SP -= 2
-			incCount(1)
+			bytecounter = PC
+			incCount(0)
 		case 0x18:
 			/*
 				CLC - Clear Carry Flag
@@ -5172,16 +5176,12 @@ func execute() {
 
 			// Get the X Indexed absolute memory address
 			address := byte(int(operand2())<<8|int(operand1())) + X
-			fmt.Printf("address: %04X\n", address)
 			// Get the value in memory at the address stored in operand 1 and operand 2
 			temp := memory[address]
-			fmt.Printf("temp: %d\n", temp)
 			// Increment the value in memory
 			temp++
-			fmt.Printf("temp++: %d\n", temp)
 			// Store the incremented value in memory
 			memory[address] = temp
-			fmt.Printf("memory[%04X]: %04X\n", address, memory[address])
 			// If bit 7 of the value in memory is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 			if memory[address]<<7 == 0b10000000 {
 				setSRBitOn(7)
