@@ -3234,16 +3234,16 @@ func execute() {
 				setSRBitOff(0)
 			}
 			// If tempresult <0 Set the carry flag
-			if TempResult < 0 {
+			// If temp bit 7 is set then set SR bit 0 to 0 as number is negative
+			// If temp bit 7 is not set then set SR bit 0 to 1 as number is not negative
+			if TempResult<<7 == 0b10000000 {
 				setSRBitOn(0)
+				setSRBitOn(7)
+
 			} else {
 				setSRBitOff(0)
-			}
-			// If bit 7 of TempResult is set, set N flag to 1
-			if TempResult<<7 == 0b10000000 {
-				setSRBitOn(7)
-			} else {
 				setSRBitOff(7)
+
 			}
 			// If operand is equal to A, set Z flag to 1 else set Zero flag to 0
 			if finalValue == A {
@@ -3251,8 +3251,8 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			// Set the overflow flag
-			if int(TempResult) > 127 || int(TempResult) < (-128) {
+			// If tempresult is greater than 127 or less than -127, set overflow flag to 1
+			if TempResult > 127 || TempResult == 0x80 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
