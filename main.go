@@ -3231,7 +3231,7 @@ func execute() {
 			// Subtract operand from A
 			TempResult := A - finalValue
 			// If operand is greater than A, set carry flag to 0
-			if finalValue > A {
+			if TempResult > A {
 				setSRBitOff(0)
 			}
 			// If tempresult <0 Set the carry flag
@@ -3247,7 +3247,7 @@ func execute() {
 
 			}
 			// If operand is equal to A, set Z flag to 1 else set Zero flag to 0
-			if finalValue == A {
+			if TempResult == A {
 				setSRBitOn(1)
 			} else {
 				setSRBitOff(1)
