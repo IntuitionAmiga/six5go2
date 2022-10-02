@@ -4481,11 +4481,11 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 				}
-				fmt.Printf("LDA $%02X%02X\n", operand2(), operand1())
+				fmt.Printf("LDA $%04X\n", uint16(operand2())<<8|uint16(operand1()))
 			}
 
 			// Update A with the value stored at the address in the operands
-			A = memory[operand1()+(operand2())]
+			A = memory[uint16(operand2())<<8|uint16(operand1())]
 			// If A==0 then set SR zero flag bit 1 to 1 else set it to 0
 			if A == 0 {
 				setSRBitOn(1)
