@@ -4425,7 +4425,7 @@ func execute() {
 
 			// Set PC to the absolute address stored in operand 1 and operand 2
 			PC = int(operand2())<<8 | int(operand1())
-			bytecounter += 2
+			bytecounter += 3
 			incCount(0)
 		case 0x20:
 			/*
@@ -5181,7 +5181,7 @@ func execute() {
 			fmt.Printf("temp++: %d\n", temp)
 			// Store the incremented value in memory
 			memory[address] = temp
-			fmt.Printf("memory[address]: %04X\n", memory[address])
+			fmt.Printf("memory[%04X]: %04X\n", address, memory[address])
 			// If bit 7 of the value in memory is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 			if memory[address]<<7 == 0b10000000 {
 				setSRBitOn(7)
