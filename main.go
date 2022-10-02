@@ -4814,10 +4814,11 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 				}
-				fmt.Printf("STA $%04X\n", operand1()|uint8(int(operand2())<<8))
+				fmt.Printf("STA $%04X\n", uint16(operand2())<<8|uint16(operand1()))
 			}
+
 			// Update the memory at the address stored in operand 1 and operand 2 with the value of the accumulator
-			memory[int(operand1())+int(operand2())] = A
+			memory[uint16(operand2())<<8|uint16(operand1())] = A
 			incCount(3)
 		case 0x8E:
 			/*
