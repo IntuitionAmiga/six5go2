@@ -2355,7 +2355,7 @@ func execute() {
 			*/
 			if disassemble {
 				if printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Zero Page,X)\t\n", PC, opcode(), operand1(), operand2())
+					fmt.Printf(";; $%04x\t$%02x $%02x\t(Zero Page,X)\t\n", PC, opcode(), operand1())
 				}
 				fmt.Printf("AND $%02X,X\n", operand1())
 			}
@@ -2374,7 +2374,7 @@ func execute() {
 			} else {
 				setSRBitOff(7)
 			}
-			incCount(3)
+			incCount(2)
 		case 0x16:
 			/*
 				ASL - Arithmetic Shift Left
