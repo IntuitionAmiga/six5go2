@@ -1288,11 +1288,11 @@ func execute() {
 			// Load the accumulator with the value in the operand
 			A = operand1()
 			// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
-			/*if A == 0 {
+			if A == 0 {
 				setSRBitOn(1)
 			} else {
 				setSRBitOff(1)
-			}*/
+			}
 			// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
 			if getABit(7) == 1 {
 				setSRBitOn(7)
