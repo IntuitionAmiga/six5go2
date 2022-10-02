@@ -5477,18 +5477,20 @@ func execute() {
 				setSRBitOn(0)
 			}
 			// If temp <0 then set carry bit to 0 indicating a borrow
-			if temp < 0 {
+			// If temp bit 7 is set then set SR bit 0 to 0 as number is negative
+			if temp<<7 == 0b10000000 {
 				setSRBitOff(0)
 			}
+			// Subtract the value in memory from the accumulator with borrow
+			A -= temp - (1 - getSRBit(0))
 			// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
-			if int(A) > 127 || int(A) < (-127) {
+			if A > 127 || A == 0x80 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
 			}
 			// If bit 7 of accumulator is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 			if getABit(7) == 1 {
-				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
@@ -5498,8 +5500,7 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-			// Subtract the value in memory from the accumulator with borrow
-			A -= temp - (1 - getSRBit(0))
+
 			incCount(3)
 		case 0x9D:
 			/*
