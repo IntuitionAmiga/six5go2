@@ -4427,7 +4427,7 @@ func execute() {
 			}
 
 			// Set PC to the absolute address stored in operand 1 and operand 2
-			PC = int(operand1()) + int(operand2())
+			PC = int(operand2())<<8 | int(operand1())
 			bytecounter += 2
 			incCount(0)
 		case 0x20:
@@ -4473,7 +4473,7 @@ func execute() {
 				When instruction LDA is executed by the microprocessor, data is transferred from memory to
 				the accumulator and stored in the accumulator.
 
-				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
+				 LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
