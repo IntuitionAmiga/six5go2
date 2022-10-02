@@ -1426,26 +1426,27 @@ func execute() {
 			// Store result of A-memory stored at operand1() in temp variable
 			temp := A - operand1()
 			// If temp is greater than or equal to 0, set carry flag to 1
-			if temp > 0 {
+			// If temp bit 7 is not set then set SR bit 0 to 1 as number is not negative
+			if temp<<7 == 0b00000000 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
 			}
 			// If temp is less than 0, set carry flag to 0
-			if temp < 0 {
-				setSRBitOff(0)
-			}
-			// If temp is greater than 127 or less than -127, set overflow flag to 1
-			if int(temp) > 127 || int(temp) < (-127) {
-				setSRBitOn(6)
-			} else {
-				setSRBitOff(6)
-			}
+			// If temp bit 7 is set then set SR bit 0 to 0 as number is negative
 			// If bit 7 of temp is set, set N flag to 1 else reset it
+
 			if temp<<7 == 0b10000000 {
+				setSRBitOff(0)
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
+			}
+			// If temp is greater than 127 or less than -127, set overflow flag to 1
+			if temp > 127 || temp == 0x80 {
+				setSRBitOn(6)
+			} else {
+				setSRBitOff(6)
 			}
 			// If temp is equal to 0, set Z flag to 1 else reset it
 			if temp == 0 {
