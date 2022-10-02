@@ -4781,22 +4781,21 @@ func execute() {
 				setSRBitOff(0)
 			}
 			// If accumulator<0 then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
-			if A < 0 {
+			// If bit 7 of A is set then it is negative
+			// If bit 7 of accumulator is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
+			if A<<7 == 0b10000000 {
 				setSRBitOff(0)
+				setSRBitOn(7)
 			} else {
 				setSRBitOn(0)
+				setSRBitOff(7)
+
 			}
 			// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
 			if A > 127 || A == 0x80 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
-			}
-			// If bit 7 of accumulator is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-			if getABit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
 			}
 			incCount(3)
 		case 0x8D:
