@@ -134,7 +134,7 @@ func execute() {
 	if disassemble {
 		fmt.Printf(" *= $%04X\n\n", PC)
 	}
-	for bytecounter = PC; bytecounter < len(memory); {
+	for bytecounter = PC; bytecounter < len(file); {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		// Implied addressing mode instructions
@@ -166,15 +166,14 @@ func execute() {
 			}
 
 			//  Push PC onto stack
-			memory[SP] = byte(PC + 2)
+			memory[+SP] = byte(PC >> 8)
 			// Store SR on stack
 			memory[SP-1] = SR
 			// Set PC to interrupt vector
-			PC = int(memory[0xFFFE]) + int(memory[0xFFFF])*256
-			fmt.Printf("PC = $%04X\n", PC)
+			PC = int(memory[0xFFFE]) | int(memory[0xFFFF])<<8
 			// Decrement SP
 			SP -= 2
-			incCount(2)
+			incCount(1)
 		case 0x18:
 			/*
 				CLC - Clear Carry Flag
@@ -3240,11 +3239,9 @@ func execute() {
 			if TempResult<<7 == 0b10000000 {
 				setSRBitOn(0)
 				setSRBitOn(7)
-
 			} else {
 				setSRBitOff(0)
 				setSRBitOff(7)
-
 			}
 			// If operand is equal to A, set Z flag to 1 else set Zero flag to 0
 			if TempResult == A {
@@ -4452,7 +4449,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
 				}
-				fmt.Printf("JSR $%02X%02X\n", operand2(), operand1())
+				fmt.Printf("JSR $%04X\n", int(operand2())<<8|int(operand1()))
 			}
 
 			// Push the program counter onto the stack
@@ -4791,7 +4788,6 @@ func execute() {
 			} else {
 				setSRBitOn(0)
 				setSRBitOff(7)
-
 			}
 			// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
 			if A > 127 || A == 0x80 {
@@ -5171,17 +5167,21 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
 				}
-				fmt.Printf("INC $%02X%02X,X\n", operand2(), operand1())
+				fmt.Printf("INC $%04X,X\n", int(operand2())<<8|int(operand1()))
 			}
 
 			// Get the X Indexed absolute memory address
-			address := operand2() + operand1() + X
+			address := byte(int(operand2())<<8|int(operand1())) + X
+			fmt.Printf("address: %04X\n", address)
 			// Get the value in memory at the address stored in operand 1 and operand 2
 			temp := memory[address]
+			fmt.Printf("temp: %d\n", temp)
 			// Increment the value in memory
 			temp++
+			fmt.Printf("temp++: %d\n", temp)
 			// Store the incremented value in memory
 			memory[address] = temp
+			fmt.Printf("memory[address]: %04X\n", memory[address])
 			// If bit 7 of the value in memory is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 			if memory[address]<<7 == 0b10000000 {
 				setSRBitOn(7)
@@ -5556,11 +5556,11 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
 				}
-				fmt.Printf("ADC $%02X%02X,Y\n", operand2(), operand1())
+				fmt.Printf("ADC $%04X,Y\n", int(operand2())<<8|int(operand1()))
 			}
 
 			// Add the Y indexed address from the operands plus the carry bit to the accumulator
-			A += memory[int(operand1())+int(operand2())+int(Y)]
+			A += memory[int(operand2())<<8|int(operand1())+int(Y)]
 			// If the carry flag is 1 then add 1 to the accumulator else reset it
 			if getSRBit(0) == 1 {
 				A++
@@ -5568,10 +5568,14 @@ func execute() {
 				setSRBitOff(0)
 			}
 			// If the accumulator is greater than 255 then set the carry flag else reset it
-			if A > 255 {
+			// 256 rolls over to 0
+			// If the accumulator is 0 then set the zero flag else reset it
+			if A == 255 {
 				setSRBitOn(0)
+				setSRBitOn(1)
 			} else {
 				setSRBitOff(0)
+				setSRBitOff(1)
 			}
 			// If the accumulator is greater than 99 then set the decimal flag else reset it
 			if A > 99 {
@@ -5586,28 +5590,20 @@ func execute() {
 				setSRBitOff(6)
 			}
 			// If the accumulator is less than 0 then set the overflow flag else reset it
-			if A < 0 {
+			// If accumulator bit 7 is set then set SR bit 0 to 0 as number is negative
+			// If the accumulator is less than 0 then set the negative flag else reset it
+			if getABit(7) == 1 {
 				setSRBitOn(6)
+				setSRBitOn(7)
 			} else {
 				setSRBitOff(6)
+				setSRBitOff(7)
 			}
 			// If the accumulator is greater than 127 then set the negative flag else reset it
 			if A > 127 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
-			}
-			// If the accumulator is less than 0 then set the negative flag else reset it
-			if A < 0 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
-			}
-			// If the accumulator is 0 then set the zero flag else reset it
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
 			}
 			incCount(3)
 		case 0x39:
