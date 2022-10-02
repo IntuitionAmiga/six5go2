@@ -3582,13 +3582,14 @@ func execute() {
 			// Update the accumulator
 			A = A - memory[indirectAddress] - (1 - SR&1)
 			// Set carry flag bit 0 if result is greater than or equal to 1
-			if A > 0 {
+			// If accumulator bit 7 is not set then set SR bit 0 to 1 as number is not negative
+			if A<<7 == 0b00000000 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
 			}
 			// Set overflow flag bit 6 if accumulator is greater than 127 or less than -127
-			if int(A) > 127 || int(A) < -127 {
+			if A > 127 || A == 0x80 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
