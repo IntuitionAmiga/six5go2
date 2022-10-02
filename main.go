@@ -10,7 +10,7 @@ import (
 var (
 	printHex       bool
 	file           []byte
-	fileposition   int // Byte position counter
+	bytecounter    int // Byte position counter
 	machineMonitor     = false
 	disassemble        = false
 
@@ -55,11 +55,6 @@ func main() {
 	fmt.Printf("Copying file into memory at $%04X\n\n", PC)
 	copy(memory[PC:], file)
 
-	// For C64 cartridge files
-	// Copy file from 40 bytes until end into memory at PC
-	// fmt.Printf("Copying file into memory at $%04X\n\n", PC)
-	// copy(memory[PC:], file[40:])
-
 	// Start emulation
 	fmt.Printf("Starting emulation at $%04X\n\n", PC)
 	printMachineState()
@@ -71,17 +66,17 @@ func instructions() {
 	fmt.Printf("EXAMPLE - %s apple1basic.bin 0100 mon\n\n", os.Args[0])
 }
 func opcode() byte {
-	return memory[fileposition]
+	return memory[bytecounter]
 }
 func operand1() byte {
-	return memory[fileposition+1]
+	return memory[bytecounter+1]
 }
 func operand2() byte {
-	return memory[fileposition+2]
+	return memory[bytecounter+2]
 }
 func incCount(amount int) {
-	if fileposition+amount < len(file)-1 && amount != 0 {
-		fileposition += amount
+	if bytecounter+amount < len(file)-1 && amount != 0 {
+		bytecounter += amount
 	}
 	PC += amount
 	printMachineState()
@@ -139,7 +134,7 @@ func execute() {
 	if disassemble {
 		fmt.Printf(" *= $%04X\n\n", PC)
 	}
-	for fileposition = PC; fileposition < len(memory); {
+	for bytecounter = PC; bytecounter < len(memory); {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		// Implied addressing mode instructions
@@ -2519,7 +2514,7 @@ func execute() {
 			}
 
 			// Load the accumulator with the X indexed value in the operand
-			A = memory[fileposition+1+int(X)]
+			A = memory[bytecounter+1+int(X)]
 
 			// If A is zero, set the zero flag else reset the zero flag
 			if A == 0 {
@@ -3668,7 +3663,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BPL $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+				fmt.Printf("BPL $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
 
 			// Get offset from relative address in operand
@@ -3682,7 +3677,7 @@ func execute() {
 				if offset < 0 {
 					PC--
 				}
-				fileposition += 2
+				bytecounter += 2
 				incCount(0)
 			} else {
 				// Don't branch
@@ -3702,7 +3697,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BMI $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+				fmt.Printf("BMI $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
 
 			// Get offset from relative address in operand
@@ -3716,7 +3711,7 @@ func execute() {
 				if offset < 0 {
 					PC--
 				}
-				fileposition += 2
+				bytecounter += 2
 				incCount(0)
 			} else {
 				// Don't branch
@@ -3736,7 +3731,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BVC $%02X\n", fileposition+2+int(operand1()))
+				fmt.Printf("BVC $%02X\n", bytecounter+2+int(operand1()))
 			}
 
 			// Get offset from relative address in operand
@@ -3750,7 +3745,7 @@ func execute() {
 				if offset < 0 {
 					PC--
 				}
-				fileposition += 2
+				bytecounter += 2
 				incCount(0)
 			} else {
 				// Don't branch
@@ -3804,12 +3799,12 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BVS $%04X\n", fileposition+2+int(operand1()))
+				fmt.Printf("BVS $%04X\n", bytecounter+2+int(operand1()))
 			}
 
 			// If SR overflow flag bit 6 is set then branch to operand 1
 			if getSRBit(6) == 1 {
-				PC = fileposition + 2 + int(operand1())
+				PC = bytecounter + 2 + int(operand1())
 			}
 			incCount(2)
 
@@ -3820,14 +3815,14 @@ func execute() {
 
 				This instruction tests the state of the carry bit and takes a conditional branch if the carry bit is reset.
 
-				It affects no flags or registers other than the program fileposition and then only if the C flag is not on.
+				It affects no flags or registers other than the program bytecounter and then only if the C flag is not on.
 			*/
 
 			if disassemble {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BCC $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+				fmt.Printf("BCC $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
 
 			// Get offset from relative address in operand
@@ -3852,12 +3847,12 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BCS $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+				fmt.Printf("BCS $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
 
 			// If the carry flag is set, branch to the address in the operand
 			if getSRBit(0) == 1 {
-				PC = (fileposition + 2 + int(operand1())) & 0xFF
+				PC = (bytecounter + 2 + int(operand1())) & 0xFF
 			}
 			incCount(2)
 
@@ -3877,7 +3872,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BNE $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+				fmt.Printf("BNE $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
 
 			// Get offset from relative address in operand
@@ -3891,7 +3886,7 @@ func execute() {
 				if offset < 0 {
 					PC--
 				}
-				fileposition += 2
+				bytecounter += 2
 				incCount(0)
 			} else {
 				// Don't branch
@@ -3906,25 +3901,25 @@ func execute() {
 
 				It takes a conditional branch whenever the Z flag is on or the previous result is equal to 0.
 
-				BEQ does not affect any of the flags or registers other than the program fileposition and only then
+				BEQ does not affect any of the flags or registers other than the program bytecounter and only then
 				when the Z flag is set.
 			*/
 			if disassemble {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BEQ $%02X\n", (fileposition+2+int(operand1()))&0xFF)
+				fmt.Printf("BEQ $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
 
 			// Get relative address from operand
 			relativeAddress := operand1()
 			// If Z flag is set, branch to relative address
 			if getSRBit(1) == 1 {
-				// If relative address is negative, subtract from fileposition
+				// If relative address is negative, subtract from bytecounter
 				if relativeAddress<<7 == 0b10000000 {
-					fileposition -= int(relativeAddress ^ 0xFF)
+					bytecounter -= int(relativeAddress ^ 0xFF)
 				} else {
-					fileposition += int(relativeAddress)
+					bytecounter += int(relativeAddress)
 				}
 			}
 			incCount(2)
@@ -4430,7 +4425,7 @@ func execute() {
 
 			// Set PC to the absolute address stored in operand 1 and operand 2
 			PC = int(operand1()) + int(operand2())
-			fileposition += 2
+			bytecounter += 2
 			incCount(0)
 		case 0x20:
 			/*
@@ -4448,7 +4443,7 @@ func execute() {
 				program to begin at that new address.
 
 				The JSR instruction affects no flags, causes the stack pointer to be decremented by 2 and substitutes
-				new values into the program fileposition low and the program fileposition high.
+				new values into the program bytecounter low and the program bytecounter high.
 			*/
 			if disassemble {
 				if printHex {
@@ -4465,7 +4460,7 @@ func execute() {
 			// Set the program counter to the absolute address from the operands
 			PC = int(operand2())<<8 | int(operand1())
 
-			fileposition = PC
+			bytecounter = PC
 			incCount(0)
 		case 0xAD:
 			/*
