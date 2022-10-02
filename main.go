@@ -2780,19 +2780,21 @@ func execute() {
 			temp := operand1() + X
 			result := A - memory[temp] - (1 - SR&1)
 			// If result is greater than or equal to 1 then set carry flag bit 0 to 1 else set carry flag bit 0 to 0
-			if result > 0 {
+			// If result bit 7 is not set then set SR bit 0 to 1 as number is not negative
+			if result<<7 == 0b00000000 {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
 			}
 			// If result is > 127 or < -127 then set overflow flag bit 6 to 1 else set overflow flag bit 6 to 0
-			if int(result) > 127 || int(result) < -127 {
+			if result > 127 || result == 0x80 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
 			}
 			// If result is < 0 then set Negative flag bit 7 to 1 else set Negative flag bit 7 to 0
-			if result < 0 {
+			// If result bit 7 is set then set SR bit 0 to 0 as number is negative
+			if result<<7 == 0b10000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
