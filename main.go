@@ -4423,7 +4423,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, opcode(), operand1(), operand2())
 				}
-				fmt.Printf("JMP $%02X%02X\n", operand2(), operand1())
+				fmt.Printf("JMP $%04X\n", int(operand2())<<8|int(operand1()))
 			}
 
 			// Set PC to the absolute address stored in operand 1 and operand 2
@@ -5921,11 +5921,11 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute Indirect)\n", PC, opcode(), operand1(), operand2())
 				}
-				fmt.Printf("JMP ($%02X%02X)\n", operand2(), operand1())
+				fmt.Printf("JMP ($%04X)\n", int(operand2())<<8|int(operand1()))
 			}
 
 			// Update the PC with the memory location
-			PC = int(memory[operand1()+(operand2())])
+			PC = int(memory[int(operand2())<<8|int(operand1())])
 			incCount(3)
 		}
 	}
