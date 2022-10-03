@@ -104,7 +104,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		//time.Sleep(10 * time.Millisecond)
+		// time.Sleep(10 * time.Millisecond)
 		// Wait for keypress
 		// var input string
 		// fmt.Scanln(&input)
@@ -2317,11 +2317,12 @@ func execute() {
 			}
 
 			// Store the X Indexed Zero Page value at the operand 1 address in a temp variable
-			temp := memory[operand1()+X]
+			temp := uint16(memory[operand1()+X])
+			// temp := memory[operand1()+X]
 			// Add temp to accumulator
-			A += temp
+			A += byte(temp)
 			// If temp>255 then set SR carry flag bit 0 to 1
-			if A > 255 {
+			if A > 0x00FF {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
@@ -2345,7 +2346,6 @@ func execute() {
 				setSRBitOff(1)
 			}
 			incCount(2)
-
 		case 0x35:
 			/*
 				AND - "AND" Memory with Accumulator
@@ -3088,19 +3088,19 @@ func execute() {
 			}
 
 			// Store the value at the X Indexed Zero Pages Indirect address in a variable
-			indirectAddress := int(operand1()) + int(X)
+			indirectAddress := uint16(int(operand1()) + int(X))
 			// If the indirect address is greater than 255, wrap around
 			if indirectAddress > 255 {
 				indirectAddress -= 256
 			}
 			// Get the value at the indirect address
-			indirectValue := memory[uint16(indirectAddress)]
+			indirectValue := memory[indirectAddress]
 			// Get the value at the indirect address + 1
-			indirectValue2 := memory[uint16(indirectAddress+1)]
+			indirectValue2 := memory[(indirectAddress + 1)]
 			// Combine the two values to get the address
-			indirectAddress = int(indirectValue) + (int(indirectValue2) << 8)
+			indirectAddress = uint16(int(indirectValue) + int(indirectValue2)<<8)
 			// Get the value at the address
-			value := memory[uint16(indirectAddress)]
+			value := memory[indirectAddress]
 			// XOR the accumulator with the value
 			A ^= value
 			// If A==0, set zero flag
@@ -3322,7 +3322,7 @@ func execute() {
 			// Add memory[address] to accumulator
 			A += memory[address]
 			// If accumulator>255 then set SR carry flag bit 0 to 1
-			if A > 255 {
+			if memory[address] > 0x00FF {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
@@ -3679,7 +3679,8 @@ func execute() {
 				// Add offset to lower 8bits of PC
 				PC += offset
 				// If the offset is negative, decrement the PC by 1
-				if offset < 0 {
+				// If bit 7 is unset then it's negative
+				if offset<<7 == 0b00000000 {
 					PC--
 				}
 				bytecounter += 2
@@ -3713,7 +3714,8 @@ func execute() {
 				// Add offset to lower 8bits of PC
 				PC += offset
 				// If the offset is negative, decrement the PC by 1
-				if offset < 0 {
+				// If bit 7 is unset then it's negative
+				if offset<<7 == 0b00000000 {
 					PC--
 				}
 				bytecounter += 2
@@ -3747,7 +3749,8 @@ func execute() {
 				// Add offset to lower 8bits of PC
 				PC += offset
 				// If the offset is negative, decrement the PC by 1
-				if offset < 0 {
+				// If bit 7 is unset then it's negative
+				if offset<<7 == 0b00000000 {
 					PC--
 				}
 				bytecounter += 2
@@ -3888,7 +3891,8 @@ func execute() {
 				// Add offset to lower 8bits of PC
 				PC += offset
 				// If the offset is negative, decrement the PC by 1
-				if offset < 0 {
+				// If bit 7 is unset then it's negative
+				if offset<<7 == 0b00000000 {
 					PC--
 				}
 				bytecounter += 2
@@ -4902,7 +4906,8 @@ func execute() {
 			}
 
 			// Add the X indexed address from the operands plus the carry bit to the accumulator
-			A += memory[int(operand1())+int(operand2())+int(X)]
+			temp := uint16(memory[int(operand1())+int(operand2())+int(X)])
+			A += byte(temp)
 			// If the carry flag is 1 then add 1 to the accumulator else reset it
 			if getSRBit(0) == 1 {
 				A++
@@ -4910,7 +4915,7 @@ func execute() {
 				setSRBitOff(0)
 			}
 			// If the accumulator is greater than 255 then set the carry flag else reset it
-			if A > 255 {
+			if temp > 0x00FF {
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
@@ -4928,7 +4933,8 @@ func execute() {
 				setSRBitOff(6)
 			}
 			// If the accumulator is less than 0 then set the overflow flag else reset it
-			if A < 0 {
+			// If A bit 7 is unset then it's negative
+			if getABit(7) == 0b00000000 {
 				setSRBitOn(6)
 			} else {
 				setSRBitOff(6)
@@ -4940,7 +4946,8 @@ func execute() {
 				setSRBitOff(7)
 			}
 			// If the accumulator is less than 0 then set the negative flag else reset it
-			if A < 0 {
+			// If A bit 7 is unset then it's negative
+			if getABit(7) == 0b00000000 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
@@ -5854,19 +5861,20 @@ func execute() {
 
 			// Subtract the value in the Y indexed memory address from the accumulator with borrow
 			// Get the value in memory at the address stored in operand 1 and operand 2
-			temp := memory[operand2()+operand1()+Y]
+			temp := uint16(memory[operand2()+operand1()+Y])
 			// If temp is greater than A then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
-			if temp > A {
+			if temp > uint16(A) {
 				setSRBitOff(0)
 			} else {
 				setSRBitOn(0)
 			}
 			// If temp <0 then set carry bit to 0 indicating a borrow
-			if temp < 0 {
+			// If A bit 7 is unset then it's negative
+			if temp<<7 == 0b00000000 {
 				setSRBitOff(0)
 			}
 			// Subtract the value in memory from the accumulator with borrow
-			A = A - temp - (1 - getSRBit(0))
+			A = A - byte(temp) - (1 - getSRBit(0))
 			// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
 			// If accumulator bit 7 is set then set SR bit 0 to 0 as number is negative
 			if A > 127 || A == 0x80 {
