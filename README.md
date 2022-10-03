@@ -2,7 +2,7 @@
 
 Six5go2 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley
 
-USAGE   - ./six5go2 <target_filename> <hex_entry_point> <dis>/<mon> (Disassembler/Machine Monitor) <hex> (Hex opcodes as comments with disassembly)
+USAGE   - ./six5go2 target_filename hex_entry_point dis/mon hex
 
 EXAMPLE - ./six5go2 AllSuiteA.bin 4000 mon
 
