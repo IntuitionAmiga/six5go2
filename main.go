@@ -3279,10 +3279,10 @@ func execute() {
 				fmt.Printf("STA ($%02X,X)\n", operand1())
 			}
 
-			// Store X-Indexed Zero Page Indirect Address in temporary variable
-			temp := operand1() + X
+			// Get the X indexed zero page address
+			indirectAddress := operand1() + X
 			// Store accumulator at address stored in temporary variable
-			memory[temp] = A
+			memory[indirectAddress] = A
 			incCount(2)
 
 		// Zero Page Indirect Y Indexed addressing mode instructions
@@ -5759,8 +5759,10 @@ func execute() {
 				fmt.Printf("LDA $%02X%02X,Y\n", operand2(), operand1())
 			}
 
+			// Get 16 bit address from operand 1 and operand 2
+			address := int(operand2())<<8 | int(operand1()) + 1 + int(X)
 			// Update A with the Y indexed value stored at the address in the operands
-			A = memory[operand1()+(operand2())+Y]
+			A = memory[address]
 			// If A==0 then set SR zero flag bit 1 to 1 else set it to 0
 			if A == 0 {
 				setSRBitOn(1)
