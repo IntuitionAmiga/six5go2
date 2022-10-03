@@ -5216,7 +5216,8 @@ func execute() {
 				When instruction LDA is executed by the microprocessor, data is transferred from memory to the
 				accumulator and stored in the accumulator.
 
-				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
+				LDA affects the contents of the accumulator,
+				does not affect the carry or overflow flags;
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
 				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
@@ -5227,8 +5228,12 @@ func execute() {
 				fmt.Printf("LDA $%02X%02X,X\n", operand2(), operand1())
 			}
 
-			// Update A with the X indexed absolute value stored at the address in the operands
-			A = memory[operand1()+(operand2())+X]
+			// Get the 16bit X indexed absolute memory address
+			address := int(operand2())<<8 | int(operand1()) + 1 + int(X)
+
+			// Update A with the value stored at the address
+			A = memory[address]
+
 			// If A==0 then set SR zero flag bit 1 to 1 else set it to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -5533,8 +5538,9 @@ func execute() {
 				fmt.Printf("STA $%02X%02X,X\n", operand2(), operand1())
 			}
 
-			// Update the memory at the X indexed absolute address stored in operand 1 and operand 2 with the value of the accumulator
-			memory[int(operand1())+int(operand2())+int(X)] = A
+			// Get 16 bit X indexed absolute memory address
+			address := int(operand2())<<8 | int(operand1()) + 1 + int(X)
+			memory[address] = A
 			incCount(3)
 
 		// Y Indexed Absolute addressing mode instructions
