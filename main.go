@@ -3919,14 +3919,21 @@ func execute() {
 			relativeAddress := operand1()
 			// If Z flag is set, branch to relative address
 			if getSRBit(1) == 1 {
-				// If relative address is negative, subtract from bytecounter
+				// If relative address is negative, subtract from PC
 				if relativeAddress<<7 == 0b10000000 {
-					bytecounter -= int(relativeAddress ^ 0xFF)
+					PC -= int(relativeAddress)
+					bytecounter = PC
+					incCount(0)
 				} else {
-					bytecounter += int(relativeAddress)
+					// If relative address is positive, add to PC
+					PC += int(relativeAddress)
+					bytecounter = PC
+					incCount(0)
 				}
+			} else {
+				// If Z flag is not set, don't branch
+				incCount(2)
 			}
-			incCount(2)
 		case 0xF6:
 			/*
 				INC - Increment Memory By One
