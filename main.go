@@ -2518,8 +2518,7 @@ func execute() {
 			}
 
 			// Load the accumulator with the X indexed value in the operand
-			A = memory[bytecounter+1+int(X)]
-
+			A = memory[int(operand1())+1+int(X)]
 			// If A is zero, set the zero flag else reset the zero flag
 			if A == 0 {
 				setSRBitOn(1)
@@ -4828,6 +4827,8 @@ func execute() {
 
 			// Update the memory at the address stored in operand 1 and operand 2 with the value of the accumulator
 			memory[uint16(operand2())<<8|uint16(operand1())] = A
+			fmt.Printf("memory at %04X: %04X\n", uint16(operand2())<<8|uint16(operand1()), memory[uint16(operand2())<<8|uint16(operand1())])
+
 			incCount(3)
 		case 0x8E:
 			/*
