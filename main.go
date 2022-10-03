@@ -3134,12 +3134,11 @@ func execute() {
 				fmt.Printf("LDA ($%02X,X)\n", operand1())
 			}
 
-			// Load the X-Indexed Zero Page Indirect value into the Accumulator
-			A = memory[(operand1()+X)&0xFF]
-			// Store the value of the Accumulator into temp variable
-			temp := A
-			// Load accumulator into with value stored at address contained in temp
-			A = memory[temp]
+			// Get the 16bit indirect address
+			indirectAddress := int(int(operand1()) + int(X))
+			// Set the accumulator to the value
+			A = memory[indirectAddress]
+
 			// If bit 7 of A is set, set the SR negative flag else reset it to 0
 			if getABit(7) == 1 {
 				setSRBitOn(7)
