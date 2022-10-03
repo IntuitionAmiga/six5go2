@@ -4189,9 +4189,12 @@ func execute() {
 			}
 			// If bit 7 of Y is 1 then set SR Negative bit 7 of SR to 1
 			// else set bit 7 of SR to 0
+			// If bit 7 of Y is 1 then set SR negative bit 7 of to 1 else set SR negative bit 7 to 0
 			if getYBit(7) == 1 {
 				setSRBitOn(7)
+				setSRBitOn(7)
 			} else {
+				setSRBitOff(7)
 				setSRBitOff(7)
 			}
 			// If value loaded to Y is 0 set SR Zero flag bit 1 to 0
@@ -4205,12 +4208,6 @@ func execute() {
 			// If value in memory is greater than the accumulator set SR Zero flag bit 1 of SR to 1
 			if Y > A {
 				setSRBitOn(1)
-			}
-			// If bit 7 of Y is 1 then set SR negative bit 7 of to 1 else set SR negative bit 7 to 0
-			if getYBit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
 			}
 			incCount(3)
 		case 0xEC:
