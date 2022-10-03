@@ -19,13 +19,16 @@ To build the project, run the following command:
 
     git clone https://github.com/intuitionamiga/six5go2.git
     cd six5go2
-    go build .
+    go build -ldflags="-s -w" .
 
 To run the disassembler on the AllSuiteA 6502 opcode test suite, run the following command:
+
     ./six5go2 AllSuiteA.bin 4000 dis
 
-To run the disassembler with hex opcodes as comments, run the following command:
+To run the disassembler with hex opcodes as comments:
+
     ./six5go2 AllSuiteA.bin 4000 dis hex
 
-To run the machine monitor, run the following command:
+To run the machine monitor:
+
     ./six5go2 AllSuiteA.bin 4000 mon
