@@ -62,8 +62,9 @@ func main() {
 }
 func instructions() {
 	fmt.Printf("USAGE   - %s <target_filename> <hex_entry_point> <dis>/<mon> (Disassembler/Machine Monitor) <hex> (Hex opcodes as comments with disassembly)\n\n", os.Args[0])
-	fmt.Printf("EXAMPLE - %s c64kernal.bin 0200 dis hex\n\n", os.Args[0])
-	fmt.Printf("EXAMPLE - %s apple1basic.bin 0100 mon\n\n", os.Args[0])
+	fmt.Printf("EXAMPLE - %s AllSuiteA.bin 4000 mon\n\n", os.Args[0])
+	fmt.Printf("EXAMPLE - %s AllSuiteA.bin 4000 dis\n\n", os.Args[0])
+	fmt.Printf("EXAMPLE - %s AllSuiteA.bin 4000 dis hex\n\n", os.Args[0])
 }
 func opcode() byte {
 	return memory[bytecounter]

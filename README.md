@@ -2,12 +2,13 @@
 
 Six5go2 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley
 
-USAGE   - ./six5go2 target_filename hex_entry_point dis/mon (Disassembler/Machine Monitor) hex (Hex opcodes as comments with disassembly)
+USAGE   - ./six5go2 <target_filename> <hex_entry_point> <dis>/<mon> (Disassembler/Machine Monitor) <hex> (Hex opcodes as comments with disassembly)
 
-EXAMPLE - ./six5go2 c64kernal.bin 0200 dis hex
+EXAMPLE - ./six5go2 AllSuiteA.bin 4000 mon
 
-EXAMPLE - ./six5go2 apple1basic.bin 0100 mon
+EXAMPLE - ./six5go2 AllSuiteA.bin 4000 dis
 
+EXAMPLE - ./six5go2 AllSuiteA.bin 4000 dis hex
 
 Choose Disassembler or Machine Monitor at command line with dis or mon parameter.
 
@@ -20,11 +21,11 @@ To build the project, run the following command:
     cd six5go2
     go build .
 
-To run the disassembler on the c64 kernal rom, run the following command:
-    ./six5go2 c64kernal.bin 0200 dis
+To run the disassembler on the AllSuiteA 6502 opcode test suite, run the following command:
+    ./six5go2 AllSuiteA.bin 4000 dis
 
 To run the disassembler with hex opcodes as comments, run the following command:
-    ./six5go2 c64kernal.bin 0200 dis hex
+    ./six5go2 AllSuiteA.bin 4000 dis hex
 
 To run the machine monitor, run the following command:
-    ./six5go2 c64kernal.bin 0200 mon
+    ./six5go2 AllSuiteA.bin 4000 mon
