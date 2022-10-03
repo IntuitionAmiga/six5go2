@@ -3135,7 +3135,7 @@ func execute() {
 			}
 
 			// Get the 16bit indirect address
-			indirectAddress := int(int(operand1()) + int(X))
+			indirectAddress := int(operand1()) + int(X)
 			// Set the accumulator to the value
 			A = memory[indirectAddress]
 
@@ -4180,37 +4180,29 @@ func execute() {
 				fmt.Printf("CMP $%02X%02X\n", operand2(), operand1())
 			}
 
-			// Set X to Operand 2 and Y to the X indexed value stored in operand 1
-			X = operand2()
-			Y = memory[int(operand1())+int(X)]
-			// If value in memory is less than or equal to the accumulator set bit 0 of SR to 1
-			// else set bit 0 of SR to 0
-			if Y <= A {
-				setSRBitOn(0)
+			// Get 16bit absolute address
+			address := int(operand2())<<8 | int(operand1())
+			// Get the value at the address
+			value := memory[address]
+			result := value - A
+			// If the result is equal to 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+			if result == 0 {
+				setSRBitOn(1)
 			} else {
-				setSRBitOff(0)
+				setSRBitOff(1)
 			}
-			// If bit 7 of Y is 1 then set SR Negative bit 7 of SR to 1
-			// else set bit 7 of SR to 0
 			// If bit 7 of Y is 1 then set SR negative bit 7 of to 1 else set SR negative bit 7 to 0
 			if getYBit(7) == 1 {
 				setSRBitOn(7)
-				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
-				setSRBitOff(7)
 			}
-			// If value loaded to Y is 0 set SR Zero flag bit 1 to 0
-			if Y == 0 {
-				setSRBitOff(1)
-			}
-			// If value in memory is equal to the accumulator set SR Zero flag bit 1 of SR to 0
-			if Y == A {
-				setSRBitOff(1)
-			}
-			// If value in memory is greater than the accumulator set SR Zero flag bit 1 of SR to 1
-			if Y > A {
-				setSRBitOn(1)
+			// If value in memory is less than or equal to the accumulator set bit 0 of SR to 1
+			// else set bit 0 of SR to 0
+			if result <= A {
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
 			}
 			incCount(3)
 		case 0xEC:
@@ -4826,8 +4818,6 @@ func execute() {
 
 			// Update the memory at the address stored in operand 1 and operand 2 with the value of the accumulator
 			memory[uint16(operand2())<<8|uint16(operand1())] = A
-			fmt.Printf("memory at %04X: %04X\n", uint16(operand2())<<8|uint16(operand1()), memory[uint16(operand2())<<8|uint16(operand1())])
-
 			incCount(3)
 		case 0x8E:
 			/*
