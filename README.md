@@ -15,13 +15,13 @@ Choose Disassembler or Machine Monitor at command line with dis or mon parameter
 Specify hex as optional parameter with the disassembler to have opcodes as comments in the source output.
 
 
-To build the project, run the following command:
+To build the project:
 
     git clone https://github.com/intuitionamiga/six5go2.git
     cd six5go2
     go build -ldflags="-s -w" .
 
-To run the disassembler on the AllSuiteA 6502 opcode test suite, run the following command:
+To run the disassembler on the AllSuiteA 6502 opcode test suite:
 
     ./six5go2 AllSuiteA.bin 4000 dis
 
