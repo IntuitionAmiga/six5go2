@@ -4428,15 +4428,17 @@ func execute() {
 			*/
 			if disassemble {
 				if printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, opcode(), operand1(), operand2())
+					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Indirect)\n", PC, opcode(), operand1(), operand2())
 				}
 				fmt.Printf("JMP $%04X\n", int(operand2())<<8|int(operand1()))
 			}
 
 			//Get 16 bit address from operand 1 and operand 2
 			address := int(operand2())<<8 | int(operand1())
-			// Set PC to the address
-			PC = int(address)
+			//Get indirect address from address
+			indirectAddress := int(memory[address+1])<<8 | int(memory[address])
+			//Set PC to indirect address
+			PC = indirectAddress
 			bytecounter = PC
 			incCount(0)
 		case 0x20:
