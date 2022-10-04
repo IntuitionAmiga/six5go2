@@ -3010,14 +3010,14 @@ func execute() {
 				fmt.Printf("AND ($%02X,X)\n", operand1())
 			}
 
-			// Store the X-Indexed Zero Page Indirect address in a variable
-			indirectAddress := operand1() + X
-			// Get the address of the operand from the Zero Page
-			operandAddress := uint16(memory[indirectAddress])
-			// Get the operand from the Zero Page
-			operand := memory[operandAddress]
-			// AND the accumulator with the operand
-			A &= operand
+			// Get the X Indexed Zero Page Indirect address from the operand
+			indirectAddress := int(operand1()) + int(X)
+			// Get the address from the indirect address
+			address := int(memory[indirectAddress]) + int(memory[indirectAddress+1])<<8
+			// Get the value from the address
+			value := memory[address]
+			// AND the value with the accumulator
+			A &= value
 			// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -3923,8 +3923,10 @@ func execute() {
 				fmt.Printf("BEQ $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
 
-			// Get relative address from operand
-			relativeAddress := operand1()
+			// Get offset from address in operand
+			offset := int(operand1())
+			// Get relative address from offset
+			relativeAddress := bytecounter + 2 + offset
 			// If Z flag is set, branch to relative address
 			if getSRBit(1) == 1 {
 				// If relative address is negative, subtract from PC
@@ -3934,7 +3936,7 @@ func execute() {
 					incCount(0)
 				} else {
 					// If relative address is positive, add to PC
-					PC += int(relativeAddress)
+					PC = int(relativeAddress)
 					bytecounter = PC
 					incCount(0)
 				}
