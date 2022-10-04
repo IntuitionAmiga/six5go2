@@ -94,7 +94,7 @@ func printMachineState() {
 		fmt.Printf("\033[0;0H")
 	}
 
-	fmt.Printf(";; A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X PC=$%04X Instruction=$%02X $%02X $%02X\n\n", A, X, Y, SR, SP, PC, opcode(), operand1(), operand2())
+	fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X Instruction=$%02X $%02X $%02X\n\n", PC, A, X, Y, SR, SP, opcode(), operand1(), operand2())
 
 	if machineMonitor {
 		fmt.Printf("Zero Page RAM dump:\n\n")
@@ -3920,18 +3920,18 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BEQ $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
+				fmt.Printf("BEQ $%04X\n", (bytecounter + 2 + int(operand1())))
 			}
 
 			// Get offset from address in operand
 			offset := int(operand1())
 			// Get relative address from offset
-			relativeAddress := bytecounter + 2 + offset
+			relativeAddress := PC + 2 + offset
 			// If Z flag is set, branch to relative address
 			if getSRBit(1) == 1 {
 				// If relative address is negative, subtract from PC
 				if relativeAddress<<7 == 0b10000000 {
-					PC -= int(relativeAddress)
+					PC -= offset
 					bytecounter = PC
 					incCount(0)
 				} else {
@@ -4433,9 +4433,11 @@ func execute() {
 				fmt.Printf("JMP $%04X\n", int(operand2())<<8|int(operand1()))
 			}
 
-			// Set PC to the absolute address stored in operand 1 and operand 2
-			PC = int(operand2())<<8 | int(operand1())
-			bytecounter += 3
+			//Get 16 bit address from operand 1 and operand 2
+			address := int(operand2())<<8 | int(operand1())
+			// Set PC to the address
+			PC = int(address)
+			bytecounter = PC
 			incCount(0)
 		case 0x20:
 			/*
@@ -5947,8 +5949,13 @@ func execute() {
 				fmt.Printf("JMP ($%04X)\n", int(operand2())<<8|int(operand1()))
 			}
 
-			// Update the PC with the memory location
-			PC = int(memory[int(operand2())<<8|int(operand1())])
+			// Get 16bit absolute address
+			address := uint16(operand2())<<8 | uint16(operand1())
+			// Get the indirect address
+			indirectAddress := uint16(memory[address+1])<<8 | uint16(memory[address])
+			// Set the program counter to the indirect address
+			PC = int(indirectAddress)
+
 			incCount(3)
 		}
 	}
