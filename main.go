@@ -104,10 +104,6 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		// time.Sleep(10 * time.Millisecond)
-		// Wait for keypress
-		// var input string
-		// fmt.Scanln(&input)
 	}
 }
 func getSRBit(x byte) byte {
@@ -170,9 +166,11 @@ func execute() {
 			}
 
 			//  Push PC onto stack
-			memory[+SP] = byte(PC >> 8)
+			memory[SP] = byte(PC >> 8)
+			SP--
 			// Store SR on stack
 			memory[SP-1] = SR
+			SP--
 			// Set PC to interrupt vector
 			PC = int(memory[0xFFFE]) | int(memory[0xFFFF])<<8
 			// Decrement SP
@@ -566,10 +564,11 @@ func execute() {
 			}
 
 			// Update PC with the value stored at the address pointed to by SP+1
-			PC = int(memory[SP] + 1)
+			PC = int(memory[SP+1])
+			bytecounter = PC
 			// Increment the stack pointer by 1 byte
 			SP++
-			incCount(1)
+			incCount(0)
 		case 0x38:
 			/*
 				SEC - Set Carry Flag
@@ -4456,13 +4455,14 @@ func execute() {
 			}
 
 			// Push the program counter onto the stack
-			memory[0x0100|SP] = byte(PC >> 8)
+			memory[SP] = byte(PC >> 8)
 			SP--
-			memory[0x0100|SP] = byte(PC & 0xFF)
+			fmt.Printf("SP: %04X\n", SP)
+			memory[SP] = byte(PC & 0xFF)
 			SP--
+			fmt.Printf("SP: %04X\n", SP)
 			// Set the program counter to the absolute address from the operands
 			PC = int(operand2())<<8 | int(operand1())
-
 			bytecounter = PC
 			incCount(0)
 		case 0xAD:
