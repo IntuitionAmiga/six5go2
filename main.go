@@ -2516,8 +2516,10 @@ func execute() {
 				fmt.Printf("LDA $%02X,X\n", operand1())
 			}
 
+			// Get address
+			address := operand1() + X
 			// Load the accumulator with the X indexed value in the operand
-			A = memory[int(operand1())+1+int(X)]
+			A = memory[int(address)]
 			// If A is zero, set the zero flag else reset the zero flag
 			if A == 0 {
 				setSRBitOn(1)
@@ -2549,8 +2551,10 @@ func execute() {
 				fmt.Printf("LDY $%02X,X\n", operand1())
 			}
 
+			// Get the X indexed address
+			address := operand1() + X
 			// Load the Y register with the X indexed value in the operand
-			Y = memory[int(operand1())+int(X)]
+			Y = memory[address]
 			// If bit 7 of Y is 1, set the SR negative flag bit 7 else reset the SR negative flag
 			if getYBit(7) == 1 {
 				setSRBitOn(7)
@@ -2874,8 +2878,10 @@ func execute() {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, opcode(), operand1())
 				}
 
+				// Get Y indexed Zero Page address
+				address := operand1() + Y
 				// Load the X register with the Y indexed value in the operand
-				X = memory[int(operand1())+int(Y)]
+				X = memory[address]
 				// If bit 7 of X is 1, set the SR negative flag bit 7 else reset the SR negative flag
 				if getXBit(7) == 1 {
 					setSRBitOn(7)
@@ -3172,10 +3178,13 @@ func execute() {
 
 			// Get the address
 			indirectAddress := int(operand1()) + int(X)
+			fmt.Printf("indirectAddress: %d\n", indirectAddress)
 			// Get the value at the address
 			value := memory[indirectAddress]
+			fmt.Printf("value: %d\n", value)
 			// OR the accumulator with the value
 			A |= value
+			fmt.Printf("A: %02x\n", A)
 			// If A==0 set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -4509,8 +4518,10 @@ func execute() {
 				fmt.Printf("LDX $%02X%02X\n", operand2(), operand1())
 			}
 
+			// Get 16 bit address from operands
+			address := uint16(operand2())<<8 | uint16(operand1())
 			// Update X with the value stored at the address in the operands
-			X = memory[operand1()+(operand2())]
+			X = memory[address]
 			// If X==0 then set SR zero flag bit 1 to 1 else set it to 0
 			if X == 0 {
 				setSRBitOn(1)
@@ -4542,8 +4553,10 @@ func execute() {
 				fmt.Printf("LDY $%02X%02X\n", operand2(), operand1())
 			}
 
+			// Get 16 bit address from operands
+			address := uint16(operand2())<<8 | uint16(operand1())
 			// Update Y with the value stored at the address in the operands
-			Y = memory[operand1()|uint8(int(operand2()))]
+			Y = memory[address]
 			// If bit 7 of Y is set, set the SR Negative bit 7 flag to 1 else set it to 0
 			if getYBit(7) == 1 {
 				setSRBitOn(7)
@@ -5245,8 +5258,10 @@ func execute() {
 				fmt.Printf("LDY $%02X%02X,X\n", operand2(), operand1())
 			}
 
+			// Get the 16bit X indexed absolute memory address
+			address := int(operand2())<<8 | int(operand1()) + 1 + int(X)
 			// Update Y with the X indexed value stored at the address in the operands
-			Y = memory[operand1()+(operand2())+X]
+			Y = memory[address]
 			// If bit 7 of Y is 1 then set SR negative flag bit 7 to 1 else set it to 0
 			if getYBit(7) == 1 {
 				setSRBitOn(7)
@@ -5774,10 +5789,9 @@ func execute() {
 				}
 				fmt.Printf("LDX $%02X%02X,Y\n", operand2(), operand1())
 			}
-
-			//  Set Y to Operand 2 and X to the Y indexed value stored in operand 1
-			Y = operand2()
-			X = memory[int(operand1())+int(Y)]
+			// Get 16 bit Y indexed address from operands
+			address := int(operand2())<<8 | int(operand1()) + 1 + int(Y)
+			X = memory[address]
 			// If bit 7 of X is 1 then set bit 7 of SR to 1 else set bit 7 of SR to 0
 			if getXBit(7) == 1 {
 				setSRBitOn(7)
@@ -5901,9 +5915,10 @@ func execute() {
 				}
 				fmt.Printf("STA $%02X%02X,Y\n", operand2(), operand1())
 			}
-
+			// Get 16bit absolute address
+			address := uint16(operand2())<<8 | uint16(operand1())
 			// Update the memory at the Y indexed address stored in operand 1 and operand 2 with the value of the accumulator
-			memory[int(operand1())+int(operand2())+int(Y)] = A
+			memory[int(address)+int(Y)] = A
 			incCount(3)
 
 		// Absolute Indirect addressing mode instructions
