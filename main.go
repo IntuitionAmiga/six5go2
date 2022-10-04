@@ -3170,18 +3170,12 @@ func execute() {
 				fmt.Printf("ORA ($%02x,X)\n", operand1())
 			}
 
-			// Store the X Indexed Zero Page address in a variable
-			indirectAddress := operand1() + X
-			// Get the value at the indirect address
-			indirectValue := memory[indirectAddress]
-			// Get the value at the indirect address + 1
-			indirectValue2 := memory[indirectAddress] + 1
-			// Combine the two values to get the final address
-			finalAddress := indirectValue + indirectValue2
-			// Get the value at the final address
-			finalValue := memory[finalAddress]
-			// Perform the ORA operation and store in the accumulator
-			A |= finalValue
+			// Get the address
+			indirectAddress := int(operand1()) + int(X)
+			// Get the value at the address
+			value := memory[indirectAddress]
+			// OR the accumulator with the value
+			A |= value
 			// If A==0 set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -4457,10 +4451,8 @@ func execute() {
 			// Push the program counter onto the stack
 			memory[SP] = byte(PC >> 8)
 			SP--
-			fmt.Printf("SP: %04X\n", SP)
 			memory[SP] = byte(PC & 0xFF)
 			SP--
-			fmt.Printf("SP: %04X\n", SP)
 			// Set the program counter to the absolute address from the operands
 			PC = int(operand2())<<8 | int(operand1())
 			bytecounter = PC
