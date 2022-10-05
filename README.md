@@ -32,3 +32,4 @@ To run the disassembler with hex opcodes as comments:
 To run the machine monitor:
 
     ./six5go2 AllSuiteA.bin 4000 mon
+           

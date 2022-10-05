@@ -7,12 +7,13 @@ import (
 )
 
 var (
-	printHex       bool
-	file           []byte
-	bytecounter    int // Byte position counter
-	machineMonitor     = false
-	disassemble        = false
-	once               = true
+	printHex           bool
+	file               []byte
+	bytecounter        int // Byte position counter
+	machineMonitor         = false
+	disassemble            = false
+	once                   = true
+	instructionCounter     = 0
 
 	// CPURegisters and RAM
 	A      byte        = 0x0000     // Accumulator
@@ -134,7 +135,7 @@ func execute() {
 	if disassemble {
 		fmt.Printf(" *= $%04X\n\n", PC)
 	}
-	for bytecounter = PC; bytecounter < len(file); {
+	for bytecounter = PC; bytecounter < len(file); instructionCounter++ {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		// Implied addressing mode instructions
@@ -1945,8 +1946,16 @@ func execute() {
 				fmt.Printf("LDX $%02X\n", operand1())
 			}
 
-			// Load the value of the operand1() into the X register.
-			X = operand1()
+			// Get address
+			address := operand1()
+			// Load the value at the address into X
+			X = memory[address]
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("memory[address]: %04X\n", memory[address])
+			fmt.Printf("A: %02X\n", A)
+			fmt.Printf("X: %02X\n", X)
+			fmt.Printf("Y: %02X\n", Y)
+
 			// If bit 7 of X is set, set the SR negative flag else reset it to 0
 			if getXBit(7) == 1 {
 				setSRBitOn(7)
@@ -1978,8 +1987,15 @@ func execute() {
 				fmt.Printf("LDY $%02X\n", operand1())
 			}
 
-			// Load the value of the operand1() into the Y register.
-			Y = operand1()
+			// Get address
+			address := operand1()
+			// Load the value at the address into Y
+			Y = memory[address]
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("memory[address]: %04X\n", memory[address])
+			fmt.Printf("A: %02X\n", A)
+			fmt.Printf("X: %02X\n", X)
+			fmt.Printf("Y: %02X\n", Y)
 			// If bit 7 of Y is set, set the SR negative flag else reset it to 0
 			if getYBit(7) == 1 {
 				setSRBitOn(7)
@@ -3260,11 +3276,16 @@ func execute() {
 			}
 
 			// Get the address
-			indirectAddress := int(operand1()) + int(X)
+			address := uint16(int(operand1()) + int(X))
+			// If the address is greater than 255, wrap around
+			if address > 255 {
+				address -= 256
+			}
 			// Get the value at the address
-			value := memory[indirectAddress]
+			value := memory[address]
 			// OR the accumulator with the value
 			A |= value
+
 			// If A==0 set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -3416,10 +3437,15 @@ func execute() {
 				fmt.Printf("ADC ($%02X),Y\n", operand1())
 			}
 
-			// Get Zero Page Indirect Y-Indexed address from operand 1
-			address := operand1() + Y
-			// Add memory[address] to accumulator
-			A += memory[address]
+			// Get address
+			address := memory[operand1()]
+			// Load accumulator with address+Y index value
+			A = memory[address+Y]
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("A: %02X\n", A)
+			fmt.Printf("X: %02X\n", X)
+			fmt.Printf("Y: %02X\n", Y)
+
 			// If accumulator>255 then set SR carry flag bit 0 to 1
 			if memory[address] > 0x00FF {
 				setSRBitOn(0)
@@ -3562,10 +3588,15 @@ func execute() {
 				fmt.Printf("EOR ($%02X),Y\n", operand1())
 			}
 
-			// Get the zero pages indirect Y indexed address of the operand
-			address := memory[operand1()] + memory[operand1()+1] + Y
-			// XOR the accumulator with the value stored at the address
-			A ^= memory[address]
+			// Get address
+			address := memory[operand1()]
+			// XOR accumulator with address+Y index value
+			A ^= memory[address+Y]
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("A: %02X\n", A)
+			fmt.Printf("X: %02X\n", X)
+			fmt.Printf("Y: %02X\n", Y)
+
 			// If accumulator is 0 then set Zero flag to 1 else set Zero flag to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -3598,8 +3629,14 @@ func execute() {
 				fmt.Printf("LDA ($%02X),Y\n", operand1())
 			}
 
-			// Load the accumulator with the zero page indirect y indexed value in the operand
-			A = memory[operand1()+Y]
+			// Get address
+			address := memory[operand1()]
+			// Load accumulator with address+Y index value
+			A = memory[address+Y]
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("A: %02X\n", A)
+			fmt.Printf("X: %02X\n", X)
+			fmt.Printf("Y: %02X\n", Y)
 			// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -3632,14 +3669,15 @@ func execute() {
 				fmt.Printf("ORA ($%02x),Y\n", operand1())
 			}
 
-			// Get the value of the memory location at operand1
-			value := memory[operand1()]
-			// Get the value of the memory location at operand1+1
-			value2 := memory[operand1()+1]
-			// Get the value of the memory location at value2:value
-			value3 := memory[(value2)+value+Y]
-			// OR the accumulator with the value
-			A |= value3
+			// Get address
+			address := memory[operand1()]
+			// Load accumulator with address+Y index value
+			A |= memory[address+Y]
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("A: %02X\n", A)
+			fmt.Printf("X: %02X\n", X)
+			fmt.Printf("Y: %02X\n", Y)
+
 			// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -3677,11 +3715,15 @@ func execute() {
 				fmt.Printf("SBC ($%02X),Y\n", operand1())
 			}
 
-			// Get zero page indirect Y-indexed address
-			indirectAddress := memory[operand1()] + memory[operand1()+1]
-			indirectAddress += Y
-			// Update the accumulator
-			A = A - memory[indirectAddress] - (1 - SR&1)
+			// Get address
+			address := memory[operand1()]
+			// Load accumulator with address+Y index value
+			A = memory[address+Y] - (1 - SR&1)
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("A: %02X\n", A)
+			fmt.Printf("X: %02X\n", X)
+			fmt.Printf("Y: %02X\n", Y)
+
 			// Set carry flag bit 0 if result is greater than or equal to 1
 			// If accumulator bit 7 is not set then set SR bit 0 to 1 as number is not negative
 			if A<<7 == 0b00000000 {
@@ -3724,10 +3766,11 @@ func execute() {
 				fmt.Printf("STA ($%02X),Y\n", operand1())
 			}
 
-			// Store Zero Page Indirect Y Indexed Address in temporary variable
-			address := operand1() + Y
-			// Store accumulator at address stored in temporary variable
-			memory[address] = A
+			// Get address
+			address := memory[operand1()]
+			// Load accumulator with address+Y index value
+			memory[address+Y] = A
+
 			fmt.Printf("address: %04X\n", address)
 			fmt.Printf("memory[address]: %04X\n", memory[address])
 			fmt.Printf("A: %02X\n", A)
@@ -5378,7 +5421,7 @@ func execute() {
 			}
 
 			// Get the 16bit X indexed absolute memory address
-			address := int(operand2())<<8 | int(operand1()) + 1 + int(X)
+			address := int(operand2())<<8 | int(operand1()) + int(X)
 
 			// Update A with the value stored at the address
 			A = memory[address]
@@ -5700,7 +5743,7 @@ func execute() {
 			}
 
 			// Get 16 bit X indexed absolute memory address
-			address := int(operand2())<<8 | int(operand1()) + 1 + int(X)
+			address := int(operand2())<<8 | int(operand1()) + int(X)
 			memory[address] = A
 			fmt.Printf("address: %04X\n", address)
 			fmt.Printf("memory[address] = %04X\n", memory[address])
@@ -5913,7 +5956,7 @@ func execute() {
 
 				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
 				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
-				sets the negative flag if bit 7 of the accumulator is a 1, other­ wise resets the negative flag.
+				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
 			if disassemble {
 				if printHex {
@@ -5923,9 +5966,14 @@ func execute() {
 			}
 
 			// Get 16 bit address from operand 1 and operand 2
-			address := int(operand2())<<8 | int(operand1()) + 1 + int(X)
+			address := int(operand2())<<8 | int(operand1()) + int(Y)
 			// Update A with the Y indexed value stored at the address in the operands
 			A = memory[address]
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("memory[address]: %04X\n", memory[address])
+			fmt.Printf("A: %02X\n", A)
+			fmt.Printf("X: %02X\n", X)
+			fmt.Printf("Y: %02X\n", Y)
 			// If A==0 then set SR zero flag bit 1 to 1 else set it to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -5957,7 +6005,7 @@ func execute() {
 				fmt.Printf("LDX $%02X%02X,Y\n", operand2(), operand1())
 			}
 			// Get 16 bit Y indexed address from operands
-			address := int(operand2())<<8 | int(operand1()) + 1 + int(Y)
+			address := int(operand2())<<8 | int(operand1()) + int(Y)
 			X = memory[address]
 			fmt.Printf("address: %04X\n", address)
 			fmt.Printf("memory[address]: %04X\n", memory[address])
@@ -6087,10 +6135,17 @@ func execute() {
 				}
 				fmt.Printf("STA $%02X%02X,Y\n", operand2(), operand1())
 			}
+
 			// Get 16bit absolute address
 			address := uint16(operand2())<<8 | uint16(operand1())
 			// Update the memory at the Y indexed address stored in operand 1 and operand 2 with the value of the accumulator
 			memory[int(address)+int(Y)] = A
+
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("memory[address]: %04X\n", memory[address])
+			fmt.Printf("A: %02X\n", A)
+			fmt.Printf("X: %02X\n", X)
+			fmt.Printf("Y: %02X\n", Y)
 			incCount(3)
 
 		// Absolute Indirect addressing mode instructions
@@ -6120,10 +6175,11 @@ func execute() {
 			incCount(3)
 		}
 	}
+	fmt.Printf("Number of instructions executed: %d\n", instructionCounter)
 	if memory[0x0210] == 0xFF {
-		fmt.Println("Program completed successfully")
+		fmt.Println("Program completed successfully!")
 	} else {
-		fmt.Printf("Program failed on opcode $%02X \n", memory[0x0210])
+		fmt.Printf("Program failed on opcode $%02X.\n", memory[0x0210])
 		printMachineState()
 	}
 }
