@@ -136,7 +136,6 @@ func execute() {
 		fmt.Printf(" *= $%04X\n\n", PC)
 	}
 	for bytecounter = PC; bytecounter < len(file); instructionCounter++ {
-		// fmt.Printf("memory[0x0192] = %04X\n", memory[0x0192])
 		//  1 byte instructions with no operands
 		switch opcode() {
 		// Implied addressing mode instructions
@@ -175,8 +174,6 @@ func execute() {
 			SP--
 			// Set PC to interrupt vector
 			PC = int(memory[0xFFFE]) | int(memory[0xFFFF])<<8
-			// Decrement SP
-			SP -= 2
 			bytecounter = PC
 			incCount(0)
 		case 0x18:
@@ -976,8 +973,6 @@ func execute() {
 				}
 				fmt.Printf("ROR\n")
 			}
-
-			fmt.Printf("Accumulator pre: %08b %02X\n", A, A)
 			// Get bit 0 of A and store it in the carry flag
 			if getABit(0) == 1 {
 				setSRBitOn(0)
@@ -994,11 +989,10 @@ func execute() {
 			A >>= 1
 			// Set Accumulator bit 7 to the value of the carry flag
 			if getSRBit(0) == 1 {
-				setABitOn(7)
-			} else {
 				setABitOff(7)
+			} else {
+				setABitOn(7)
 			}
-			fmt.Printf("Accumulator post: %08b %02X\n", A, A)
 			// Set SR zero flag bit 1 to 1 if Accumulator is 0 else set SR zero flag to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -2907,7 +2901,6 @@ func execute() {
 			address := operand1() + X
 			// Store contents of Accumulator in X indexed memory
 			memory[address] = A
-			fmt.Printf("A: %02X\n", A)
 			incCount(2)
 		case 0x94:
 			/*
@@ -4575,8 +4568,6 @@ func execute() {
 			PC = address
 			// PC = 0x4000
 			bytecounter = PC
-			fmt.Printf("PC: %04X\n", PC)
-
 			incCount(0)
 		case 0x20:
 			/*
@@ -4635,7 +4626,6 @@ func execute() {
 			address := int(operand2())<<8 | int(operand1())
 			// Set accumulator to value at address
 			A = memory[address]
-			fmt.Printf("A: %02X\n", A)
 			// If A==0 then set SR zero flag bit 1 to 1 else set it to 0
 			if A == 0 {
 				setSRBitOn(1)
@@ -4790,14 +4780,8 @@ func execute() {
 
 			// Get address
 			address := uint16(operand2())<<8 | uint16(operand1())
-
-			fmt.Printf("A: %02X\n", A)
-
 			// Get value from memory
 			value := memory[address]
-			fmt.Printf("A=%02X, value=%02X A|value=%02X\n", A, value, A|value)
-			fmt.Printf("0x00A2 OR 0x003c = 0x%04X\n", 0x00A2|0x003c)
-
 			// OR the accumulator with the value stored at the address
 			A |= value
 
@@ -5721,7 +5705,6 @@ func execute() {
 			// Get 16 bit X indexed absolute memory address
 			address := int(operand2())<<8 | int(operand1()) + int(X)
 			memory[address] = A
-			fmt.Printf("memory[address] = %04X\n", memory[address])
 			incCount(3)
 
 		// Y Indexed Absolute addressing mode instructions
@@ -6135,9 +6118,6 @@ func execute() {
 			indirectAddress := uint16(memory[address])<<8 | uint16(memory[address])
 			// Set the program counter to the indirect address
 			PC = int(indirectAddress)
-			fmt.Printf("PC: %04X\n", PC)
-			fmt.Printf("memory[indirectAddress]: %04X\n", memory[indirectAddress])
-
 			incCount(3)
 		}
 	}
