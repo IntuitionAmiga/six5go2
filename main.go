@@ -2182,6 +2182,7 @@ func execute() {
 			value := memory[address]
 			fmt.Printf("memory[address] pre: %0X\n", memory[address])
 			fmt.Printf("memory[address] pre: %08b\n", memory[address])
+
 			// Update SR carry flag bit 0 with bit 0 of value
 			if value&1 == 1 {
 				fmt.Printf("value&1 %d\n", value&1)
@@ -2189,13 +2190,12 @@ func execute() {
 			} else {
 				setSRBitOff(0)
 			}
-			// If SR carry flag is set then set bit 0 of value to 1 else set it to 0
+			// If SR bit 0 is 1 then update value bit 7 to 1
 			if getSRBit(0) == 1 {
+				value |= 1 << 7
 				fmt.Printf("value&1 %d\n", value&1)
-				value |= 1
-			} else {
-				value &= 0xFE
 			}
+
 			// Shift the value right 1 bit
 			value >>= 1
 			// Store the value back into memory
@@ -2918,6 +2918,8 @@ func execute() {
 			address := operand1() + X
 			// Store contents of Accumulator in X indexed memory
 			memory[address] = A
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("memory[address]: %04X\n", memory[address])
 			incCount(2)
 		case 0x94:
 			/*
