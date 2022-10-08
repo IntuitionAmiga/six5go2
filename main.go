@@ -2182,7 +2182,6 @@ func execute() {
 			value := memory[address]
 			fmt.Printf("memory[address] pre: %0X\n", memory[address])
 			fmt.Printf("memory[address] pre: %08b\n", memory[address])
-
 			// Update SR carry flag bit 0 with bit 0 of value
 			if value&1 == 1 {
 				fmt.Printf("value&1 %d\n", value&1)
@@ -2195,7 +2194,6 @@ func execute() {
 				value |= 1 << 7
 				fmt.Printf("value&1 %d\n", value&1)
 			}
-
 			// Shift the value right 1 bit
 			value >>= 1
 			// Store the value back into memory
@@ -2203,7 +2201,6 @@ func execute() {
 			fmt.Printf("address: %04X\n", address)
 			fmt.Printf("memory[address] post: %0X\n", memory[address])
 			fmt.Printf("memory[address] post: %08b\n", memory[address])
-
 			// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
 			if value<<6 == 1 {
 				setSRBitOn(7)
@@ -2755,35 +2752,43 @@ func execute() {
 				fmt.Printf("ROL $%02X,X\n", operand1())
 			}
 
-			// Get the X indexed zero page address
+			// Get X indexed zero page address
 			address := operand1() + X
-			// Get the value at the X indexed address
+			// Get the value at the address
 			value := memory[address]
+			fmt.Printf("memory[address] pre: %0X\n", memory[address])
+			fmt.Printf("memory[address] pre: %08b\n", memory[address])
+			// Update SR carry flag bit 0 with bit 0 of value
+			fmt.Printf("value&1 %d\n", value&1)
+			if value&1 == 0 {
+				fmt.Printf("value&1 %d\n", value&1)
+				setSRBitOn(0)
+			} else {
+				setSRBitOff(0)
+			}
 			// Shift the value left 1 bit
 			value <<= 1
-			// If the carry flag is set, set bit 0 of the value to 1
+			// If SR carry bit 0 is 1 then update value bit 0 to 1
+			fmt.Printf("value&1 %d\n", value&1)
 			if getSRBit(0) == 1 {
-				value |= 0b00000001
+				value |= 1 << 0
 			}
-			// Store the shifted value in memory
+			// Store the value back into memory
 			memory[address] = value
-			// If the result is 0, set the Zero flag to 1
-			if value == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			// Set the Negative flag to the value of bit 6 of value
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("memory[address] post: %0X\n", memory[address])
+			fmt.Printf("memory[address] post: %08b\n", memory[address])
+			// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
 			if value<<6 == 1 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			// Set the Carry flag to the value of bit 7 of value
-			if value<<7 == 1 {
-				setSRBitOn(0)
+			// If value is 0 then set SR zero flag to 1 else set it to 0
+			if value == 0 {
+				setSRBitOn(1)
 			} else {
-				setSRBitOff(0)
+				setSRBitOff(1)
 			}
 			incCount(2)
 		case 0x76:
@@ -2812,34 +2817,41 @@ func execute() {
 
 			// Get X indexed zero page address
 			address := operand1() + X
-			// Get the value from the X Indexed Zero Paged memory from the address in the operand
+			// Get the value at the address
 			value := memory[address]
-			// Get bit 0 of value and store it in the carry flag
-			if value<<0 == 1 {
+			fmt.Printf("memory[address] pre: %0X\n", memory[address])
+			fmt.Printf("memory[address] pre: %08b\n", memory[address])
+			// Update SR carry flag bit 0 with bit 0 of value
+			if value&1 == 1 {
+				fmt.Printf("value&1 %d\n", value&1)
 				setSRBitOn(0)
 			} else {
 				setSRBitOff(0)
 			}
-			// Set N flag bit7 to the value of the carry flag
+			// Shift the value right 1 bit
+			value >>= 1
+			// If SR bit 0 is 1 then update value bit 7 to 1
 			if getSRBit(0) == 1 {
+				value |= 1 << 7
+				fmt.Printf("value&1 %d\n", value&1)
+			}
+			// Store the value back into memory
+			memory[address] = value
+			fmt.Printf("address: %04X\n", address)
+			fmt.Printf("memory[address] post: %0X\n", memory[address])
+			fmt.Printf("memory[address] post: %08b\n", memory[address])
+			// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
+			if value<<6 == 1 {
 				setSRBitOn(7)
 			} else {
 				setSRBitOff(7)
 			}
-			// Shift right the value by 1 bit
-			value >>= 1
-			// Set value bit 7 to the value of the carry flag
-			if getSRBit(0) == 1 {
-				value |= 0b10000000
-			}
-			// Set SR zero flag bit 1 to 1 if value is 0 else set SR zero flag to 0
+			// If value is 0 then set SR zero flag to 1 else set it to 0
 			if value == 0 {
 				setSRBitOn(1)
 			} else {
 				setSRBitOff(1)
 			}
-			// Store value in memory at address in operand
-			memory[address] = value
 			incCount(2)
 		case 0xF5:
 			/*
