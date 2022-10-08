@@ -95,7 +95,7 @@ func printMachineState() {
 		fmt.Printf("\033[0;0H")
 	}
 
-	fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X Instruction=$%02X $%02X $%02X\n\n", PC, A, X, Y, SR, SP, opcode(), operand1(), operand2())
+	fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X\n\n", PC, A, X, Y, SR, SP)
 
 	if machineMonitor {
 		fmt.Printf("Zero Page RAM dump:\n\n")
@@ -2579,8 +2579,8 @@ func execute() {
 
 			// Get address
 			address := operand1() + X
-			// Load the accumulator with the X indexed value in the operand
-			A = memory[int(address)]
+			// Load accumulator with memory at address
+			A = memory[address]
 
 			// If A is zero, set the zero flag else reset the zero flag
 			if A == 0 {
@@ -2588,7 +2588,6 @@ func execute() {
 			} else {
 				setSRBitOff(1)
 			}
-
 			// If bit 7 of A is 1, set the negative flag else reset the negative flag
 			if getABit(7) == 1 {
 				setSRBitOn(7)
@@ -4566,9 +4565,9 @@ func execute() {
 				fmt.Printf("JMP $%04X\n", int(operand2())<<8|int(operand1()))
 			}
 
-			// Get 16 bit address from operand 1 and operand 2
-			address := int(operand2())<<8 | int(operand1())&0xFF
-			PC = address
+			// Get 16bit address from operand 1 and operand 2
+			address := uint16(operand2())<<8 | uint16(operand1())
+			PC = int(address)
 			// PC = 0x4000
 			bytecounter = PC
 			incCount(0)
