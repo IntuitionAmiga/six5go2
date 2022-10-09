@@ -133,6 +133,84 @@ func setABitOn(x byte) {
 func setABitOff(x byte) {
 	A &= ^(1 << x)
 }
+
+func LDA(addressingMode string) {
+	switch addressingMode {
+	case "immediate": // Immediate
+		A = operand1()
+		incCount(2)
+	case "zeropage": // Zero Page
+		// Get address
+		address := operand1()
+		// Get value from memory at address
+		value := memory[address]
+		// Set accumulator to value
+		A = value
+		incCount(2)
+	case "zeropagex": // Zero Page, X
+		// Get address
+		address := operand1() + X
+		value := memory[address]
+		// Set accumulator to value
+		A = value
+		incCount(2)
+	case "absolute": // Absolute
+		// Get 16 bit address from operand 1 and operand 2
+		address := int(operand2())<<8 | int(operand1())
+		value := memory[address]
+		// Set accumulator to value
+		A = value
+		incCount(3)
+	case "absolutex": // Absolute, X
+		// Get the 16bit X indexed absolute memory address
+		address := int(operand2())<<8 | int(operand1()) + int(X)
+		value := memory[address]
+		// Set accumulator to value
+		A = value
+		incCount(3)
+	case "absolutey": // Absolute, Y
+		// Get 16 bit address from operand 1 and operand 2
+		address := int(operand2())<<8 | int(operand1()) + int(Y)
+		value := memory[address]
+		// Set accumulator to value
+		A = value
+		incCount(3)
+	case "indirectx": // Indirect, X
+		// Get the 16bit X indexed zero page indirect address
+		indirectAddress := uint16(int(operand1()) + int(X)&0xFF)
+		// Get the value at the indirect address
+		indirectValue := memory[indirectAddress]
+		// Get the value at the indirect address + 1
+		indirectValue2 := memory[(indirectAddress + 1)]
+		// Combine the two values to get the address
+		indirectAddress = uint16(int(indirectValue) + int(indirectValue2)<<8)
+		// Get the value at the address
+		value := memory[indirectAddress]
+		// Set the accumulator to the value
+		A = value
+		incCount(2)
+	case "indirecty": // Indirect, Y
+		// Get address
+		address := memory[operand1()]
+		// Get the value at the address
+		value := memory[address+Y]
+		// Set the accumulator to the value
+		A = value
+		incCount(2)
+	}
+	// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
+	if A == 0 {
+		setSRBitOn(1)
+	} else {
+		setSRBitOff(1)
+	}
+	// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
+	if getABit(7) == 1 {
+		setSRBitOn(7)
+	} else {
+		setSRBitOff(7)
+	}
+}
 func execute() {
 	if disassemble {
 		fmt.Printf(" *= $%04X\n\n", PC)
@@ -1286,23 +1364,7 @@ func execute() {
 				}
 				fmt.Printf("LDA #$%02X\n", operand1())
 			}
-
-			// Load the accumulator with the value in the operand
-			A = operand1()
-
-			// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
-			if getABit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
-			}
-			incCount(2)
+			LDA("immediate")
 		case 0xA2:
 			/*
 				LDX - Load Index Register X From Memory
@@ -1916,26 +1978,7 @@ func execute() {
 				fmt.Printf("LDA $%02X\n", operand1())
 			}
 
-			// Get address
-			address := operand1()
-			// Get value from memory at address
-			value := memory[address]
-			// Set accumulator to value
-			A = value
-
-			// If bit 7 of A is set, set the SR negative flag else reset it to 0
-			if getABit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
-			}
-			// If A is zero, set the SR zero flag else reset it to 0
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			incCount(2)
+			LDA("zeropage")
 		case 0xA6:
 			/*
 				LDX - Load Index Register X From Memory
@@ -2589,26 +2632,7 @@ func execute() {
 				fmt.Printf("LDA $%02X,X\n", operand1())
 			}
 
-			// Get address
-			address := operand1() + X
-			// Load accumulator with memory at address
-			A = memory[address]
-			fmt.Printf("address: %04X\n", address)
-			fmt.Printf("memory[address]: %0X\n", memory[address])
-
-			// If A is zero, set the zero flag else reset the zero flag
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			// If bit 7 of A is 1, set the negative flag else reset the negative flag
-			if getABit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
-			}
-			incCount(2)
+			LDA("zeropagex")
 		case 0xB4:
 			/*
 				LDY - Load Index Register Y From Memory
@@ -3258,36 +3282,7 @@ func execute() {
 				fmt.Printf("LDA ($%02X,X)\n", operand1())
 			}
 
-			// Get the 16bit X indexed zero page indirect address
-			indirectAddress := uint16(int(operand1()) + int(X)&0xFF)
-
-			// Get the value at the indirect address
-			indirectValue := memory[indirectAddress]
-			// Get the value at the indirect address + 1
-			indirectValue2 := memory[(indirectAddress + 1)]
-			// Combine the two values to get the address
-			indirectAddress = uint16(int(indirectValue) + int(indirectValue2)<<8)
-			// Get the value at the address
-			value := memory[indirectAddress]
-
-			// Set the accumulator to the value
-			A = value
-			fmt.Printf("address: %04X\n", indirectAddress)
-			fmt.Printf("memory[address]: %04X\n", value)
-
-			// If bit 7 of A is set, set the SR negative flag else reset it to 0
-			if getABit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
-			}
-			// If A is zero, set the SR zero flag else reset it to 0
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			incCount(2)
+			LDA("indirectx")
 		case 0x01:
 			/*
 				ORA - "OR" Memory with Accumulator
@@ -3647,24 +3642,7 @@ func execute() {
 				fmt.Printf("LDA ($%02X),Y\n", operand1())
 			}
 
-			// Get address
-			address := memory[operand1()]
-			// Load accumulator with address+Y index value
-			A = memory[address+Y]
-
-			// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
-			if getABit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
-			}
-			incCount(2)
+			LDA("indirecty")
 		case 0x11:
 			/*
 				ORA - "OR" Memory with Accumulator
@@ -4669,23 +4647,7 @@ func execute() {
 				fmt.Printf("LDA $%04X\n", uint16(operand2())<<8|uint16(operand1()))
 			}
 
-			// Get 16 bit address from operand 1 and operand 2
-			address := int(operand2())<<8 | int(operand1())
-			// Set accumulator to value at address
-			A = memory[address]
-			// If A==0 then set SR zero flag bit 1 to 1 else set it to 0
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			// If bit 7 of A is 1 then set SR negative flag bit 7 to 1 else set it to 0
-			if getABit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
-			}
-			incCount(3)
+			LDA("absolute")
 		case 0xAE:
 			/*
 				LDX - Load Index Register X From Memory
@@ -5459,26 +5421,7 @@ func execute() {
 				fmt.Printf("LDA $%02X%02X,X\n", operand2(), operand1())
 			}
 
-			// Get the 16bit X indexed absolute memory address
-			address := int(operand2())<<8 | int(operand1()) + int(X)
-			// Load the value in memory at the address stored in operand 1 and operand 2 into the accumulator
-
-			// Update A with the value stored at the address
-			A = memory[address]
-
-			// If A==0 then set SR zero flag bit 1 to 1 else set it to 0
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			// If bit 7 of A is 1 then set SR negative flag bit 7 to 1 else set it to 0
-			if getABit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
-			}
-			incCount(3)
+			LDA("absolutex")
 		case 0xBC:
 			/*
 				LDY - Load Index Register Y From Memory
@@ -6000,24 +5943,7 @@ func execute() {
 				fmt.Printf("LDA $%02X%02X,Y\n", operand2(), operand1())
 			}
 
-			// Get 16 bit address from operand 1 and operand 2
-			address := int(operand2())<<8 | int(operand1()) + int(Y)
-			// Update A with the Y indexed value stored at the address in the operands
-			A = memory[address]
-
-			// If A==0 then set SR zero flag bit 1 to 1 else set it to 0
-			if A == 0 {
-				setSRBitOn(1)
-			} else {
-				setSRBitOff(1)
-			}
-			// If bit 7 of A is 1 then set SR negative flag bit 7 to 1 else set it to 0
-			if getABit(7) == 1 {
-				setSRBitOn(7)
-			} else {
-				setSRBitOff(7)
-			}
-			incCount(3)
+			LDA("absolutey")
 		case 0xBE:
 			/*
 				LDX - Load Index Register X From Memory
