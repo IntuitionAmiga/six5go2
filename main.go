@@ -147,6 +147,56 @@ func setABitOn(x byte) {
 func setABitOff(x byte) {
 	A &= ^(1 << x)
 }
+func setNegativeFlag() {
+	setSRBitOn(7)
+}
+func unsetNegativeFlag() {
+	setSRBitOff(7)
+}
+func setOverflowFlag() {
+	setSRBitOn(6)
+}
+func unsetOverflowFlag() {
+	setSRBitOff(6)
+}
+func setBreakFlag() {
+	setSRBitOn(4)
+}
+
+/*
+	func unsetBreakFlag() {
+		setSRBitOff(4)
+	}
+*/
+func setDecimalFlag() {
+	setSRBitOn(3)
+}
+func unsetDecimalFlag() {
+	setSRBitOff(3)
+}
+func setInterruptFlag() {
+	setSRBitOn(2)
+}
+func unsetInterruptFlag() {
+	setSRBitOff(2)
+}
+func setZeroFlag() {
+	setSRBitOn(1)
+}
+func unsetZeroFlag() {
+	setSRBitOff(1)
+}
+func setCarryFlag() {
+	setSRBitOn(0)
+}
+func unsetCarryFlag() {
+	setSRBitOff(0)
+}
+
+func readABit(bit byte, value byte) int {
+	// Read bit from value and return it
+	return int((value >> bit) & 1)
+}
 
 // 6502 mnemonics with multiple addressing modes
 func LDA(addressingMode string) {
@@ -215,15 +265,15 @@ func LDA(addressingMode string) {
 	}
 	// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
 	if A == 0 {
-		setSRBitOn(1)
+		setZeroFlag()
 	} else {
-		setSRBitOff(1)
+		unsetZeroFlag()
 	}
 	// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
 	if getABit(7) == 1 {
-		setSRBitOn(7)
+		setNegativeFlag()
 	} else {
-		setSRBitOff(7)
+		unsetNegativeFlag()
 	}
 }
 func LDX(addressingMode string) {
@@ -262,15 +312,15 @@ func LDX(addressingMode string) {
 	}
 	// If bit 7 of X is set, set the SR negative flag else reset it to 0
 	if getXBit(7) == 1 {
-		setSRBitOn(7)
+		setNegativeFlag()
 	} else {
-		setSRBitOff(7)
+		unsetNegativeFlag()
 	}
 	// If X is zero, set the SR zero flag else reset it to 0
 	if X == 0 {
-		setSRBitOn(1)
+		setZeroFlag()
 	} else {
-		setSRBitOff(1)
+		unsetZeroFlag()
 	}
 }
 func LDY(addressingMode string) {
@@ -310,15 +360,15 @@ func LDY(addressingMode string) {
 	}
 	// If bit 7 of Y is set, set the SR negative flag else reset it to 0
 	if getYBit(7) == 1 {
-		setSRBitOn(7)
+		setNegativeFlag()
 	} else {
-		setSRBitOff(7)
+		unsetNegativeFlag()
 	}
 	// If Y is zero, set the SR zero flag else reset it to 0
 	if Y == 0 {
-		setSRBitOn(1)
+		setZeroFlag()
 	} else {
-		setSRBitOff(1)
+		unsetZeroFlag()
 	}
 }
 func STA(addressingMode string) {
@@ -423,27 +473,27 @@ func CMP(addressingMode string) {
 		value := A - operand1()
 		// Set carry flag to true if A is greater than or equal to operand else reset it
 		if A >= value {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If the operand is greater than the accumulator, set the carry flag to 0 else set to 1
 		if operand1() > A {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		} else {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// If bit 7 of value is set, set N flag to 1
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If operand value is equal to accumulator, set Z flag to 1 else set Zero flag to 0
 		if operand1() == A {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ZEROPAGE: // Zero Page
@@ -453,21 +503,21 @@ func CMP(addressingMode string) {
 		value := A - memory[address]
 		// If the operand is greater than the accumulator, set the carry flag to 0 else set to 1
 		if memory[address] > A {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		} else {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// If bit 7 of value is set, set N flag to 1
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If operand value is equal to accumulator, set Z flag to 1 else set Zero flag to 0
 		if memory[address] == A {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX: // Zero Page, X
@@ -477,24 +527,24 @@ func CMP(addressingMode string) {
 		value := memory[address]
 		// Compare memory and accumulator
 		if value == A {
-			setSRBitOn(1)
-			setSRBitOn(7)
+			setZeroFlag()
+			setNegativeFlag()
 		}
 		// Set carry flag to true if A is greater than or equal to operand else reset it
 		if A >= value {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Set Z flag to false if A is not equal to operand
 		if A != value {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Set N flag to true if A minus operand results in SR bit 7 being set, else reset N flag
 		if (A-value)<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ABSOLUTE: // Absolute
@@ -505,22 +555,22 @@ func CMP(addressingMode string) {
 		result := value - A
 		// If the result is equal to 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if result == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If bit 7 of Y is 1 then set SR negative bit 7 of to 1 else set SR negative bit 7 to 0
 		if getYBit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If value in memory is less than or equal to the accumulator set bit 0 of SR to 1
 		// else set bit 0 of SR to 0
 		if result <= A {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX: // Absolute, X
@@ -530,21 +580,21 @@ func CMP(addressingMode string) {
 		value := memory[address]
 		// If A=value set SR Zero flag bit 1 to 0 else reset it
 		if A == value {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		} else {
-			setSRBitOn(1)
+			setZeroFlag()
 		}
 		// If bit 7 of value is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If value <= A set SR carry bit 0 to 1 else set SR carry bit 0 to 0
 		if value <= A {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		incCount(3)
 	case ABSOLUTEY: // Absolute, Y
@@ -554,21 +604,21 @@ func CMP(addressingMode string) {
 		value := memory[address]
 		// If A=value set SR Zero flag bit 1 to 0 else reset it
 		if A == value {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		} else {
-			setSRBitOn(1)
+			setZeroFlag()
 		}
 		// If bit 7 of value is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If value <= A set SR carry bit 0 to 1 else set SR carry bit 0 to 0
 		if value <= A {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		incCount(3)
 	case INDIRECTX: // Indirect, X
@@ -580,21 +630,21 @@ func CMP(addressingMode string) {
 		result := A - value
 		// If the operand is greater than the accumulator, set the carry flag to 0 else set to 1
 		if value > A {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		} else {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// If bit 7 of value is set, set N flag to 1
 		if result<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If operand value is equal to accumulator, set Z flag to 1 else set Zero flag to 0
 		if value == A {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case INDIRECTY: // Indirect, Y
@@ -602,26 +652,26 @@ func CMP(addressingMode string) {
 		address := memory[operand1()] + Y
 		// Compare memory and accumulator
 		if address == A {
-			setSRBitOn(1)
-			setSRBitOn(7)
+			setZeroFlag()
+			setNegativeFlag()
 		}
 		// Set carry flag to true if A is greater than or equal to operand
 		if A >= address {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// Set carry flag to false if A is less than operand
 		if A < address {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Set Z flag to false if A is not equal to operand
 		if A != address {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Set N flag to true if A minus address bit 7 is set
 		if (A-address)<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	}
@@ -649,15 +699,15 @@ func AND(addressingMode string) {
 		A &= operand1()
 		// If A==0, set zero flag
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If accumulator bit 7 is 1, set negative SR flag
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ZEROPAGE:
@@ -665,15 +715,15 @@ func AND(addressingMode string) {
 		A &= memory[operand1()]
 		// If A is 0 then set zero flag
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If bit 7 of A is 1 then set negative flag
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX:
@@ -687,15 +737,15 @@ func AND(addressingMode string) {
 		A &= memory[int(operand1())+int(X)]
 		// If A==0 set the SR zero flag to 1
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If bit 7 of A is 1 then set the SR negative flag to 1 else set negative flag to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -705,15 +755,15 @@ func AND(addressingMode string) {
 		A &= memory[address]
 		// If A==0 set the SR zero flag to 1
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If bit 7 of A is 1 then set the SR negative flag to 1 else set negative flag to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -725,15 +775,15 @@ func AND(addressingMode string) {
 		A &= value
 		// If the accumulator is 0 then set the zero flag else reset it
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If accumulator has bit 7 on then set the negative flag to 1 else set the negative flag to 0
 		if getABit(7) == 0b00000001 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case ABSOLUTEY:
@@ -743,15 +793,15 @@ func AND(addressingMode string) {
 		A &= memory[address]
 		// If A==0 then set the SR zero flag to 1 else set SR zero flag to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Set the negative flag to the value of bit 6 of accumulator
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case INDIRECTX:
@@ -764,15 +814,15 @@ func AND(addressingMode string) {
 		A &= value
 		// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If A bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case INDIRECTY:
@@ -788,15 +838,15 @@ func AND(addressingMode string) {
 		A &= value
 		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	}
@@ -808,15 +858,15 @@ func EOR(addressingMode string) {
 		A ^= operand1()
 		// If accumulator is 0the  set Zero flag to 1 else set Zero flag to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If bit 7 of accumulator is set, set SR Negative flag to 1
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ZEROPAGE:
@@ -826,15 +876,15 @@ func EOR(addressingMode string) {
 		A ^= memory[address]
 		// If A==0, set zero flag
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If accumulator bit 7 is 1, set negative SR flag
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX:
@@ -846,15 +896,15 @@ func EOR(addressingMode string) {
 		A ^= value
 		// If accumulator is 0 then set Zero flag to 1 else set Zero flag to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If bit 7 of accumulator is set, set SR Negative flag to 1
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -864,14 +914,14 @@ func EOR(addressingMode string) {
 		A ^= memory[address]
 		// If A==0 then set SR Zero flag bit 1 to 1
 		if A == 0 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -880,15 +930,15 @@ func EOR(addressingMode string) {
 		// Perform EOR operation on A and the value at the X indexed memory location
 		A ^= memory[address]
 		if A == 0 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If bit 7 of A is 1 then set SR Negative flag bit 7 to 1
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case ABSOLUTEY:
@@ -898,14 +948,14 @@ func EOR(addressingMode string) {
 		A ^= memory[address]
 		// If A==0 then set SR Zero flag bit 1 to 1
 		if A == 0 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case INDIRECTX:
@@ -923,15 +973,15 @@ func EOR(addressingMode string) {
 		A ^= value
 		// If A==0, set zero flag
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If A bit 7 is 1, set negative flag
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case INDIRECTY:
@@ -947,15 +997,15 @@ func EOR(addressingMode string) {
 		A ^= value
 		// If accumulator is 0 then set Zero flag to 1 else set Zero flag to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If bit 7 of accumulator is set, set SR Negative flag to 1
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	}
@@ -967,15 +1017,15 @@ func ORA(addressingMode string) {
 		A |= operand1()
 		// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If A bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ZEROPAGE:
@@ -983,15 +1033,15 @@ func ORA(addressingMode string) {
 		A |= memory[operand1()]
 		// If the accumulator is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If accumulator bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX:
@@ -1003,15 +1053,15 @@ func ORA(addressingMode string) {
 		A |= value
 		// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If A bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -1023,15 +1073,15 @@ func ORA(addressingMode string) {
 		A |= value
 		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -1041,15 +1091,15 @@ func ORA(addressingMode string) {
 		A |= memory[address]
 		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case ABSOLUTEY:
@@ -1059,15 +1109,15 @@ func ORA(addressingMode string) {
 		A |= memory[address]
 		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case INDIRECTX:
@@ -1085,15 +1135,15 @@ func ORA(addressingMode string) {
 		A |= value
 		// If A==0 set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If A bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case INDIRECTY:
@@ -1110,15 +1160,15 @@ func ORA(addressingMode string) {
 
 		// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If A bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	}
@@ -1134,19 +1184,19 @@ func BIT(addressingMode string) {
 		result := A & value
 		// If bit 7 of result is set then set SR negative value to 1 else set it to 0
 		if result<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If bit 6 of result is set then set SR overflow flag to 1 else set it to 0
 		if result<<6 == 0b01000000 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If result is 0 then set SR zero flag to 1 else set it to 0
 		if result == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -1158,24 +1208,24 @@ func BIT(addressingMode string) {
 		result := A & value
 		// Set the SR Negative flag bit 7 to the value of bit 7 of result
 		if result<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// Set the SR Overflow flag bit 6 to the value of bit 6 of result
 		if result<<6 == 0b01000000 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If result==0 then set the SR Zero flag bit 1 to the result of result else set SR negative flag to 0
 		if result == 0 {
 			// If bit 7 of result is 1 then set SR negative flag to 1
 			if result<<7 == 0b10000000 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			}
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	}
@@ -1193,15 +1243,15 @@ func INC(addressingMode string) {
 		memory[address] = value
 		// If value==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If value bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX:
@@ -1215,15 +1265,15 @@ func INC(addressingMode string) {
 		memory[address] = value
 		// If value==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If value bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -1233,14 +1283,14 @@ func INC(addressingMode string) {
 		memory[address]++
 		// If bit 7 of the value stored in memory is 1 then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if memory[operand2()+operand1()] == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		if memory[operand2()+operand1()] == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -1250,15 +1300,15 @@ func INC(addressingMode string) {
 		memory[address]++
 		// If bit 7 of the value in memory is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if memory[address]<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If the value in memory is 0 then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
 		if memory[address] == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	}
@@ -1276,15 +1326,15 @@ func DEC(addressingMode string) {
 		memory[address] = value
 		// If value==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If value bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX:
@@ -1298,15 +1348,15 @@ func DEC(addressingMode string) {
 		memory[address] = value
 		// If value==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If value bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -1316,14 +1366,14 @@ func DEC(addressingMode string) {
 		memory[address]--
 		// If bit 7 of the value stored in memory is 1 then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if memory[operand2()+operand1()] == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		if memory[operand2()+operand1()] == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -1333,15 +1383,15 @@ func DEC(addressingMode string) {
 		memory[address]--
 		// If bit 7 of memory is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if memory[address]<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If result is 0 set SR Zero flag bit 1 to 1 else set SR Zero flag bit 1 to 0
 		if memory[address] == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	}
@@ -1351,57 +1401,57 @@ func ADC(addressingMode string) {
 	case IMMEDIATE:
 		// If A+memory > 255, set SR carry flag
 		if int(A)+int(operand1()) > 255 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If bit 7 of A+memory is different from bit 7 of A, set SR overflow flag bit 6
 		if (A&0x80)^(operand1()&0x80) != 0 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// Update A with A+memory
 		A += operand1()
 		// If bit 7 of A is set then set SR negative flag bit 7 else clear it
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If A=0 then set SR zero flag bit 1 else clear it
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ZEROPAGE:
 		// If A+memory > 255, set SR carry flag
 		if int(A)+int(operand1()) > 255 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If bit 7 of A+memory is different from bit 7 of A, set SR overflow flag bit 6
 		if (A&0x80)^(operand1()&0x80) != 0 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// Update A with a+memory
 		A += memory[operand1()]
 		// If bit 7 of A is set then set SR negative flag bit 7 else clear it
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If A=0 then set SR zero flag bit 1 else clear it
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX:
@@ -1412,27 +1462,27 @@ func ADC(addressingMode string) {
 		A += byte(temp)
 		// If result>255 then set SR carry flag bit 0 to 1
 		if A > 0x00FF {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If result>127 or result<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
 		if A > 127 || A < 128 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -1446,17 +1496,17 @@ func ADC(addressingMode string) {
 		A += operand1()
 		// If bit 7 of accumulator is not equal to bit 7 of result then set SR overflow flag bit 6 to 1
 		if getABit(7) != (temp & 0b10000000) {
-			setSRBitOn(6)
+			setOverflowFlag()
 		}
 		// If bit 7 of accumulator is 1 then set negative flag
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		}
 		// If accumulator is 0 then set zero flag else set SR zero flag to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -1467,51 +1517,51 @@ func ADC(addressingMode string) {
 		if getSRBit(0) == 1 {
 			A++
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If the accumulator is greater than 255 then set the carry flag else reset it
 		if temp > 0x00FF {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If the accumulator is greater than 99 then set the decimal flag else reset it
 		if A > 99 {
-			setSRBitOn(3)
+			setDecimalFlag()
 		} else {
-			setSRBitOff(3)
+			unsetDecimalFlag()
 		}
 		// If the accumulator is greater than 127 then set the overflow flag else reset it
 		if A > 127 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If the accumulator is less than 0 then set the overflow flag else reset it
 		// If A bit 7 is unset then it's negative
 		if getABit(7) == 0b00000000 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If the accumulator is greater than 127 then set the negative flag else reset it
 		if A > 127 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If the accumulator is less than 0 then set the negative flag else reset it
 		// If A bit 7 is unset then it's negative
 		if getABit(7) == 0b00000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If the accumulator is 0 then set the zero flag else reset it
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	case ABSOLUTEY:
@@ -1521,45 +1571,45 @@ func ADC(addressingMode string) {
 		if getSRBit(0) == 1 {
 			A++
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If the accumulator is greater than 255 then set the carry flag else reset it
 		// 256 rolls over to 0
 		// If the accumulator is 0 then set the zero flag else reset it
 		if A == 255 {
-			setSRBitOn(0)
-			setSRBitOn(1)
+			setCarryFlag()
+			setZeroFlag()
 		} else {
-			setSRBitOff(0)
-			setSRBitOff(1)
+			unsetCarryFlag()
+			unsetZeroFlag()
 		}
 		// If the accumulator is greater than 99 then set the decimal flag else reset it
 		if A > 99 {
-			setSRBitOn(3)
+			setDecimalFlag()
 		} else {
-			setSRBitOff(3)
+			unsetDecimalFlag()
 		}
 		// If the accumulator is greater than 127 then set the overflow flag else reset it
 		if A > 127 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If the accumulator is less than 0 then set the overflow flag else reset it
 		// If accumulator bit 7 is set then set SR bit 0 to 0 as number is negative
 		// If the accumulator is less than 0 then set the negative flag else reset it
 		if getABit(7) == 1 {
-			setSRBitOn(6)
-			setSRBitOn(7)
+			setOverflowFlag()
+			setNegativeFlag()
 		} else {
-			setSRBitOff(6)
-			setSRBitOff(7)
+			unsetOverflowFlag()
+			unsetNegativeFlag()
 		}
 		// If the accumulator is greater than 127 then set the negative flag else reset it
 		if A > 127 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(3)
 	case INDIRECTX:
@@ -1577,27 +1627,27 @@ func ADC(addressingMode string) {
 		}
 		// If the accumulator is 0, set the Zero flag to 1
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If bit 7 of accumulator is set, set SR Negative flag to 1
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If the accumulator is greater than 255, set the carry flag to 1
 		if A > 255 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If the accumulator is greater than 127 or less than -128, set the overflow flag to 1
 		if int(A) > 127 || int(A) < (-128) {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		incCount(2)
 	case INDIRECTY:
@@ -1607,27 +1657,27 @@ func ADC(addressingMode string) {
 		A = memory[address+Y]
 		// If accumulator>255 then set SR carry flag bit 0 to 1
 		if memory[address] > 0x00FF {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If accumulator>127 or accumulator<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
 		if A > 127 || int(A) < 128 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	}
@@ -1640,30 +1690,30 @@ func SBC(addressingMode string) {
 		// If result is greater than or equal to 0, set carry flag to 1
 		// If result bit 7 is not set then set SR bit 0 to 1 as number is not negative
 		if temp<<7 == 0b00000000 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If result is less than 0, set carry flag to 0
 		// If result bit 7 is set then set SR bit 0 to 0 as number is negative
 		// If bit 7 of result is set, set N flag to 1 else reset it
 		if temp<<7 == 0b10000000 {
-			setSRBitOff(0)
-			setSRBitOn(7)
+			unsetCarryFlag()
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If result is greater than 127 or less than -127, set overflow flag to 1
 		if temp > 127 || temp == 0x80 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If result is equal to 0, set Z flag to 1 else reset it
 		if temp == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Set A to result
 		A = temp
@@ -1674,30 +1724,30 @@ func SBC(addressingMode string) {
 		// If result is greater than or equal to 0, set carry flag to 1
 		// If result bit 7 is not set then set SR bit 0 to 1 as number is not negative
 		if temp<<7 == 0b00000000 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If result is less than 0, set carry flag to 0
 		// If result bit 7 is set then set SR bit 0 to 0 as number is negative
 		// If bit 7 of result is set, set N flag to 1 else reset it
 		if temp<<7 == 0b10000000 {
-			setSRBitOff(0)
-			setSRBitOn(7)
+			unsetCarryFlag()
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If result is greater than 127 or less than -127, set overflow flag to 1
 		if temp > 127 || temp == 0x80 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If result is equal to 0, set Z flag to 1 else reset it
 		if temp == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Set A to result
 		A = temp
@@ -1709,28 +1759,28 @@ func SBC(addressingMode string) {
 		// If result is greater than or equal to 1 then set carry flag bit 0 to 1 else set carry flag bit 0 to 0
 		// If result bit 7 is not set then set SR bit 0 to 1 as number is not negative
 		if result<<7 == 0b00000000 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If result is > 127 or < -127 then set overflow flag bit 6 to 1 else set overflow flag bit 6 to 0
 		if result > 127 || result == 0x80 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If result is < 0 then set Negative flag bit 7 to 1 else set Negative flag bit 7 to 0
 		// If result bit 7 is set then set SR bit 0 to 0 as number is negative
 		if result<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If result is 0 then set Z flag bit 1 to 1 else set Z flag bit 1 to 0
 		if result == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Update the accumulator
 		A = result
@@ -1742,25 +1792,25 @@ func SBC(addressingMode string) {
 		A -= temp - getSRBit(0)
 		// If accumulator >= 0 then set SR carry bit 0 to 1 else set SR carry bit 0 to 0
 		if A > 0 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If accumulator<0 then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
 		// If bit 7 of A is set then it is negative
 		// If bit 7 of accumulator is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if A<<7 == 0b10000000 {
-			setSRBitOff(0)
-			setSRBitOn(7)
+			unsetCarryFlag()
+			setNegativeFlag()
 		} else {
-			setSRBitOn(0)
-			setSRBitOff(7)
+			setCarryFlag()
+			unsetNegativeFlag()
 		}
 		// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
 		if A > 127 || A == 0x80 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -1769,33 +1819,33 @@ func SBC(addressingMode string) {
 		temp := memory[operand2()+operand1()+X]
 		// If result is greater than A then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
 		if temp > A {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		} else {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// If result <0 then set carry bit to 0 indicating a borrow
 		// If result bit 7 is set then set SR bit 0 to 0 as number is negative
 		if temp<<7 == 0b10000000 {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Subtract the value in memory from the accumulator with borrow
 		A -= temp - (1 - getSRBit(0))
 		// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
 		if A > 127 || A == 0x80 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If bit 7 of accumulator is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if getABit(7) == 1 {
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If accumulator is 0 then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	case ABSOLUTEY:
@@ -1804,35 +1854,35 @@ func SBC(addressingMode string) {
 		temp := uint16(memory[operand2()+operand1()+Y])
 		// If result is greater than A then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
 		if temp > uint16(A) {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		} else {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// If result <0 then set carry bit to 0 indicating a borrow
 		// If A bit 7 is unset then it's negative
 		if temp<<7 == 0b00000000 {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Subtract the value in memory from the accumulator with borrow
 		A = A - byte(temp) - (1 - getSRBit(0))
 		// If accumulator > 127 or accumulator < -127 then set SR overflow bit 6 to 1 else set SR overflow bit 6 to 0
 		// If accumulator bit 7 is set then set SR bit 0 to 0 as number is negative
 		if A > 127 || A == 0x80 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If bit 7 of accumulator is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If accumulator is 0 then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	case INDIRECTX:
@@ -1850,29 +1900,29 @@ func SBC(addressingMode string) {
 		TempResult := A - finalValue
 		// If operand is greater than A, set carry flag to 0
 		if TempResult > A {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If tempresult <0 Set the carry flag
 		// If result bit 7 is set then set SR bit 0 to 0 as number is negative
 		// If result bit 7 is not set then set SR bit 0 to 1 as number is not negative
 		if TempResult<<7 == 0b10000000 {
-			setSRBitOn(0)
-			setSRBitOn(7)
+			setCarryFlag()
+			setNegativeFlag()
 		} else {
-			setSRBitOff(0)
-			setSRBitOff(7)
+			unsetCarryFlag()
+			unsetNegativeFlag()
 		}
 		// If operand is equal to A, set Z flag to 1 else set Zero flag to 0
 		if TempResult == A {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If tempresult is greater than 127 or less than -127, set overflow flag to 1
 		if TempResult > 127 || TempResult == 0x80 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// Set A to the result of the subtraction
 		A = TempResult
@@ -1885,27 +1935,27 @@ func SBC(addressingMode string) {
 		// Set carry flag bit 0 if result is greater than or equal to 1
 		// If accumulator bit 7 is not set then set SR bit 0 to 1 as number is not negative
 		if A<<7 == 0b00000000 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Set overflow flag bit 6 if accumulator is greater than 127 or less than -127
 		if A > 127 || A == 0x80 {
-			setSRBitOn(6)
+			setOverflowFlag()
 		} else {
-			setSRBitOff(6)
+			unsetOverflowFlag()
 		}
 		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// Set Z flag bit 1 if accumulator is 0 else set Z flag bit 1 to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	}
@@ -1915,15 +1965,15 @@ func ROR(addressingMode string) {
 	case ACCUMULATOR:
 		// Get bit 0 of A and store it in the carry flag
 		if getABit(0) == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Set N flag bit7 to the value of the carry flag
 		if getSRBit(0) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// Shift right the accumulator by 1 bit
 		A >>= 1
@@ -1935,9 +1985,9 @@ func ROR(addressingMode string) {
 		}
 		// Set SR zero flag bit 1 to 1 if Accumulator is 0 else set SR zero flag to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(1)
 	case ZEROPAGE:
@@ -1947,9 +1997,9 @@ func ROR(addressingMode string) {
 		value := memory[address]
 		// Update SR carry flag bit 0 with bit 0 of value
 		if value&1 == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If SR bit 0 is 1 then update value bit 7 to 1
 		if getSRBit(0) == 1 {
@@ -1961,15 +2011,15 @@ func ROR(addressingMode string) {
 		memory[address] = value
 		// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
 		if value<<6 == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If value is 0 then set SR zero flag to 1 else set it to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX:
@@ -1979,9 +2029,9 @@ func ROR(addressingMode string) {
 		value := memory[address]
 		// Update SR carry flag bit 0 with bit 0 of value
 		if value&1 == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Shift the value right 1 bit
 		value >>= 1
@@ -1993,23 +2043,23 @@ func ROR(addressingMode string) {
 		bit7 := memory[address] & 1 << 7
 		// If bit 7 of memory[address] is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
 		if bit7 == 0x80 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Store the value back into memory
 		memory[address] = value
 		// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
 		if value<<6 == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If value is 0 then set SR zero flag to 1 else set it to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -2017,39 +2067,35 @@ func ROR(addressingMode string) {
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get the value stored at the address in the operands
 		value := memory[address]
-		// Update SR carry flag bit 0 with bit 0 of value
-		if value&1 == 1 {
-			setSRBitOn(0)
-		} else {
-			setSRBitOff(0)
-		}
+		// Store bit 0 of value in a temp variable
+		bit0 := value & 1
+		// Update SR carry flag bit 0 with bit0
+		SR = (SR & 0xFE) | bit0
+		fmt.Printf("SR bit 0 = %d\n", getSRBit(0))
+		fmt.Printf("zeroth bit of value = %d\n", value&1)
+		fmt.Printf("bit0 = %d\n", bit0)
+		fmt.Printf("memory[address] = %04X\n", memory[address])
+		fmt.Printf("memory[address] = %0b\n", memory[address])
+		fmt.Printf("value = %04X\n", value)
 		// Shift the value right 1 bit
 		value >>= 1
-		// If SR bit 0 is 1 then update value bit 7 to 1
-		if getSRBit(0) == 1 {
-			value |= 1 << 7
-		}
-		// Get bit 7 of memory[address]
-		bit7 := memory[address] & 1 << 7
-		// If bit 7 of memory[address] is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
-		if bit7 == 0x80 {
-			setSRBitOn(0)
-		} else {
-			setSRBitOff(0)
-		}
+		// Update bit 7 of value variable with the value of SR carry flag bit 0
+		value |= uint8(getSRBit(0)) << 7
+		fmt.Printf("value>>1 = %04X\n", value)
+		fmt.Printf("value>>1 = %0b\n", value)
 		// Store the value back into memory
 		memory[address] = value
 		// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
 		if value<<6 == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If value is 0 then set SR zero flag to 1 else set it to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -2059,15 +2105,15 @@ func ROR(addressingMode string) {
 		value := memory[address]
 		// Get bit 0 of value and store it in the carry flag
 		if value<<0 == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Set N flag bit7 to the value of the carry flag
 		if getSRBit(0) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// Shift right the value by 1 bit
 		value >>= 1
@@ -2079,9 +2125,9 @@ func ROR(addressingMode string) {
 		}
 		// Set SR zero flag bit 1 to 1 if value is 0 else set SR zero flag to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Store value in memory at address in operand
 		memory[address] = value
@@ -2095,23 +2141,23 @@ func ROL(addressingMode string) {
 		A <<= 1
 		// Set SR carry flag bit 0 to the value of Accumulator bit 7
 		if getABit(7) == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 
 		// Set SR negative flag bit 7 to the value of Accumulator bit 6
 		if getABit(6) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 
 		// Set SR zero flag bit 1 to 1 if Accumulator is 0 else set SR zero flag to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(1)
 	case ZEROPAGE:
@@ -2121,9 +2167,9 @@ func ROL(addressingMode string) {
 		value := memory[address]
 		// Update SR carry flag bit 0 with bit 0 of value
 		if value&1 == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If SR carry flag is set then set bit 0 of value to 1 else set it to 0
 		if getSRBit(0) == 1 {
@@ -2137,15 +2183,15 @@ func ROL(addressingMode string) {
 		memory[address] = value
 		// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
 		if value<<6 == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If value is 0 then set SR zero flag to 1 else set it to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX:
@@ -2163,23 +2209,23 @@ func ROL(addressingMode string) {
 		bit7 := memory[address] & 1 << 7
 		// If bit 7 of memory[address] is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
 		if bit7 == 0x80 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Store the value back into memory
 		memory[address] = value
 		// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
 		if value<<6 == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If value is 0 then set SR zero flag to 1 else set it to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -2187,34 +2233,39 @@ func ROL(addressingMode string) {
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get the value stored at the address in the operands
 		value := memory[address]
+		// Store bit 7 of value in a temp variable
+		bit7 := readABit(7, value)
+		fmt.Printf("memory[address] = %04X\n", memory[address])
+		fmt.Printf("memory[address] = %08b\n", memory[address])
+		fmt.Printf("value = %04X\n", value)
+		fmt.Printf("bit7 of value = %08b\n", bit7)
 		// Shift the value left 1 bit
 		value <<= 1
-		// If SR carry bit 0 is 1 then update value bit 0 to 1
-		if getSRBit(0) == 1 {
-			value |= 1 << 0
-		}
-		// Get bit 7 of memory[address]
-		bit7 := memory[address] & 1 << 7
-		// If bit 7 of memory[address] is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
-		if bit7 == 0x80 {
-			setSRBitOn(0)
-		} else {
-			setSRBitOff(0)
-		}
-		// Store the value back into memory
-		memory[address] = value
-		// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
-		if value<<6 == 1 {
-			setSRBitOn(7)
-		} else {
-			setSRBitOff(7)
+		// Set SR negative flag bit 7 to the value of bit 7 of value
+		SR = (SR & 0x7F) | (value & 0x80)
+		fmt.Printf("value << 1 = %04X\n", value)
+		fmt.Printf("value << 1= %08b\n", value)
+		fmt.Printf("value+1 = %04X\n", value+1)
+		fmt.Printf("value+1 = %08b\n", value+1)
+		// If negative bit not set then increase value by 1
+		if bit7 == 0 {
+			value++
 		}
 		// If value is 0 then set SR zero flag to 1 else set it to 0
-		if value == 0 {
-			setSRBitOn(1)
+		if memory[address] == 0 {
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
+		// If input bit7==1 then set SR carry flag bit 0 to 1 else set it to 0
+		if bit7 == 0x80 {
+			setCarryFlag()
+		} else {
+			unsetCarryFlag()
+		}
+		fmt.Printf("SR bit 0 = %08b\n", getSRBit(0))
+		// Store the value back into memory
+		memory[address] = value
 		incCount(3)
 	case ABSOLUTEX:
 		// Get 16bit X indexed absolute memory address
@@ -2225,21 +2276,21 @@ func ROL(addressingMode string) {
 		value <<= 1
 		// Set the SR Carry flag to the bit 7 of value
 		if value<<7 == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Set the SR Negative flag to the bit 6 of value
 		if value<<6 == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If value is 0 then set the SR Zero flag bit 1 to 1 else reset it
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Store the shifted value back in memory
 		memory[address] = value
@@ -2252,18 +2303,18 @@ func LSR(addressingMode string) {
 		// Shift A right 1 bit
 		A >>= 1
 		// Set SR negative flag bit 7 to 0
-		setSRBitOff(7)
+		unsetNegativeFlag()
 		// Set SR zero flag bit 1 to 1 if A is 0 else set it to 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Set SR carry flag bit 0 to bit 0 of A
 		if getABit(0) == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		incCount(1)
 	case ZEROPAGE:
@@ -2277,17 +2328,17 @@ func LSR(addressingMode string) {
 		memory[address] = value
 		// Update SR carry flag bit 0 with bit 0 of result variable
 		if value&1 == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Set the SR Negative flag to 0
-		setSRBitOff(7)
+		unsetNegativeFlag()
 		// If the result of the shift is 0, set the SR Zero flag
 		if value>>1 == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ZEROPAGEX:
@@ -2301,17 +2352,17 @@ func LSR(addressingMode string) {
 		memory[address] = value
 		// If the result is 0, set the Zero flag to 1
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Set the Negative flag to 0
-		setSRBitOff(7)
+		unsetNegativeFlag()
 		// Set the Carry flag to the value of bit 0 of the temporary variable
 		if value&0b00000001 == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -2324,18 +2375,18 @@ func LSR(addressingMode string) {
 		// Store the shifted value back in memory
 		memory[address] = value
 		// Set the SR Negative flag to 0
-		setSRBitOff(7)
+		unsetNegativeFlag()
 		// If the memory location is 0 then set the SR Zero flag bit 1 to 1
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Set the SR Carry flag to the bit 0 of result
 		if value&0b00000001 == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -2348,18 +2399,18 @@ func LSR(addressingMode string) {
 		// Store the shifted value back in memory
 		memory[address] = value
 		// Set the SR Negative flag to 0
-		setSRBitOff(7)
+		unsetNegativeFlag()
 		// If result is 0 then set the SR Zero flag bit 1 to 1 else reset it
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Set the SR Carry flag to the bit 0 of result
 		if value&0b00000001 == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		incCount(3)
 	}
@@ -2371,15 +2422,15 @@ func ASL(addressingMode string) {
 		A <<= 1
 		// Set SR negative flag if bit 7 of A is set
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// Set SR zero flag if A is 0
 		if A == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(1)
 	case ZEROPAGE:
@@ -2393,17 +2444,17 @@ func ASL(addressingMode string) {
 		memory[address] = value
 		// If the value bit 7 is 1, set the SR carry flag bit 0 to 1 and negative bit 7 to 1  else set bothto 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(0)
-			setSRBitOn(7)
+			setCarryFlag()
+			setNegativeFlag()
 		} else {
-			setSRBitOff(0)
-			setSRBitOff(7)
+			unsetCarryFlag()
+			unsetNegativeFlag()
 		}
 		// If the value is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// Store the value in memory at operand1
 		memory[operand1()] = value
@@ -2419,21 +2470,21 @@ func ASL(addressingMode string) {
 		memory[address] = value
 		// If memory[operand1()+X] bit 7 is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If memory[operand1()+X] == 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If memory[operand1()+X] bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -2447,23 +2498,23 @@ func ASL(addressingMode string) {
 		memory[address] = value
 		// If bit 7 is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// Shift the value at the address stored in result left 1 bit
 		value <<= 1
 		// If bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 		if getABit(7) == 1 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If the result is equal to 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	case ABSOLUTEX:
@@ -2477,27 +2528,27 @@ func ASL(addressingMode string) {
 		memory[address] = value
 		// Set negative flag if bit 7 is 1
 		if value<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// Set zero flag if the result is 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If result == 0 then set Zero flag bit 1 to 1 else set Zero flag bit 1 to 0
 		if value == 0 {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		// If bit 7 of result is 1 then set carry flag bit 0 to 1 else set carry flag bit 0 to 0
 		if value<<7 == 0b10000000 {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		incCount(3)
 	}
@@ -2509,21 +2560,21 @@ func CPX(addressingMode string) {
 		TempResult := X - operand1()
 		// If the operand is greater than the X register, set the carry flag to 0 else set to 1
 		if operand1() > X {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		} else {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// If bit 7 of value is set, set N flag to 1
 		if TempResult<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If operand value is equal to X register, set Z flag to 1 else set Zero flag to 0
 		if operand1() == X {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ZEROPAGE:
@@ -2531,25 +2582,25 @@ func CPX(addressingMode string) {
 		temp := X - memory[operand1()]
 		// If X >= memory[operand1()], set carry flag to 1
 		if X >= memory[operand1()] {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// If memory stored at operand1() is greater than X, set carry flag to 0
 		if memory[operand1()] > X {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If bit 7 of result is set, set N flag to 1 else reset it
 		if temp<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If memory stored at operand1() is equal to X, set Z flag to 1 else reset it
 		if memory[operand1()] == X {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -2557,27 +2608,27 @@ func CPX(addressingMode string) {
 		temp := memory[operand2()+operand1()]
 		// If X >= to the value in memory then set SR carry bit 0 to 1 else set SR carry bit 0 to 0
 		if X >= temp {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If value in memory > X then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
 		if temp > X {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		} else {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// If bit 7 of result is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if temp&0x80 == 0x80 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If result == X then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
 		if temp == X {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	}
@@ -2589,19 +2640,19 @@ func CPY(addressingMode string) {
 		TempResult := Y - operand1()
 		// If operand is greater than Y, set carry flag to 0
 		if operand1() > Y {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If bit 7 of value is set, set N flag to 1
 		if TempResult<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If operand is equal to Y, set Z flag to 1 else set Zero flag to 0
 		if operand1() == Y {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ZEROPAGE:
@@ -2609,25 +2660,25 @@ func CPY(addressingMode string) {
 		temp := Y - memory[operand1()]
 		// If Y >= memory[operand1()], set carry flag to 1
 		if Y >= memory[operand1()] {
-			setSRBitOn(0)
+			setCarryFlag()
 		}
 		// If memory stored at operand1() is greater than Y, set carry flag to 0
 		if memory[operand1()] > Y {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		// If bit 7 of result is set, set N flag to 1 else reset it
 		if temp<<7 == 0b10000000 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If memory stored at operand1() is equal to Y, set Z flag to 1 else reset it
 		if memory[operand1()] == Y {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(2)
 	case ABSOLUTE:
@@ -2635,29 +2686,29 @@ func CPY(addressingMode string) {
 		temp := memory[operand2()+operand1()]
 		// If Y >= to the value in memory then set SR carry bit 0 to 1 else set SR carry bit 0 to 0
 		if Y >= temp {
-			setSRBitOn(0)
+			setCarryFlag()
 		} else {
-			setSRBitOff(0)
+			unsetCarryFlag()
 		}
 		/*
 			// If value in memory > Y then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
 			if result > Y {
-				setSRBitOff(0)
+				unsetCarryFlag()
 			} else {
-				setSRBitOn(0)
+				setCarryFlag()
 			}
 		*/
 		// If bit 7 of result is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
 		if temp&0x80 == 0x80 {
-			setSRBitOn(7)
+			setNegativeFlag()
 		} else {
-			setSRBitOff(7)
+			unsetNegativeFlag()
 		}
 		// If result == Y then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
 		if temp == Y {
-			setSRBitOn(1)
+			setZeroFlag()
 		} else {
-			setSRBitOff(1)
+			unsetZeroFlag()
 		}
 		incCount(3)
 	}
@@ -2708,19 +2759,19 @@ func execute() {
 			// Set PC to 0xFFFE
 			PC = 0xFFFE
 			// Set SR interrupt disable bit to 1
-			setSRBitOn(2)
+			setInterruptFlag()
 			// Set SR break command bit to 1
-			setSRBitOn(4)
+			setBreakFlag()
 			// Set SR decimal mode bit to 0
-			setSRBitOff(3)
+			unsetDecimalFlag()
 			// Set SR overflow bit to 0
-			setSRBitOff(6)
+			unsetOverflowFlag()
 			// Set SR carry bit to 0
-			setSRBitOff(0)
+			unsetCarryFlag()
 			// Set SR negative bit to 0
-			setSRBitOff(7)
+			unsetNegativeFlag()
 			// Set SR zero bit to 0
-			setSRBitOff(1)
+			unsetZeroFlag()
 			// Set PC to the value stored at 0xFFFE
 			PC = int(uint16(memory[0xFFFE])<<8 | uint16(memory[0xFFFF]))
 			bytecounter = PC
@@ -2743,7 +2794,7 @@ func execute() {
 			}
 
 			// Set SR carry flag bit 0 to 0
-			setSRBitOff(0)
+			unsetCarryFlag()
 			incCount(1)
 		case 0xD8:
 			/*
@@ -2763,7 +2814,7 @@ func execute() {
 				fmt.Printf("CLD\n")
 			}
 
-			setSRBitOff(3)
+			unsetDecimalFlag()
 			incCount(1)
 		case 0x58:
 			/*
@@ -2784,7 +2835,7 @@ func execute() {
 			}
 
 			// Set SR interrupt disable bit 2 to 0
-			setSRBitOff(2)
+			unsetInterruptFlag()
 			incCount(1)
 		case 0xB8:
 			/*
@@ -2805,7 +2856,7 @@ func execute() {
 			}
 
 			// Set SR overflow flag bit 6 to 0
-			setSRBitOff(6)
+			unsetOverflowFlag()
 			incCount(1)
 		case 0xCA:
 			/*
@@ -2830,15 +2881,15 @@ func execute() {
 			X--
 			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if getXBit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if X == 0 {
-				setSRBitOn(1)
+				setZeroFlag()
 			} else {
-				setSRBitOff(1)
+				unsetZeroFlag()
 			}
 			incCount(1)
 		case 0x88:
@@ -2867,9 +2918,9 @@ func execute() {
 			Y--
 			// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if getYBit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			incCount(1)
 		case 0xE8:
@@ -2898,15 +2949,15 @@ func execute() {
 			X++
 			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if getXBit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if X == 0 {
-				setSRBitOn(1)
+				setZeroFlag()
 			} else {
-				setSRBitOff(1)
+				unsetZeroFlag()
 			}
 			incCount(1)
 		case 0xC8:
@@ -2934,15 +2985,15 @@ func execute() {
 			Y++
 			// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if getYBit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			// If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if Y == 0 {
-				setSRBitOn(1)
+				setZeroFlag()
 			} else {
-				setSRBitOff(1)
+				unsetZeroFlag()
 			}
 			incCount(1)
 		case 0xEA:
@@ -3030,15 +3081,15 @@ func execute() {
 			A = memory[SP]
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if getABit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			// If accumulator is 0, set zero SR flag else set zero SR flag to 0
 			if A == 0 {
-				setSRBitOn(1)
+				setZeroFlag()
 			} else {
-				setSRBitOff(1)
+				unsetZeroFlag()
 			}
 			incCount(1)
 		case 0x28:
@@ -3137,7 +3188,7 @@ func execute() {
 			}
 
 			// Set SR carry flag bit 0 to 1
-			setSRBitOn(0)
+			setCarryFlag()
 			incCount(1)
 		case 0xF8:
 			/*
@@ -3158,7 +3209,7 @@ func execute() {
 			}
 
 			// Set SR decimal mode flag to 1
-			setSRBitOn(3)
+			setDecimalFlag()
 			incCount(1)
 		case 0x78:
 			/*
@@ -3178,7 +3229,7 @@ func execute() {
 			}
 
 			// Set SR interrupt disable bit 2 to 1
-			setSRBitOn(2)
+			setInterruptFlag()
 			incCount(1)
 		case 0xAA:
 			/*
@@ -3203,15 +3254,15 @@ func execute() {
 			X = A
 			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if getXBit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if X == 0 {
-				setSRBitOn(1)
+				setZeroFlag()
 			} else {
-				setSRBitOff(1)
+				unsetZeroFlag()
 			}
 			incCount(1)
 		case 0xA8:
@@ -3237,15 +3288,15 @@ func execute() {
 			Y = A
 			// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if getYBit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			// If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if A == 0 {
-				setSRBitOn(1)
+				setZeroFlag()
 			} else {
-				setSRBitOff(1)
+				unsetZeroFlag()
 			}
 			incCount(1)
 		case 0xBA:
@@ -3271,15 +3322,15 @@ func execute() {
 			X = memory[SP]
 			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if getXBit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 			if X == 0 {
-				setSRBitOn(1)
+				setZeroFlag()
 			} else {
-				setSRBitOff(1)
+				unsetZeroFlag()
 			}
 			incCount(1)
 		case 0x8A:
@@ -3305,15 +3356,15 @@ func execute() {
 			A = X
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if getABit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			// If accumulator is 0, set zero SR flag else set zero SR flag to 0
 			if A == 0 {
-				setSRBitOn(1)
+				setZeroFlag()
 			} else {
-				setSRBitOff(1)
+				unsetZeroFlag()
 			}
 			incCount(1)
 		case 0x9A:
@@ -3360,15 +3411,15 @@ func execute() {
 			A = Y
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if getABit(7) == 1 {
-				setSRBitOn(7)
+				setNegativeFlag()
 			} else {
-				setSRBitOff(7)
+				unsetNegativeFlag()
 			}
 			// If accumulator is 0, set zero SR flag else set zero SR flag to 0
 			if A == 0 {
-				setSRBitOn(1)
+				setZeroFlag()
 			} else {
-				setSRBitOff(1)
+				unsetZeroFlag()
 			}
 			incCount(1)
 
