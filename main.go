@@ -2606,94 +2606,54 @@ func ASL(addressingMode string) {
 	}
 }
 func CPX(addressingMode string) {
+	var value, result byte
 	switch addressingMode {
 	case IMMEDIATE:
 		// Get value from operand1
-		value := operand1()
-		// Compare the operand with the X register
-		// If the operand is greater than the X register, set the carry flag to 0 else set to 1
-		if value > X {
-			unsetCarryFlag()
-		} else {
-			setCarryFlag()
-		}
-		// If bit 7 of value is set, set N flag to 1
-		if readBit(7, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If operand value is equal to X register, set Z flag to 1 else set Zero flag to 0
-		if value == X {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		value = operand1()
+		// Compare X with value
+		result = X - value
 		incCount(2)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
 		// Get value at address
-		value := memory[address]
+		value = memory[address]
 		// Store result of X-memory stored at operand1() in result variable
-		result := X - value
-		// If X >= memory[operand1()], set carry flag to 1
-		if X >= value {
-			setCarryFlag()
-		}
-		// If memory stored at operand1() is greater than X, set carry flag to 0
-		if value > X {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// If bit 7 of result is set, set N flag to 1 else reset it
-		if readBit(7, result) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If memory stored at operand1() is equal to X, set Z flag to 1 else reset it
-		if value == X {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		result = X - value
 		incCount(2)
 	case ABSOLUTE:
 		// Get address
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get value at address
-		value := memory[address]
-		// If X >= to the value in memory then set SR carry bit 0 to 1 else set SR carry bit 0 to 0
-		if X >= value {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// If value in memory > X then set SR carry bit 0 to 0 else set SR carry bit 0 to 1
-		if value > X {
-			unsetCarryFlag()
-		} else {
-			setCarryFlag()
-		}
-		// If bit 7 of result is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-		if readBit(7, X-value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If result == X then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
-		if value == X {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		value = memory[address]
 		incCount(3)
+	}
+	// If X >= value then set carry flag bit 0 to 1 set carry flag bit 0 to 0
+	if X >= value {
+		setCarryFlag()
+	} else {
+		unsetCarryFlag()
+	}
+	// If value> X then reset carry flag
+	if value > X {
+		unsetCarryFlag()
+	}
+	// If bit 7 of result is 1 then set negative flag else unset negative flag
+	if readBit(7, result) == 1 {
+		setNegativeFlag()
+	} else {
+		unsetNegativeFlag()
+	}
+	// If value == X then set zero flag else unset zero flag
+	if value == X {
+		setZeroFlag()
+	} else {
+		unsetZeroFlag()
 	}
 }
 func CPY(addressingMode string) {
-	var result, value byte
+	var value, result byte
 	switch addressingMode {
 	case IMMEDIATE:
 		// Get value from operand1
