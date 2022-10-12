@@ -17,13 +17,13 @@ var (
 	instructionCounter     = 0
 
 	// CPURegisters and RAM
-	A      byte        = 0x0000     // Accumulator
-	X      byte        = 0x0000     // X register
-	Y      byte        = 0x0000     // Y register		(76543210) SR Bit 5 is always set
-	SR     byte        = 0b00110100 // Status Register	(NVEBDIZC)
-	SP     uint        = 0x01ff     // Stack Pointer
-	PC     int                      // Program Counter
-	memory [65536]byte              // Memory
+	A      byte        = 0x0 // Accumulator
+	X      byte        = 0x0 // X register
+	Y      byte        = 0x0 // Y register		(76543210) SR Bit 5 is always set
+	SR     byte              // Status Register	(NVEBDIZC)
+	SP     uint              // Stack Pointer
+	PC     int               // Program Counter
+	memory [65536]byte       // Memory
 )
 
 const (
@@ -73,6 +73,7 @@ func main() {
 
 	// Start emulation
 	fmt.Printf("Starting emulation at $%04X\n\n", PC)
+	reset()
 	printMachineState()
 	execute()
 }
@@ -2770,6 +2771,15 @@ func CPY(addressingMode string) {
 		}
 		incCount(3)
 	}
+}
+
+func reset() {
+	// Set PC to 0xFFFC
+	PC = int(uint16(memory[0xFFFD])<<8 | uint16(memory[0xFFFC]))
+	// Set SP to 0x0100
+	SP = 0x0100
+	// Set SR to 0x24
+	SR = 0x24
 }
 
 func execute() {
