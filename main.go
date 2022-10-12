@@ -2693,83 +2693,46 @@ func CPX(addressingMode string) {
 	}
 }
 func CPY(addressingMode string) {
+	var result, value byte
 	switch addressingMode {
 	case IMMEDIATE:
 		// Get value from operand1
-		value := operand1()
+		value = operand1()
 		// Subtract operand from Y
-		result := Y - operand1()
-		// If operand is greater than Y, set carry flag to 0
-		if value > Y {
-			unsetCarryFlag()
-		}
-		// If bit 7 of result is set, set N flag to 1
-		if readBit(7, result) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If operand is equal to Y, set Z flag to 1 else set Zero flag to 0
-		if value == Y {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		result = Y - operand1()
 		incCount(2)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
 		// Get value at address
-		value := memory[address]
+		value = memory[address]
 		// Store result of Y-memory stored at operand1() in result variable
-		result := Y - value
-		// If Y >= memory[operand1()], set carry flag to 1
-		if Y >= value {
-			setCarryFlag()
-		}
-		// If memory stored at operand1() is greater than Y, set carry flag to 0
-		if value > Y {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// If bit 7 of result is set, set N flag to 1 else reset it
-		if readBit(7, result) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If memory stored at operand1() is equal to Y, set Z flag to 1 else reset it
-		if result == Y {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		result = Y - value
 		incCount(2)
 	case ABSOLUTE:
 		// Get address
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get value at address
-		value := memory[address]
-		// If Y >= to the value in memory then set SR carry bit 0 to 1 else set SR carry bit 0 to 0
-		if Y >= value {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// If bit 7 of result is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-		if readBit(7, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If result == Y then set SR zero bit 1 to 1 else set SR zero bit 1 to 0
-		if value == Y {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		value = memory[address]
 		incCount(3)
+	}
+	// If Y>value then set carry flag to 1 else set carry flag to 0
+	if Y >= value {
+		setCarryFlag()
+	} else {
+		unsetCarryFlag()
+	}
+	// If bit 7 of result is set, set N flag to 1 else reset it
+	if readBit(7, result) == 1 {
+		setNegativeFlag()
+	} else {
+		unsetNegativeFlag()
+	}
+	// If Y==value then set Z flag to 1 else reset it
+	if Y == value {
+		setZeroFlag()
+	} else {
+		unsetZeroFlag()
 	}
 }
 
