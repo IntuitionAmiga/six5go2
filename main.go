@@ -2350,46 +2350,23 @@ func ROL(addressingMode string) {
 	}
 }
 func LSR(addressingMode string) {
+	var value, result byte
 	switch addressingMode {
 	case ACCUMULATOR:
-		// Shift A right 1 bit
-		A >>= 1
-		// Set SR negative flag bit 7 to 0
-		unsetNegativeFlag()
-		// Set SR zero flag bit 1 to 1 if A is 0 else set it to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// Set SR carry flag bit 0 to bit 0 of A
-		if getABit(0) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
+		// Get the value of the accumulator
+		value = A
+		// Shift the value right 1 bit
+		result = value >> 1
+		// Store the result back into the accumulator
+		A = result
 		incCount(1)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
 		// Get the value at the address
-		value := memory[address]
+		value = memory[address]
 		// Shift the value right 1 bit
 		value >>= 1
-		// Update SR carry flag bit 0 with bit 0 of result variable
-		if readBit(0, value) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// Set the SR Negative flag to 0
-		unsetNegativeFlag()
-		// If the result of the shift is 0, set the SR Zero flag
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
 		// Store the value back into memory
 		memory[address] = value
 		incCount(2)
@@ -2397,47 +2374,19 @@ func LSR(addressingMode string) {
 		// Get the X indexed address
 		address := operand1() + X
 		// Get the value at the X indexed address
-		value := memory[address]
+		value = memory[address]
 		// Shift the value right 1 bit
 		value >>= 1
 		// Store the shifted value in memory
 		memory[address] = value
-		// If the result is 0, set the Zero flag to 1
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// Set the Negative flag to 0
-		unsetNegativeFlag()
-		// Set the Carry flag to the value of bit 0 of the temporary variable
-		if readBit(0, value) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
 		incCount(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get the value stored at the address in the operands
-		value := memory[address]
+		value = memory[address]
 		// Shift the value right 1 bit
 		value >>= 1
-		// Set the SR Negative flag to 0
-		unsetNegativeFlag()
-		// If the memory location is 0 then set the SR Zero flag bit 1 to 1
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// Set the SR Carry flag to the bit 0 of result
-		if readBit(0, value) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
 		// Store the shifted value back in memory
 		memory[address] = value
 		incCount(3)
@@ -2445,26 +2394,26 @@ func LSR(addressingMode string) {
 		// Get the 16bit X indexed absolute memory address
 		address := int(operand2())<<8 | int(operand1()) + int(X)
 		// Get the value stored at the address
-		value := memory[address]
+		value = memory[address]
 		// Shift the value right 1 bit
 		value >>= 1
 		// Store the shifted value back in memory
 		memory[address] = value
-		// Set the SR Negative flag to 0
-		unsetNegativeFlag()
-		// If result is 0 then set the SR Zero flag bit 1 to 1 else reset it
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// Set the SR Carry flag to the bit 0 of result
-		if readBit(0, value) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
 		incCount(3)
+	}
+	// Reset the SR negative flag
+	unsetNegativeFlag()
+	// If result is 0 then set SR zero flag else reset it
+	if result == 0 {
+		setZeroFlag()
+	} else {
+		unsetZeroFlag()
+	}
+	// If bit 0 of value is 1 then set SR carry flag else reset it
+	if readBit(0, value) == 1 {
+		setCarryFlag()
+	} else {
+		unsetCarryFlag()
 	}
 }
 func ASL(addressingMode string) {
