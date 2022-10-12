@@ -2468,47 +2468,24 @@ func LSR(addressingMode string) {
 	}
 }
 func ASL(addressingMode string) {
+	var value, result byte
 	switch addressingMode {
 	case ACCUMULATOR:
-		// Shift left the accumulator by 1 bit
-		A <<= 1
-		// Set SR negative flag if bit 7 of A is set
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// Set SR zero flag if A is 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		// Set value to accumulator
+		value = A
+		// Shift the value left 1 bit
+		result = value << 1
+		// Update the accumulator with the result
+		A = result
 		incCount(1)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
 		// Get value at address
-		value := memory[address]
+		value = memory[address]
 		// Shift value left 1 bit
 		value <<= 1
 		// Store value at address
-		memory[address] = value
-		// If the value bit 7 is 1, set the SR carry flag bit 0 to 1 and negative bit 7 to 1  else set bothto 0
-		if readBit(7, value) == 1 {
-			setCarryFlag()
-			setNegativeFlag()
-		} else {
-			unsetCarryFlag()
-			unsetNegativeFlag()
-		}
-		// If the value is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// Store the value in memory at operand1
 		memory[address] = value
 		incCount(2)
 	case ZEROPAGEX:
@@ -2520,89 +2497,45 @@ func ASL(addressingMode string) {
 		value <<= 1
 		// Store value at address
 		memory[address] = value
-		// If memory[operand1()+X] bit 7 is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
-		if readBit(7, value) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// If memory[operand1()+X] == 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If memory[operand1()+X] bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if readBit(7, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
 		incCount(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get the value at the address
-		value := memory[address]
+		value = memory[address]
 		// Shift the value left 1 bit
 		value <<= 1
 		// Store the value at the address
 		memory[address] = value
-		// If bit 7 is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
-		if getABit(7) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// Shift the value at the address stored in result left 1 bit
-		value <<= 1
-		// If bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If the result is equal to 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
 		incCount(3)
 	case ABSOLUTEX:
 		// Get address
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
 		// Get value at address
-		value := memory[address]
+		value = memory[address]
 		// Shift left 1 bit
 		value <<= 1
 		// Store value back in memory
 		memory[address] = value
-		// Set negative flag if bit 7 is 1
-		if readBit(7, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// Set zero flag if the result is 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If result == 0 then set Zero flag bit 1 to 1 else set Zero flag bit 1 to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If bit 7 of result is 1 then set carry flag bit 0 to 1 else set carry flag bit 0 to 0
+		incCount(3)
+	}
+	// Set the SR Negative flag to the bit 7 of the result
+	if readBit(7, result) == 1 {
+		setNegativeFlag()
+	} else {
+		unsetNegativeFlag()
+	}
+	// If the result is 0, set the Zero flag to 1 else unset zero flag and set carry flag to bit 7 of value
+	if result == 0 {
+		setZeroFlag()
+	} else {
+		unsetZeroFlag()
+		// Set the Carry flag to the bit 7 of input value
 		if readBit(7, value) == 1 {
 			setCarryFlag()
 		} else {
 			unsetCarryFlag()
 		}
-		incCount(3)
 	}
 }
 func CPX(addressingMode string) {
