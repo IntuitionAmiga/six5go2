@@ -117,11 +117,15 @@ func printMachineState() {
 		fmt.Printf("RAM dump $0000 - $073f:\n\n")
 		for i := 0; i < 23; i++ {
 			for j := 0; j < 35; j++ {
-				fmt.Printf("%02X ", memory[i*32+j])
+				if memory[i*32+j] == 0 {
+					fmt.Printf("\u001B[37m %02X", (memory[i*32+j]))
+				} else {
+					fmt.Printf("\u001B[3%dm %02X", (memory[i*32+j])%7+1, memory[i*32+j])
+				}
 			}
 			fmt.Printf("\n")
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 func getSRBit(x byte) byte {
