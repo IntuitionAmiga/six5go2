@@ -114,9 +114,9 @@ func printMachineState() {
 	fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X\n\n", PC, A, X, Y, SR, SP)
 
 	if machineMonitor {
-		fmt.Printf("Zero Page RAM dump:\n\n")
-		for i := 0; i < 16; i++ {
-			for j := 0; j < 16; j++ {
+		fmt.Printf("RAM dump $0000 - $073f:\n\n")
+		for i := 0; i < 23; i++ {
+			for j := 0; j < 35; j++ {
 				fmt.Printf("%02X ", memory[i*32+j])
 			}
 			fmt.Printf("\n")
@@ -1710,12 +1710,29 @@ func ADC(addressingMode string) {
 	}
 }
 func SBC(addressingMode string) {
+	var value, result byte
 	switch addressingMode {
 	case IMMEDIATE:
 		// Get value from operand
-		value := operand1()
+		value = operand1()
 		// Store result of A-memory stored at operand1() in result variable
-		result := A - value
+		result = A - value
+
+		/*
+			This instruction subtracts the value of memory and borrow from the value of the accumulator,
+			using two's complement arithmetic, and stores the result in the accumulator.
+			Borrow is defined as the carry flag complemented;
+			therefore, a resultant carry flag indicates that a borrow has not occurred.
+				Subtraction is performed by adding the two's complement of the value of memory to the accumulator.
+				The carry flag is set if the result is greater than or equal to 0.
+				The carry flag is reset when the result is less than 0, indicating a borrow.
+				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
+				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
+				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
+		*/
+
+		// If
+
 		// If result is greater than or equal to 0, set carry flag to 1
 		// If result bit 7 is not set then set SR bit 0 to 1 as number is not negative
 		if readBit(7, result) == 0 {
@@ -2016,176 +2033,75 @@ func SBC(addressingMode string) {
 	}
 }
 func ROR(addressingMode string) {
+	var value, result byte
 	switch addressingMode {
 	case ACCUMULATOR:
-		// Get bit 0 of A and store it in the carry flag
-		if getABit(0) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// Set N flag bit7 to the value of the carry flag
-		if getSRBit(0) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// Shift right the accumulator by 1 bit
-		A >>= 1
-		// Set Accumulator bit 7 to the value of the carry flag
-		if getSRBit(0) == 1 {
-			setABitOff(7)
-		} else {
-			setABitOn(7)
-		}
-		// Set SR zero flag bit 1 to 1 if Accumulator is 0 else set SR zero flag to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		// Get value from accumulator
+		value = A
+		// Rotate right one bit
+		result = value >> 1
+		// Store the result in the accumulator
+		A = result
 		incCount(1)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
 		// Get the value at the address
-		value := memory[address]
-		// Update SR carry flag bit 0 with bit 0 of value
-		if readBit(0, value) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// If SR bit 0 is 1 then update value bit 7 to 1
-		if getSRBit(0) == 1 {
-			value |= 1 << 7
-		}
+		value = memory[address]
 		// Shift the value right 1 bit
-		value >>= 1
+		result = value >> 1
 		// Store the value back into memory
-		memory[address] = value
-		// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
-		if readBit(6, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If value is 0 then set SR zero flag to 1 else set it to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		memory[address] = result
 		incCount(2)
 	case ZEROPAGEX:
 		// Get X indexed zero page address
 		address := operand1() + X
 		// Get the value at the address
-		value := memory[address]
-		// Update SR carry flag bit 0 with bit 0 of value
-		if readBit(0, value) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
+		value = memory[address]
 		// Shift the value right 1 bit
-		value >>= 1
-		// If SR bit 0 is 1 then update value bit 7 to 1
-		if getSRBit(0) == 1 {
-			value |= 1 << 7
-		}
-		// Get bit 7 of memory[address]
-		//bit7 := memory[address] & 1 << 7
-		// If bit 7 of memory[address] is 1 then set SR carry flag bit 0 to 1 else set SR carry flag bit 0 to 0
-		if readBit(7, memory[address]) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
+		result = value >> 1
 		// Store the value back into memory
-		memory[address] = value
-		// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
-		if readBit(6, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If value is 0 then set SR zero flag to 1 else set it to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		memory[address] = result
 		incCount(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get the value stored at the address in the operands
-		value := memory[address]
-		// Update SR carry flag bit 0 with bit0
-		SR = (SR & 0xFE) | byte(readBit(0, value))
-		fmt.Printf("SR bit 0 = %d\n", getSRBit(0))
-		fmt.Printf("zeroth bit of value = %d\n", value&1)
-		fmt.Printf("bit0 = %d\n", readBit(0, value))
-		fmt.Printf("memory[address] = %04X\n", memory[address])
-		fmt.Printf("memory[address] = %0b\n", memory[address])
-		fmt.Printf("value = %04X\n", value)
+		value = memory[address]
 		// Shift the value right 1 bit
-		value >>= 1
-		// Update bit 7 of value variable with the value of SR carry flag bit 0
-		value = (value & 0x7F) | getSRBit(0)<<7
-		//value |= getSRBit(0) << 7
-		fmt.Printf("value>>1 = %04X\n", value)
-		fmt.Printf("value>>1 = %0b\n", value)
+		result = value >> 1
 		// Store the value back into memory
-		memory[address] = value
-		// If bit 6 of value is set then set SR negative flag to 1 else set it to 0
-		if readBit(6, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If value is 0 then set SR zero flag to 1 else set it to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		memory[address] = result
 		incCount(3)
 	case ABSOLUTEX:
 		// Get 16 bit address
 		address := int(operand2())<<8 | int(operand1()) + int(X)
 		// Get value stored at address
-		value := memory[address]
-		// Get bit 0 of value and store it in the carry flag
-		if readBit(0, value) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// Set N flag bit7 to the value of the carry flag
-		if getSRBit(0) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		value = memory[address]
 		// Shift right the value by 1 bit
-		value >>= 1
-		// Set value bit 7 to the value of the carry flag
-		if getSRBit(0) == 1 {
-			value |= 1 << 7
-		} else {
-			value &= 0 << 7
-		}
-		// Set SR zero flag bit 1 to 1 if value is 0 else set SR zero flag to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		result = value >> 1
 		// Store value in memory at address in operand
-		memory[address] = value
+		memory[address] = result
 		incCount(3)
+	}
+	// Set bit 7 of result and negative flag to the carry flag
+	if getSRBit(0) == 1 {
+		result = result | 0x80
+		setNegativeFlag()
+	} else {
+		result = result & 0x7F
+		unsetNegativeFlag()
+	}
+	// Set carry flag to bit 0 of value
+	if readBit(0, value) == 1 {
+		setCarryFlag()
+	} else {
+		unsetCarryFlag()
+	}
+	if result == 0 {
+		setZeroFlag()
+	} else {
+		unsetZeroFlag()
 	}
 }
 func ROL(addressingMode string) {
@@ -2196,6 +2112,8 @@ func ROL(addressingMode string) {
 		value = A
 		// Shift the value left 1 bit
 		result = value << 1
+		// Update bit 0 of result with the value of the carry flag
+		result = (result & 0xFE) | getSRBit(0)
 		// Store the result in the accumulator
 		A = result
 		incCount(1)
@@ -2206,6 +2124,8 @@ func ROL(addressingMode string) {
 		value = memory[address]
 		// Shift the value left 1 bit
 		result = value << 1
+		// Update bit 0 of result with the value of the carry flag
+		result = (result & 0xFE) | getSRBit(0)
 		// Store the value back into memory
 		memory[address] = result
 		incCount(2)
@@ -2216,6 +2136,8 @@ func ROL(addressingMode string) {
 		value = memory[address]
 		// Shift the value left 1 bit
 		result = value << 1
+		// Update bit 0 of result with the value of the carry flag
+		result = (result & 0xFE) | getSRBit(0)
 		// Store the value back into memory
 		memory[address] = result
 		incCount(2)
@@ -2226,6 +2148,8 @@ func ROL(addressingMode string) {
 		value = memory[address]
 		// Shift the value left 1 bit
 		result = value << 1
+		// Update bit 0 of result with the value of the carry flag
+		result = (result & 0xFE) | getSRBit(0)
 		// Store the value back into memory
 		memory[address] = result
 		incCount(3)
@@ -2236,6 +2160,8 @@ func ROL(addressingMode string) {
 		value = memory[address]
 		// Shift the value left 1 bit
 		result = value << 1
+		// Update bit 0 of result with the value of the carry flag
+		result = (result & 0xFE) | getSRBit(0)
 		// Store the shifted value back in memory
 		memory[address] = result
 		incCount(3)
@@ -2246,7 +2172,7 @@ func ROL(addressingMode string) {
 	} else {
 		unsetCarryFlag()
 	}
-	// Set SR negative flag to bit 6 of value
+	// Set SR negative flag to bit 6 of value (bit 7 of result)
 	if readBit(6, value) == 1 {
 		setNegativeFlag()
 	} else {
@@ -2258,6 +2184,7 @@ func ROL(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
+	//fmt.Printf("ROL: value = %04X, result = %04X\n", value, result)
 }
 func LSR(addressingMode string) {
 	var value, result byte
