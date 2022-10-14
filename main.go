@@ -576,7 +576,7 @@ func JMP(addressingMode string) {
 		// Get the value at the address
 		value := memory[address]
 		// Set the program counter to the value
-		PC = int(uint16(value))
+		PC = int(value)
 		incCount(3)
 	}
 }
@@ -881,60 +881,42 @@ func ORA(addressingMode string) {
 	}
 }
 func BIT(addressingMode string) {
+	var value, result byte
 	switch addressingMode {
 	case ZEROPAGE:
-		// Get address
+		// Get the address from the operand
 		address := operand1()
-		// Get value at address
-		value := memory[address]
-		// Store result of AND between A and memory stored at location in operand in a result variable
-		result := A & value
-		// If bit 7 of result is set then set SR negative value to 1 else set it to 0
-		if readBit(7, result) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If bit 6 of result is set then set SR overflow flag to 1 else set it to 0
-		if readBit(6, result) == 1 {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
-		// If result is 0 then set SR zero flag to 1 else set it to 0
-		if result == 0 {
-			setZeroFlag()
-		}
+		// Get the value at the address
+		value = memory[address]
+		// AND the value with the accumulator
+		result = A & value
 		incCount(2)
 	case ABSOLUTE:
-		// Get address
+		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get value at address
-		value := memory[address]
-		// Store the result of the AND between the accumulator and the operands in a result var
-		result := A & value
-		// Set the SR Negative flag bit 7 to the value of bit 7 of result
-		if readBit(7, result) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// Set the SR Overflow flag bit 6 to the value of bit 6 of result
-		if readBit(6, result) == 1 {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
-		// If result==0 then set the SR Zero flag bit 1 to the result of result else set SR negative flag to 0
-		if result == 0 {
-			// If bit 7 of result is 1 then set SR negative flag to 1
-			if readBit(7, result) == 1 {
-				setNegativeFlag()
-			}
-		} else {
-			unsetNegativeFlag()
-		}
+		value = memory[address]
+		// AND the value with the accumulator
+		result = A & value
 		incCount(3)
+	}
+	// Set Negative flag to bit 7 of the value
+	if readBit(7, value) == 1 {
+		setNegativeFlag()
+	} else {
+		unsetNegativeFlag()
+	}
+	// Set Overflow flag to bit 6 of the value
+	if readBit(6, value) == 1 {
+		setOverflowFlag()
+	} else {
+		unsetOverflowFlag()
+	}
+	// If the result is 0, set the zero flag
+	if result == 0 {
+		setZeroFlag()
+	} else {
+		unsetZeroFlag()
 	}
 }
 func INC(addressingMode string) {
