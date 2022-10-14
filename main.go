@@ -126,10 +126,10 @@ func printMachineState() {
 	if machineMonitor {
 		// Get terminal width and height
 		width, height, _ := getTermDim()
-		fmt.Printf("RAM dump $0000 - $%04X:\n\n", (height-5)*(width/4+8))
+		fmt.Printf("RAM dump $0000 - $%04X:\n\n", (height-5)*(width/4+6))
 
 		for i := 0; i < height-5; i++ {
-			for j := 0; j < width/4+8; j++ {
+			for j := 0; j < width/4+6; j++ {
 				if memory[i*32+j] == 0 {
 					fmt.Printf("\u001B[37m %02X", memory[i*32+j])
 				} else {
