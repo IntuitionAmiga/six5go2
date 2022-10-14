@@ -977,87 +977,60 @@ func INC(addressingMode string) {
 	}
 }
 func DEC(addressingMode string) {
+	var value, result byte
 	switch addressingMode {
 	case ZEROPAGE:
-		// Get address
+		// Get the address from the operand
 		address := operand1()
-		// Get value at address
-		value := memory[address]
-		// Decrement value
-		value--
-		// Store value at address
-		memory[address] = value
-		// If value==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If value bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if readBit(7, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		// Get the value at the address
+		value = memory[address]
+		// Decrement the value
+		result = value - 1
+		// Set the value at the address to the result
+		memory[address] = result
 		incCount(2)
 	case ZEROPAGEX:
-		// Get address
-		address := uint16(int(operand1()) + int(X)&0xFF)
-		// Get value at address
-		value := memory[address]
-		// Decrement value
-		value--
-		// Store value at address
-		memory[address] = value
-		// If value==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if value == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If value bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if readBit(7, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		// Get the address from the operand
+		address := operand1() + X
+		// Get the value at the address
+		value = memory[address]
+		// Decrement the value
+		result = value - 1
+		// Set the value at the address to the result
+		memory[address] = result
 		incCount(2)
 	case ABSOLUTE:
-		// Get 16 bit address
+		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
-		// Decrement value stored at address by 1
-		memory[address]--
-		// If bit 7 of the value stored in memory is 1 then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-		if readBit(7, memory[address]) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If the value stored in memory is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if memory[address] == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		// Get value at address
+		value = memory[address]
+		// Decrement the value
+		result = value - 1
+		// Set the value at the address to the result
+		memory[address] = result
 		incCount(3)
 	case ABSOLUTEX:
-		// Get 16bit address from operands
+		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
-		// Decrement the value at the address by 1
-		memory[address]--
-		// If bit 7 of memory is set then set SR negative bit 7 to 1 else set SR negative bit 7 to 0
-		if readBit(7, memory[address]) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If result is 0 set SR Zero flag bit 1 to 1 else set SR Zero flag bit 1 to 0
-		if memory[address] == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		// Get value at address
+		value = memory[address]
+		// Decrement the value
+		result = value - 1
+		// Set the value at the address to the result
+		memory[address] = result
 		incCount(3)
+	}
+	// If bit 7 of the result is set, set the negative flag
+	if readBit(7, result) == 1 {
+		setNegativeFlag()
+	} else {
+		unsetNegativeFlag()
+	}
+	// If the result is 0, set the zero flag
+	if result == 0 {
+		setZeroFlag()
+	} else {
+		unsetZeroFlag()
 	}
 }
 func ADC(addressingMode string) {
