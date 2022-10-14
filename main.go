@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"syscall"
 	"time"
+	"unsafe"
 )
 
 var (
@@ -99,6 +101,14 @@ func incCount(amount int) {
 	PC += amount
 	printMachineState()
 }
+func getTermDim() (width, height int, err error) {
+	var termDim [4]uint16
+	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(0), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&termDim)), 0, 0, 0); err != 0 {
+		return -1, -1, err
+	}
+	return int(termDim[1]), int(termDim[0]), nil
+}
+
 func printMachineState() {
 	if machineMonitor {
 		// fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
@@ -114,11 +124,14 @@ func printMachineState() {
 	fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X\n\n", PC, A, X, Y, SR, SP)
 
 	if machineMonitor {
-		fmt.Printf("RAM dump $0000 - $073f:\n\n")
-		for i := 0; i < 23; i++ {
-			for j := 0; j < 35; j++ {
+		// Get terminal width and height
+		width, height, _ := getTermDim()
+		fmt.Printf("RAM dump $0000 - $%04X:\n\n", (height-5)*(width/4+8))
+
+		for i := 0; i < height-5; i++ {
+			for j := 0; j < width/4+8; j++ {
 				if memory[i*32+j] == 0 {
-					fmt.Printf("\u001B[37m %02X", (memory[i*32+j]))
+					fmt.Printf("\u001B[37m %02X", memory[i*32+j])
 				} else {
 					fmt.Printf("\u001B[3%dm %02X", (memory[i*32+j])%7+1, memory[i*32+j])
 				}
