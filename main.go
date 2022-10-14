@@ -1034,311 +1034,152 @@ func DEC(addressingMode string) {
 	}
 }
 func ADC(addressingMode string) {
+	var value, result byte
 	switch addressingMode {
 	case IMMEDIATE:
-		// Get value from operand
-		value := operand1()
-		// If A+memory > 255, set SR carry flag
-		if int(A)+int(value) > 255 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
+		// Get the value from the operand
+		value = operand1()
+		// Add the value to the accumulator
+		result = A + value
+		// If the carry flag is set, add 1 to the result
+		if getSRBit(0) == 1 {
+			result++
 		}
-		// If bit 7 of A+memory is different from bit 7 of A, set SR overflow flag bit 6
-		if readBit(7, A) != readBit(7, value) {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
-		// Update A with A+memory
-		A += value
-		// If bit 7 of A is set then set SR negative flag bit 7 else clear it
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If A=0 then set SR zero flag bit 1 else clear it
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		incCount(2)
+		// Set the accumulator to the result
+		A = result
+		incCount(1)
 	case ZEROPAGE:
-		// Get address
+		// Get the address from the operand
 		address := operand1()
-		// Get value from memory
-		value := memory[address]
-		// If A+memory > 255, set SR carry flag
-		if int(A)+int(value) > 255 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
+		// Get the value at the address
+		value = memory[address]
+		// Add the value to the accumulator
+		result = A + value
+		// If the carry flag is set, add 1 to the result
+		if getSRBit(0) == 1 {
+			result++
 		}
-		// If bit 7 of A+memory is different from bit 7 of A, set SR overflow flag bit 6
-		if readBit(7, A) != readBit(7, value) {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
-		// Update A with a+memory
-		A += value
-		// If bit 7 of A is set then set SR negative flag bit 7 else clear it
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If A=0 then set SR zero flag bit 1 else clear it
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		// Set the accumulator to the result
+		A = result
 		incCount(2)
 	case ZEROPAGEX:
-		// Get address
-		address := uint16(int(operand1()) + int(X)&0xFF)
-		// Get value from memory
-		value := memory[address]
-		// Add result to accumulator
-		A += value
-		// If result>255 then set SR carry flag bit 0 to 1
-		if A > 0x00FF {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
+		// Get the address from the operand
+		address := operand1() + X
+		// Get the value at the address
+		value = memory[address]
+		// Add the value to the accumulator
+		result = A + value
+		// If the carry flag is set, add 1 to the result
+		if getSRBit(0) == 1 {
+			result++
 		}
-		// If result>127 or result<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
-		if A > 127 || A < 128 {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
-		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		// Set the accumulator to the result
+		A = result
 		incCount(2)
 	case ABSOLUTE:
-		// Get address
+		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
-		// Get value from memory
-		value := memory[address]
-		// Read bit 7 of the accumulator into a result var
-		temp := getABit(7)
-		// If SR carry bit is set, add 1 to A
+		// Get value at address
+		value = memory[address]
+		// Add the value to the accumulator
+		result = A + value
+		// If the carry flag is set, add 1 to the result
 		if getSRBit(0) == 1 {
-			A++
+			result++
 		}
-		// Add the value of operand
-		A += value
-		// If bit 7 of accumulator is not equal to bit 7 of result then set SR overflow flag bit 6 to 1
-		if getABit(7) != (temp & 0b10000000) {
-			setOverflowFlag()
-		}
-		// If bit 7 of accumulator is 1 then set negative flag
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		}
-		// If accumulator is 0 then set zero flag else set SR zero flag to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		// Set the accumulator to the result
+		A = result
 		incCount(3)
 	case ABSOLUTEX:
-		// Get address
+		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
-		// Get value from memory
-		value := memory[address]
-
-		// Add the X indexed address from the operands plus the carry bit to the accumulator
-		A += value
-		// If the carry flag is 1 then add 1 to the accumulator else reset it
+		// Get value at address
+		value = memory[address]
+		// Add the value to the accumulator
+		result = A + value
+		// If the carry flag is set, add 1 to the result
 		if getSRBit(0) == 1 {
-			A++
-		} else {
-			unsetCarryFlag()
+			result++
 		}
-		// If the accumulator is greater than 255 then set the carry flag else reset it
-		if value > 0x00FF {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// If the accumulator is greater than 99 then set the decimal flag else reset it
-		if A > 99 {
-			setDecimalFlag()
-		} else {
-			unsetDecimalFlag()
-		}
-		// If the accumulator is greater than 127 then set the overflow flag else reset it
-		if A > 127 {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
-		// If the accumulator is less than 0 then set the overflow flag else reset it
-		// If A bit 7 is unset then it's negative
-		if getABit(7) == 0 {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
-		// If the accumulator is greater than 127 then set the negative flag else reset it
-		if A > 127 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If the accumulator is less than 0 then set the negative flag else reset it
-		// If A bit 7 is unset then it's negative
-		if getABit(7) == 0 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If the accumulator is 0 then set the zero flag else reset it
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		// Set the accumulator to the result
+		A = result
 		incCount(3)
 	case ABSOLUTEY:
-		// Get address
+		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(Y)
-		// Get value from memory
-		value := memory[address]
-
-		// Add the Y indexed address from the operands plus the carry bit to the accumulator
-		A += value
-		// If the carry flag is 1 then add 1 to the accumulator else reset it
+		// Get value at address
+		value = memory[address]
+		// Add the value to the accumulator
+		result = A + value
+		// If the carry flag is set, add 1 to the result
 		if getSRBit(0) == 1 {
-			A++
-		} else {
-			unsetCarryFlag()
+			result++
 		}
-		// If the accumulator is greater than 255 then set the carry flag else reset it
-		// 256 rolls over to 0
-		// If the accumulator is 0 then set the zero flag else reset it
-		if A == 255 {
-			setCarryFlag()
-			setZeroFlag()
-		} else {
-			unsetCarryFlag()
-			unsetZeroFlag()
-		}
-		// If the accumulator is greater than 99 then set the decimal flag else reset it
-		if A > 99 {
-			setDecimalFlag()
-		} else {
-			unsetDecimalFlag()
-		}
-		// If the accumulator is greater than 127 then set the overflow flag else reset it
-		if A > 127 {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
-		// If the accumulator is less than 0 then set the overflow flag else reset it
-		// If accumulator bit 7 is set then set SR bit 0 to 0 as number is negative
-		// If the accumulator is less than 0 then set the negative flag else reset it
-		if getABit(7) == 1 {
-			setOverflowFlag()
-			setNegativeFlag()
-		} else {
-			unsetOverflowFlag()
-			unsetNegativeFlag()
-		}
-		// If the accumulator is greater than 127 then set the negative flag else reset it
-		if A > 127 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		// Set the accumulator to the result
+		A = result
 		incCount(3)
 	case INDIRECTX:
-		// Get the X Indexed Zero Page Indirect address from the operand
-		indirectAddress := int(operand1()) + int(X)
+		// Get the indirect address from the operand
+		indirectAddress := operand1() + X
 		// Get the address from the indirect address
-		address := int(memory[indirectAddress]) + int(memory[indirectAddress+1])<<8
-		// Get the value from the address
-		value := memory[address]
+		address := uint16(memory[indirectAddress+1])<<8 | uint16(memory[indirectAddress])
+		// Get the value at the address
+		value = memory[address]
 		// Add the value to the accumulator
-		A += value
-		// If the carry flag is set, add 1 to the accumulator
+		result = A + value
+		// If the carry flag is set, add 1 to the result
 		if getSRBit(0) == 1 {
-			A++
+			result++
 		}
-		// If the accumulator is 0, set the Zero flag to 1
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If bit 7 of accumulator is set, set SR Negative flag to 1
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If the accumulator is greater than 255, set the carry flag to 1
-		if A+value > 255 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
-		// If the accumulator is greater than 127 or less than -128, set the overflow flag to 1
-		if int(A) > 127 || int(A) < (-128) {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
+		// Set the accumulator to the result
+		A = result
 		incCount(2)
 	case INDIRECTY:
-		// Get address
-		address := memory[operand1()]
-		// Get value from memory
-		value := memory[address+Y]
-		// Load accumulator with address+Y index value
-		A = value
-		// If accumulator>255 then set SR carry flag bit 0 to 1
-		if value > 0x00FF {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
+		// Get the indirect address from the operand
+		indirectAddress := operand1()
+		// Get the address from the indirect address
+		address := uint16(memory[indirectAddress+1])<<8 | uint16(memory[indirectAddress]) + uint16(Y)
+		// Get the value at the address
+		value = memory[address]
+		// Add the value to the accumulator
+		result = A + value
+		// If the carry flag is set, add 1 to the result
+		if getSRBit(0) == 1 {
+			result++
 		}
-		// If accumulator>127 or accumulator<128 then set SR overflow flag bit 6 to 1 else set SR overflow flag bit 6 to 0
-		if A > 127 || int(A) < 128 {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
-		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
+		// Set the accumulator to the result
+		A = result
 		incCount(2)
+	}
+	// If the result is greater than 255, set the carry flag
+	if result > 255 {
+		setCarryFlag()
+	} else {
+		unsetCarryFlag()
+	}
+	// If decimal mode is set and the result is greater than 99, set the carry flag
+	if getSRBit(3) == 1 && result > 99 {
+		setCarryFlag()
+	} else {
+		unsetCarryFlag()
+	}
+	// If bit 7 of the result is different from bit 7 of value set the overflow flag
+	if readBit(7, result) != readBit(7, value) {
+		setOverflowFlag()
+	} else {
+		unsetOverflowFlag()
+	}
+	// If bit 7 of the result is set, set the negative flag
+	if readBit(7, result) == 1 {
+		setNegativeFlag()
+	} else {
+		unsetNegativeFlag()
+	}
+	// If the result is 0, set the zero flag
+	if result == 0 {
+		setZeroFlag()
+	} else {
+		unsetZeroFlag()
 	}
 }
 func SBC(addressingMode string) {
