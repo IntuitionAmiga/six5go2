@@ -781,140 +781,76 @@ func EOR(addressingMode string) {
 	}
 }
 func ORA(addressingMode string) {
+	var value, result byte
 	switch addressingMode {
 	case IMMEDIATE:
-		// OR the accumulator with the operand
-		A |= operand1()
-		// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If A bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		// Get the value from the operand
+		value = operand1()
+		// OR the value with the accumulator
+		result = A | value
+		// Set the accumulator to the result
+		A = result
 		incCount(2)
 	case ZEROPAGE:
-		// OR the accumulator with the memory value at the address in the operand
-		A |= memory[operand1()]
-		// If the accumulator is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If accumulator bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		// Get the address from the operand
+		address := operand1()
+		// Get the value at the address
+		value = memory[address]
+		// OR the value with the accumulator
+		result = A | value
+		// Set the accumulator to the result
+		A = result
 		incCount(2)
 	case ZEROPAGEX:
 		// Get address
 		address := operand1() + X
-		// Get the value at the address
-		value := memory[address]
+		// Get value at address
+		value = memory[address]
 		// OR the value with the accumulator
-		A |= value
-		// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If A bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		result = A | value
+		// Set the accumulator to the result
+		A = result
 		incCount(2)
 	case ABSOLUTE:
-		// Get address
+		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
-		// Get value from memory
-		value := memory[address]
-		// OR the accumulator with the value stored at the address
-		A |= value
-		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		// Get value at address
+		value = memory[address]
+		// OR the value with the accumulator
+		result = A | value
+		// Set the accumulator to the result
+		A = result
 		incCount(3)
 	case ABSOLUTEX:
 		// Get address
-		address := int(operand2())<<8 | int(operand1()) + int(X)
-		// Update A with the value stored at the address
-		A |= memory[address]
-		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
+		// Get value at address
+		value = memory[address]
+		// OR the value with the accumulator
+		result = A | value
+		// Set the accumulator to the result
+		A = result
 		incCount(3)
 	case ABSOLUTEY:
-		// Get 16 bit Y indexed address from operands
+		// Get the address
 		address := int(operand2())<<8 | int(operand1()) + int(Y)
-		// OR the value stored at the address with the accumulator
-		A |= memory[address]
-		// If accumulator is 0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If accumulator bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		// Get the value at the address
+		value = memory[address]
+		// OR the value with the accumulator
+		result = A | value
+		// Set the accumulator to the result
+		A = result
 		incCount(3)
 	case INDIRECTX:
-		// Get the X indexed zero page indirect address
-		indirectAddress := uint16(int(operand1()) + int(X)&0xFF)
-		// Get the value at the indirect address
-		indirectValue := memory[indirectAddress]
-		// Get the value at the indirect address + 1
-		indirectValue2 := memory[(indirectAddress + 1)]
-		// Combine the two values to get the address
-		indirectAddress = uint16(int(indirectValue) + int(indirectValue2)<<8)
-		// Get the value at the address
-		value := memory[indirectAddress]
+		// Get the address
+		indirectAddress := int(operand1()) + int(X)
+		address := int(memory[indirectAddress]) + int(memory[indirectAddress+1])<<8
+		// Get the value from the address
+		value = memory[address]
 		// OR the value with the accumulator
-		A |= value
-		// If A==0 set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If A bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		result = A | value
+		// Set the accumulator to the result
+		A = result
 		incCount(2)
 	case INDIRECTY:
 		// Get the 16bit address
@@ -924,23 +860,24 @@ func ORA(addressingMode string) {
 		indirectAddress2 := memory[address+1]
 		indirectAddress := uint16(int(indirectAddress1)+int(indirectAddress2)<<8) + uint16(Y)
 		// Get the value at the address
-		value := memory[indirectAddress]
-		// AND the value with the accumulator
-		A |= value
-
-		// If A==0 then set SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-		if A == 0 {
-			setZeroFlag()
-		} else {
-			unsetZeroFlag()
-		}
-		// If A bit 7 is 1 then set SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-		if getABit(7) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
+		value = memory[indirectAddress]
+		// OR the value with the accumulator
+		result = A | value
+		// Set the accumulator to the result
+		A = result
 		incCount(2)
+	}
+	// If the result is 0, set the zero flag
+	if result == 0 {
+		setZeroFlag()
+	} else {
+		unsetZeroFlag()
+	}
+	// If bit 7 of the result is set, set the negative flag
+	if readBit(7, result) == 1 {
+		setNegativeFlag()
+	} else {
+		unsetNegativeFlag()
 	}
 }
 func BIT(addressingMode string) {
