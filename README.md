@@ -1,3 +1,5 @@
+![6502 Emulator, Debugger and Disassembler](six5go2.png "six5go2")
+
 # six5go2
 
 Six5go2 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley
