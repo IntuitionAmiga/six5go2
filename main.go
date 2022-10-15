@@ -562,28 +562,25 @@ func CMP(addressingMode string) {
 	}
 }
 func JMP(addressingMode string) {
+	var value byte
 	switch addressingMode {
 	case ABSOLUTE:
 		// Get the 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
-		// Get the value at the address
-		value := memory[address]
-		// Set the program counter to the value
-		PC = int(value)
-		bytecounter = PC
-		incCount(0)
+		// Set the program counter to the absolute address
+		PC = int(address)
 	case INDIRECT:
 		// Get the 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get the indirect address
 		indirectAddress := uint16(memory[address+1])<<8 | uint16(memory[address])
 		// Get the value at the indirect address
-		value := memory[indirectAddress]
+		value = memory[indirectAddress]
 		// Set the program counter to the value
 		PC = int(value)
-		bytecounter = PC
-		incCount(0)
 	}
+	bytecounter = PC
+	incCount(0)
 }
 func AND(addressingMode string) {
 	var value, result byte
@@ -1338,7 +1335,8 @@ func SBC(addressingMode string) {
 	}
 }
 func ROR(addressingMode string) {
-	var value, result byte
+	var address, value, result byte
+	var address16 uint16
 	switch addressingMode {
 	case ACCUMULATOR:
 		// Get value from accumulator
@@ -1347,44 +1345,32 @@ func ROR(addressingMode string) {
 		result = value >> 1
 	case ZEROPAGE:
 		// Get address
-		address := operand1()
+		address = operand1()
 		// Get the value at the address
 		value = memory[address]
 		// Shift the value right 1 bit
 		result = value >> 1
-		// Store the value back into memory
-		memory[address] = result
-		incCount(2)
 	case ZEROPAGEX:
 		// Get X indexed zero page address
-		address := operand1() + X
+		address = operand1() + X
 		// Get the value at the address
 		value = memory[address]
 		// Shift the value right 1 bit
 		result = value >> 1
-		// Store the value back into memory
-		memory[address] = result
-		incCount(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operands
-		address := uint16(operand2())<<8 | uint16(operand1())
+		address16 = uint16(operand2())<<8 | uint16(operand1())
 		// Get the value stored at the address in the operands
-		value = memory[address]
+		value = memory[address16]
 		// Shift the value right 1 bit
 		result = value >> 1
-		// Store the value back into memory
-		memory[address] = result
-		incCount(3)
 	case ABSOLUTEX:
 		// Get 16 bit address
-		address := int(operand2())<<8 | int(operand1()) + int(X)
+		address16 = uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
 		// Get value stored at address
-		value = memory[address]
+		value = memory[address16]
 		// Shift right the value by 1 bit
 		result = value >> 1
-		// Store value in memory at address in operand
-		memory[address] = result
-		incCount(3)
 	}
 	// Set bit 7 of result and negative flag to the carry flag
 	if getSRBit(0) == 1 {
@@ -1405,17 +1391,25 @@ func ROR(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-
-	fmt.Printf("Value: %08b Result: %08b\n", value, result)
-	fmt.Printf("Value: %04X Result: %04X\n", value, result)
 	if addressingMode == ACCUMULATOR {
 		// Store the result in the accumulator
 		A = result
 		incCount(1)
 	}
+	if addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX {
+		// Store the value back into memory
+		memory[address] = result
+		incCount(2)
+	}
+	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX {
+		// Store the value back into memory
+		memory[address16] = result
+		incCount(3)
+	}
 }
 func ROL(addressingMode string) {
-	var value, result byte
+	var address, value, result byte
+	var address16 uint16
 	switch addressingMode {
 	case ACCUMULATOR:
 		// Get the value of the accumulator
@@ -1424,57 +1418,42 @@ func ROL(addressingMode string) {
 		result = value << 1
 		// Update bit 0 of result with the value of the carry flag
 		result = (result & 0xFE) | getSRBit(0)
-		// Store the result in the accumulator
-		A = result
-		incCount(1)
 	case ZEROPAGE:
 		// Get address
-		address := operand1()
+		address = operand1()
 		// Get the value at the address
 		value = memory[address]
 		// Shift the value left 1 bit
 		result = value << 1
 		// Update bit 0 of result with the value of the carry flag
 		result = (result & 0xFE) | getSRBit(0)
-		// Store the value back into memory
-		memory[address] = result
-		incCount(2)
 	case ZEROPAGEX:
 		// Get X indexed zero page address
-		address := operand1() + X
+		address = operand1() + X
 		// Get the value at the address
 		value = memory[address]
 		// Shift the value left 1 bit
 		result = value << 1
 		// Update bit 0 of result with the value of the carry flag
 		result = (result & 0xFE) | getSRBit(0)
-		// Store the value back into memory
-		memory[address] = result
-		incCount(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operands
-		address := uint16(operand2())<<8 | uint16(operand1())
+		address16 = uint16(operand2())<<8 | uint16(operand1())
 		// Get the value stored at the address in the operands
-		value = memory[address]
+		value = memory[address16]
 		// Shift the value left 1 bit
 		result = value << 1
 		// Update bit 0 of result with the value of the carry flag
 		result = (result & 0xFE) | getSRBit(0)
-		// Store the value back into memory
-		memory[address] = result
-		incCount(3)
 	case ABSOLUTEX:
 		// Get 16bit X indexed absolute memory address
-		address := int(operand2())<<8 | int(operand1()) + int(X)
+		address16 = uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
 		// Get the value stored at the address
-		value = memory[address]
+		value = memory[address16]
 		// Shift the value left 1 bit
 		result = value << 1
 		// Update bit 0 of result with the value of the carry flag
 		result = (result & 0xFE) | getSRBit(0)
-		// Store the shifted value back in memory
-		memory[address] = result
-		incCount(3)
 	}
 	// Set SR carry flag to bit 7 of value
 	if readBit(7, value) == 1 {
@@ -1494,7 +1473,21 @@ func ROL(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	// fmt.Printf("ROL: value = %04X, result = %04X\n", value, result)
+	if addressingMode == ACCUMULATOR {
+		// Store the result in the accumulator
+		A = result
+		incCount(1)
+	}
+	if addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX {
+		// Store the value back into memory
+		memory[address] = result
+		incCount(2)
+	}
+	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX {
+		// Store the value back into memory
+		memory[address16] = result
+		incCount(3)
+	}
 }
 func LSR(addressingMode string) {
 	var value, result byte
@@ -2175,14 +2168,13 @@ func execute() {
 				}
 				fmt.Printf("RTS\n")
 			}
-			// Get the value stored at the address pointed to by SP
-			PC = int(memory[SP])
-			// Increment the stack pointer by 1 byte
-			SP++
-			// Increment the stack pointer by 1 byte
-			SP++
-			bytecounter = PC
-			incCount(0)
+
+			// Store SP+1 as the high byte and SP as the low byte
+			address := int(memory[SP+1])<<8 | int(memory[SP])
+			PC = address
+			// Increment the stack pointer by 2 bytes
+			SP += 2
+			incCount(3)
 		case 0x38:
 			/*
 				SEC - Set Carry Flag
@@ -4551,11 +4543,11 @@ func execute() {
 				}
 				fmt.Printf("JSR $%04X\n", int(operand2())<<8|int(operand1()))
 			}
-			// Push the program counter onto the stack
+			// Push high byte of PC onto stack
 			memory[SP] = byte(PC >> 8)
 			SP--
+			// Push low byte of PC onto stack
 			memory[SP] = byte(PC & 0xFF)
-			SP--
 			// Set the program counter to the absolute address from the operands
 			PC = int(operand2())<<8 | int(operand1())
 			bytecounter = PC
