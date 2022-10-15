@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"syscall"
-	"time"
 	"unsafe"
 )
 
@@ -138,7 +137,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		time.Sleep(2 * time.Millisecond)
+		//time.Sleep(2 * time.Millisecond)
 	}
 }
 func getSRBit(x byte) byte {
@@ -1769,11 +1768,6 @@ func execute() {
 			memory[SP] = byte(PC >> 8)
 			// Store SR on stack
 			memory[SP-1] = SR
-			// Decrement SP
-			SP--
-			SP--
-			// Set PC to 0xFFFE
-			PC = 0xFFFE
 			// Set SR interrupt disable bit to 1
 			setInterruptFlag()
 			// Set SR break command bit to 1
@@ -1788,9 +1782,7 @@ func execute() {
 			unsetNegativeFlag()
 			// Set SR zero bit to 0
 			unsetZeroFlag()
-			// Set PC to the value stored at 0xFFFE
-			PC = int(uint16(memory[0xFFFE])<<8 | uint16(memory[0xFFFF]))
-			bytecounter = PC
+			PC += 2
 			incCount(0)
 		case 0x18:
 			/*
