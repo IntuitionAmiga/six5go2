@@ -137,7 +137,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		//time.Sleep(2 * time.Millisecond)
+		//time.Sleep(50 * time.Millisecond)
 	}
 }
 func getSRBit(x byte) byte {
@@ -1345,9 +1345,6 @@ func ROR(addressingMode string) {
 		value = A
 		// Rotate right one bit
 		result = value >> 1
-		// Store the result in the accumulator
-		A = result
-		incCount(1)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
@@ -1407,6 +1404,14 @@ func ROR(addressingMode string) {
 		setZeroFlag()
 	} else {
 		unsetZeroFlag()
+	}
+
+	fmt.Printf("Value: %08b Result: %08b\n", value, result)
+	fmt.Printf("Value: %04X Result: %04X\n", value, result)
+	if addressingMode == ACCUMULATOR {
+		// Store the result in the accumulator
+		A = result
+		incCount(1)
 	}
 }
 func ROL(addressingMode string) {
