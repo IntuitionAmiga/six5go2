@@ -567,17 +567,23 @@ func JMP(addressingMode string) {
 	case ABSOLUTE:
 		// Get the 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
-		// Set the program counter to the address
-		PC = int(address)
-		incCount(3)
-	case INDIRECT:
-		// Get the 16 bit address from operands
-		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get the value at the address
 		value := memory[address]
 		// Set the program counter to the value
 		PC = int(value)
-		incCount(3)
+		bytecounter = PC
+		incCount(0)
+	case INDIRECT:
+		// Get the 16 bit address from operands
+		address := uint16(operand2())<<8 | uint16(operand1())
+		// Get the indirect address
+		indirectAddress := uint16(memory[address+1])<<8 | uint16(memory[address])
+		// Get the value at the indirect address
+		value := memory[indirectAddress]
+		// Set the program counter to the value
+		PC = int(value)
+		bytecounter = PC
+		incCount(0)
 	}
 }
 func AND(addressingMode string) {
@@ -1386,10 +1392,10 @@ func ROR(addressingMode string) {
 	}
 	// Set bit 7 of result and negative flag to the carry flag
 	if getSRBit(0) == 1 {
-		result = result | 0x80
+		result |= 0x80
 		setNegativeFlag()
 	} else {
-		result = result & 0x7F
+		result &= 0x7F
 		unsetNegativeFlag()
 	}
 	// Set carry flag to bit 0 of value
@@ -1484,7 +1490,7 @@ func ROL(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	//fmt.Printf("ROL: value = %04X, result = %04X\n", value, result)
+	// fmt.Printf("ROL: value = %04X, result = %04X\n", value, result)
 }
 func LSR(addressingMode string) {
 	var value, result byte
@@ -1567,42 +1573,42 @@ func ASL(addressingMode string) {
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
-		// Get value at address
-		value = memory[address]
-		// Shift value left 1 bit
-		value <<= 1
-		// Store value at address
-		memory[address] = value
-		incCount(2)
-	case ZEROPAGEX:
-		// Get address
-		address := operand1() + X
-		// Get value at address
-		value := memory[address]
-		// Shift value left 1 bit
-		value <<= 1
-		// Store value at address
-		memory[address] = value
-		incCount(2)
-	case ABSOLUTE:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get the value at the address
 		value = memory[address]
 		// Shift the value left 1 bit
-		value <<= 1
-		// Store the value at the address
-		memory[address] = value
+		result = value << 1
+		// Store the value back into memory
+		memory[address] = result
+		incCount(2)
+	case ZEROPAGEX:
+		// Get the X indexed address
+		address := operand1() + X
+		// Get the value at the X indexed address
+		value = memory[address]
+		// Shift the value left 1 bit
+		result = value << 1
+		// Store the shifted value in memory
+		memory[address] = result
+		incCount(2)
+	case ABSOLUTE:
+		// Get 16 bit address from operands
+		address := uint16(operand2())<<8 | uint16(operand1())
+		// Get the value stored at the address in the operands
+		value = memory[address]
+		// Shift the value left 1 bit
+		result = value << 1
+		// Store the shifted value back in memory
+		memory[address] = result
 		incCount(3)
 	case ABSOLUTEX:
-		// Get address
-		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
-		// Get value at address
+		// Get the 16bit X indexed absolute memory address
+		address := int(operand2())<<8 | int(operand1()) + int(X)
+		// Get the value stored at the address
 		value = memory[address]
-		// Shift left 1 bit
-		value <<= 1
-		// Store value back in memory
-		memory[address] = value
+		// Shift the value left 1 bit
+		result = value << 1
+		// Store the shifted value back in memory
+		memory[address] = result
 		incCount(3)
 	}
 	// Set the SR Negative flag to the bit 7 of the result
@@ -5340,16 +5346,6 @@ func execute() {
 			}
 
 			JMP("indirect")
-			/*
-				// Get 16bit absolute address
-				address := uint16(operand2())<<8 | uint16(operand1())
-				// Get the indirect address
-				indirectAddress := uint16(memory[address])<<8 | uint16(memory[address])
-				// Set the program counter to the indirect address
-				PC = int(indirectAddress)
-				incCount(3)
-
-			*/
 		}
 	}
 	fmt.Printf("Number of instructions executed: %d\n", instructionCounter)
