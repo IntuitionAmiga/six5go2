@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -128,7 +129,7 @@ func printMachineState() {
 		fmt.Printf("RAM dump $0000 - $%04X:\n\n", (height-5)*(width/4+6))
 
 		for i := 0; i < height-5; i++ {
-			for j := 0; j < width/4+6; j++ {
+			for j := 0; j < (width/4)+9; j++ {
 				if memory[i*32+j] == 0 {
 					fmt.Printf("\u001B[37m %02X", memory[i*32+j])
 				} else {
@@ -137,7 +138,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		//time.Sleep(50 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 func getSRBit(x byte) byte {
@@ -562,7 +563,6 @@ func CMP(addressingMode string) {
 	}
 }
 func JMP(addressingMode string) {
-	var value byte
 	switch addressingMode {
 	case ABSOLUTE:
 		// Get the 16 bit address from operands
@@ -574,10 +574,8 @@ func JMP(addressingMode string) {
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get the indirect address
 		indirectAddress := uint16(memory[address+1])<<8 | uint16(memory[address])
-		// Get the value at the indirect address
-		value = memory[indirectAddress]
-		// Set the program counter to the value
-		PC = int(value)
+		// Set the program counter to the indirect address
+		PC = int(indirectAddress)
 	}
 	bytecounter = PC
 	incCount(0)
@@ -2172,6 +2170,7 @@ func execute() {
 			// Store SP+1 as the high byte and SP as the low byte
 			address := int(memory[SP+1])<<8 | int(memory[SP])
 			PC = address
+			bytecounter = PC
 			// Increment the stack pointer by 2 bytes
 			SP += 2
 			incCount(3)
