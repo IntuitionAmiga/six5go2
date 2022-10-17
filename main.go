@@ -100,7 +100,7 @@ func incCount(amount int) {
 		bytecounter += amount
 	}
 	PC += amount
-	//printMachineState()
+	// printMachineState()
 }
 func getTermDim() (width, height int, err error) {
 	var termDim [4]uint16
@@ -1026,43 +1026,31 @@ func ADC(addressingMode string) {
 	case IMMEDIATE:
 		// Get the value from the operand
 		value = operand1()
-		// Add the value to the accumulator
-		result = int(A) + int(value)
 	case ZEROPAGE:
 		// Get the address from the operand
 		address := operand1()
 		// Get the value at the address
 		value = memory[address]
-		// Add the value to the accumulator
-		result = int(A) + int(value)
 	case ZEROPAGEX:
 		// Get the address from the operand
 		address := operand1() + X
 		// Get the value at the address
 		value = memory[address]
-		// Add the value to the accumulator
-		result = int(A) + int(value)
 	case ABSOLUTE:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get value at address
 		value = memory[address]
-		// Add the value to the accumulator
-		result = int(A) + int(value)
 	case ABSOLUTEX:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
 		// Get value at address
 		value = memory[address]
-		// Add the value to the accumulator
-		result = int(A) + int(value)
 	case ABSOLUTEY:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(Y)
 		// Get value at address
 		value = memory[address]
-		// Add the value to the accumulator
-		result = int(A) + int(value)
 	case INDIRECTX:
 		// Get the indirect address from the operand
 		indirectAddress := operand1() + X
@@ -1070,8 +1058,6 @@ func ADC(addressingMode string) {
 		address := uint16(memory[indirectAddress+1])<<8 | uint16(memory[indirectAddress])
 		// Get the value at the address
 		value = memory[address]
-		// Add the value to the accumulator
-		result = int(A) + int(value)
 	case INDIRECTY:
 		// Get the indirect address from the operand
 		indirectAddress := operand1()
@@ -1079,9 +1065,9 @@ func ADC(addressingMode string) {
 		address := uint16(memory[indirectAddress+1])<<8 | uint16(memory[indirectAddress]) + uint16(Y)
 		// Get the value at the address
 		value = memory[address]
-		// Add the value to the accumulator
-		result = int(A) + int(value)
 	}
+	// Add the value to the accumulator
+	result = int(A) + int(value)
 	// If the carry flag is set, add 1 to the result
 	if getSRBit(0) == 1 {
 		result++
@@ -1133,85 +1119,31 @@ func SBC(addressingMode string) {
 	case IMMEDIATE:
 		// Get the value from the operand
 		value = operand1()
-		// Subtract the value from the accumulator
-		result = int(A - value)
-		// If the carry flag is set, subtract 1 from the result
-		if getSRBit(0) == 1 {
-			result--
-		}
-		// Set the accumulator to the result
-		A = byte(result)
-		incCount(2)
 	case ZEROPAGE:
 		// Get the address from the operand
 		address := operand1()
 		// Get the value at the address
 		value = memory[address]
-		// Subtract the value from the accumulator
-		result = int(A - value)
-		// If the carry flag is set, subtract 1 from the result
-		if getSRBit(0) == 1 {
-			result--
-		}
-		// Set the accumulator to the result
-		A = byte(result)
-		incCount(2)
 	case ZEROPAGEX:
 		// Get the address from the operand
 		address := operand1() + X
 		// Get the value at the address
 		value = memory[address]
-		// Subtract the value from the accumulator
-		result = int(A - value)
-		// If the carry flag is set, subtract 1 from the result
-		if getSRBit(0) == 1 {
-			result--
-		}
-		// Set the accumulator to the result
-		A = byte(result)
-		incCount(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get value at address
 		value = memory[address]
-		// Subtract the value from the accumulator
-		result = int(A - value)
-		// If the carry flag is set, subtract 1 from the result
-		if getSRBit(0) == 1 {
-			result--
-		}
-		// Set the accumulator to the result
-		A = byte(result)
-		incCount(3)
 	case ABSOLUTEX:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
 		// Get value at address
 		value = memory[address]
-		// Subtract the value from the accumulator
-		result = int(A - value)
-		// If the carry flag is set, subtract 1 from the result
-		if getSRBit(0) == 1 {
-			result--
-		}
-		// Set the accumulator to the result
-		A = byte(result)
-		incCount(3)
 	case ABSOLUTEY:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(Y)
 		// Get value at address
 		value = memory[address]
-		// Subtract the value from the accumulator
-		result = int(A - value)
-		// If the carry flag is set, subtract 1 from the result
-		if getSRBit(0) == 1 {
-			result--
-		}
-		// Set the accumulator to the result
-		A = byte(result)
-		incCount(3)
 	case INDIRECTX:
 		// Get the indirect address from the operand
 		indirectAddress := operand1() + X
@@ -1219,15 +1151,6 @@ func SBC(addressingMode string) {
 		address := uint16(memory[indirectAddress+1])<<8 | uint16(memory[indirectAddress])
 		// Get the value at the address
 		value = memory[address]
-		// Subtract the value from the accumulator
-		result = int(A - value)
-		// If the carry flag is set, subtract 1 from the result
-		if getSRBit(0) == 1 {
-			result--
-		}
-		// Set the accumulator to the result
-		A = byte(result)
-		incCount(2)
 	case INDIRECTY:
 		// Get the indirect address from the operand
 		indirectAddress := operand1()
@@ -1235,16 +1158,9 @@ func SBC(addressingMode string) {
 		address := uint16(memory[indirectAddress+1])<<8 | uint16(memory[indirectAddress]) + uint16(Y)
 		// Get the value at the address
 		value = memory[address]
-		// Subtract the value from the accumulator
-		result = int(A - value)
-		// If the carry flag is set, subtract 1 from the result
-		if getSRBit(0) == 1 {
-			result--
-		}
-		// Set the accumulator to the result
-		A = byte(result)
-		incCount(2)
 	}
+	// Subtract the value from the accumulator
+	result = int(A) - int(value)
 	// If the result is greater than or equal to 0, set the carry flag
 	if result >= 0 {
 		setCarryFlag()
@@ -1274,6 +1190,18 @@ func SBC(addressingMode string) {
 		setZeroFlag()
 	} else {
 		unsetZeroFlag()
+	}
+	// Set the accumulator to the result
+	A = byte(result)
+	// If the carry flag is set, subtract 1 from the result
+	if getSRBit(0) == 1 {
+		result--
+	}
+	if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
+		incCount(2)
+	}
+	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
+		incCount(3)
 	}
 }
 func ROR(addressingMode string) {
