@@ -3857,8 +3857,8 @@ func execute() {
 
 			// Get offset from operand
 			offset := operand1()
-			// If Z flag is not set, branch to address
-			if getSRBit(1) == 0 {
+			// If Z flag is set, branch to address
+			if getSRBit(1) == 1 {
 				// Branch
 				// Add offset to lower 8bits of PC
 				PC = bytecounter + 3 + int(offset)&0xFF
