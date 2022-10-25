@@ -1161,14 +1161,10 @@ func SBC(addressingMode string) {
 	*/
 	// Subtract the value from the accumulator with borrow
 	result = int(A) - int(value)
-	// if carry flag is set, subtract 1 from the result
-	if getSRBit(0) == 1 {
+	// if carry flag is unset, subtract 1 from the result
+	if getSRBit(0) == 0 {
 		result--
 	}
-
-	fmt.Printf("int(A): %d, int(value): %d, result: %d\n", int(A), int(value), result)
-	fmt.Printf("int(A): %04X, int(value): %04X, result: %04X\n", int(A), int(value), result)
-
 	// If bit 7 of result is not set then it's a positive number and the carry flag should be set
 	if readBit(7, byte(result)) == 0 {
 		setCarryFlag()
