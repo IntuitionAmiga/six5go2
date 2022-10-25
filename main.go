@@ -3855,19 +3855,19 @@ func execute() {
 				fmt.Printf("BPL $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
 
-			// Get offset from relative address in operand
+			// Get offset from operand
 			offset := operand1()
-			// If SR negative flag bit 7 is 0 then branch
-			if getSRBit(7) == 0 {
+			// If Z flag is not set, branch to address
+			if getSRBit(1) == 0 {
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC += int(offset)
+				PC = bytecounter + 3 + int(offset)&0xFF
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				bytecounter += 2
+				bytecounter = PC
 				incCount(0)
 			} else {
 				// Don't branch
