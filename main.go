@@ -1066,6 +1066,19 @@ func ADC(addressingMode string) {
 		// Get the value at the address
 		value = memory[address]
 	}
+	/*
+		This instruction adds the value of memory and carry from the previous operation to the value of the accumulator
+		and stores the result in the accumulator.
+
+		This instruction affects the accumulator;
+		sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99,
+		otherwise carry is reset.
+		The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
+		otherwise overflow is reset.
+		The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
+		The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
+	*/
+
 	// Add the value to the accumulator
 	result = int(A) + int(value)
 	// If the carry flag is set, add 1 to the result
@@ -1082,9 +1095,11 @@ func ADC(addressingMode string) {
 	if getSRBit(3) == 1 && result > 99 {
 		setCarryFlag()
 	}
-	// If bit 7 of the result is different from bit 7 of value set the overflow flag
-	if readBit(7, byte(result)) != readBit(7, value) {
+	// If result is positive and value is negative, or result is negative and value is positive set the overflow flag
+	if (readBit(7, byte(result)) != readBit(7, value)) && (readBit(7, byte(result)) != readBit(7, A)) {
 		setOverflowFlag()
+	} else {
+		unsetOverflowFlag()
 	}
 	// If bit 7 of the result is set, set the negative flag
 	if readBit(7, byte(result)) == 1 {
@@ -1153,27 +1168,23 @@ func SBC(addressingMode string) {
 		// Get the value at the address
 		value = memory[address]
 	}
-	/*
-		This instruction subtracts the value of memory and borrow from the value of the accumulator,
-		using two's complement arithmetic, and stores the result in the accumulator.
-		Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates
-		that a borrow has not occurred.
-	*/
 	// Subtract the value from the accumulator with borrow
 	result = int(A) - int(value)
 	// if carry flag is unset, subtract 1 from the result
 	if getSRBit(0) == 0 {
 		result--
 	}
-	// If bit 7 of result is not set then it's a positive number and the carry flag should be set
-	if readBit(7, byte(result)) == 0 {
-		setCarryFlag()
-	} else {
+	// If the result is less than 0, unset the carry flag
+	if result < 0 {
 		unsetCarryFlag()
+	} else {
+		setCarryFlag()
 	}
-	// If result is greater than 127 or less than -127, set the overflow flag
-	if result > 127 || result < -127 {
+	// If result is positive and value is negative, or result is negative and value is positive set the overflow flag
+	if (readBit(7, byte(result)) != readBit(7, value)) && (readBit(7, byte(result)) != readBit(7, A)) {
 		setOverflowFlag()
+	} else {
+		unsetOverflowFlag()
 	}
 	// If bit 7 of the result is set, set the negative flag
 	if readBit(7, byte(result)) == 1 {
@@ -1181,16 +1192,13 @@ func SBC(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-	// If the accumulator is 0, set the zero flag
-	if A == 0 {
+	// If result is 0, set the zero flag
+	if result == 0 {
 		setZeroFlag()
 	}
 	// Set the accumulator to the result
 	A = byte(result)
-	// If the carry flag is set, subtract 1 from the result
-	if getSRBit(0) == 1 {
-		result--
-	}
+
 	if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
 		incCount(2)
 	}
