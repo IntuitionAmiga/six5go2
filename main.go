@@ -95,12 +95,11 @@ func operand2() byte {
 	return memory[bytecounter+2]
 }
 func incCount(amount int) {
-	printMachineState()
+	//printMachineState()
 	if bytecounter+amount < len(file)-1 && amount != 0 {
 		bytecounter += amount
 	}
 	PC += amount
-	// printMachineState()
 }
 func getTermDim() (width, height int, err error) {
 	var termDim [4]uint16
@@ -140,7 +139,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 	}
 }
 func getSRBit(x byte) byte {
@@ -523,7 +522,7 @@ func CMP(addressingMode string) {
 	}
 	// Subtract the value from the accumulator
 	result = A - value
-	fmt.Printf("A: %X, value: %X, result: %X\n", A, value, result)
+	//fmt.Printf("A: %X, value: %X, result: %X\n", A, value, result)
 	// If the result is 0, set the zero flag
 	if result == 0 {
 		setZeroFlag()
@@ -853,6 +852,11 @@ func ORA(addressingMode string) {
 		A = result
 		incCount(2)
 	}
+	/*
+		This instruction affects the accumulator;
+		sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
+		sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
+	*/
 	// If the result is 0, set the zero flag
 	if result == 0 {
 		setZeroFlag()
@@ -862,8 +866,6 @@ func ORA(addressingMode string) {
 	// If bit 7 of the result is set, set the negative flag
 	if readBit(7, result) == 1 {
 		setNegativeFlag()
-	} else {
-		unsetNegativeFlag()
 	}
 }
 func BIT(addressingMode string) {
@@ -889,8 +891,6 @@ func BIT(addressingMode string) {
 	// Set Negative flag to bit 7 of the value
 	if readBit(7, value) == 1 {
 		setNegativeFlag()
-	} else {
-		unsetNegativeFlag()
 	}
 	// Set Overflow flag to bit 6 of the value
 	if readBit(6, value) == 1 {
@@ -1085,20 +1085,14 @@ func ADC(addressingMode string) {
 	// If bit 7 of the result is different from bit 7 of value set the overflow flag
 	if readBit(7, byte(result)) != readBit(7, value) {
 		setOverflowFlag()
-	} else {
-		unsetOverflowFlag()
 	}
 	// If bit 7 of the result is set, set the negative flag
 	if readBit(7, byte(result)) == 1 {
 		setNegativeFlag()
-	} else {
-		unsetNegativeFlag()
 	}
 	// If the result is 0, set the zero flag
 	if result == 0 {
 		setZeroFlag()
-	} else {
-		unsetZeroFlag()
 	}
 	// Set the accumulator to the result
 	A = byte(result)
@@ -1159,16 +1153,24 @@ func SBC(addressingMode string) {
 		// Get the value at the address
 		value = memory[address]
 	}
-	// Subtract the value from the accumulator
+	/*
+		This instruction subtracts the value of memory and borrow from the value of the accumulator,
+		using two's complement arithmetic, and stores the result in the accumulator.
+		Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates
+		that a borrow has not occurred.
+	*/
+	// Subtract the value from the accumulator with borrow
 	result = int(A) - int(value)
-	// If the result is greater than or equal to 0, set the carry flag
-	if result >= 0 {
-		setCarryFlag()
-	} else {
-		unsetCarryFlag()
+	// if carry flag is set, subtract 1 from the result
+	if getSRBit(0) == 1 {
+		result--
 	}
-	// If result is less than 0, set the carry flag
-	if result < 0 {
+
+	fmt.Printf("int(A): %d, int(value): %d, result: %d\n", int(A), int(value), result)
+	fmt.Printf("int(A): %04X, int(value): %04X, result: %04X\n", int(A), int(value), result)
+
+	// If bit 7 of result is not set then it's a positive number and the carry flag should be set
+	if readBit(7, byte(result)) == 0 {
 		setCarryFlag()
 	} else {
 		unsetCarryFlag()
@@ -1176,11 +1178,9 @@ func SBC(addressingMode string) {
 	// If result is greater than 127 or less than -127, set the overflow flag
 	if result > 127 || result < -127 {
 		setOverflowFlag()
-	} else {
-		unsetOverflowFlag()
 	}
-	// If bit 7 of the accumulator is set, set the negative flag
-	if getABit(7) == 1 {
+	// If bit 7 of the result is set, set the negative flag
+	if readBit(7, byte(result)) == 1 {
 		setNegativeFlag()
 	} else {
 		unsetNegativeFlag()
@@ -1188,8 +1188,6 @@ func SBC(addressingMode string) {
 	// If the accumulator is 0, set the zero flag
 	if A == 0 {
 		setZeroFlag()
-	} else {
-		unsetZeroFlag()
 	}
 	// Set the accumulator to the result
 	A = byte(result)
@@ -1601,7 +1599,7 @@ func execute() {
 	if disassemble {
 		fmt.Printf(" *= $%04X\n\n", PC)
 	}
-	for bytecounter = PC; bytecounter < len(memory); instructionCounter++ {
+	for bytecounter = PC; PC < len(memory); instructionCounter++ {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		// Implied addressing mode instructions
@@ -5091,7 +5089,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
 				}
-				fmt.Printf("EOE $%02X%02X,Y\n", operand2(), operand1())
+				fmt.Printf("EOR $%02X%02X,Y\n", operand2(), operand1())
 			}
 
 			EOR("absolutey")
@@ -5216,6 +5214,7 @@ func execute() {
 
 			JMP("indirect")
 		}
+		printMachineState()
 	}
 	fmt.Printf("Number of instructions executed: %d\n", instructionCounter)
 	if memory[0x0210] == 0xFF {
