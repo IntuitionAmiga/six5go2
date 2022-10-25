@@ -139,7 +139,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(0 * time.Millisecond)
 	}
 }
 func getSRBit(x byte) byte {
@@ -3857,8 +3857,8 @@ func execute() {
 
 			// Get offset from operand
 			offset := operand1()
-			// If Z flag is set, branch to address
-			if getSRBit(1) == 1 {
+			// If N flag is not set, branch to address
+			if getSRBit(7) == 0 {
 				// Branch
 				// Add offset to lower 8bits of PC
 				PC = bytecounter + 3 + int(offset)&0xFF
