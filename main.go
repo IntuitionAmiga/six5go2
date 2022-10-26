@@ -17,7 +17,8 @@ var (
 	disassemble        = false
 	once               = true
 	instructionCounter = 0
-	startAddress       int
+	loadAddress        int
+	displayAddress     = 0xF001
 
 	// CPURegisters and RAM
 	A      byte        = 0x0 // Accumulator
@@ -52,7 +53,7 @@ func main() {
 	}
 	if len(os.Args) > 2 {
 		parseUint, _ := strconv.ParseUint(os.Args[2], 16, 16)
-		startAddress = int(parseUint)
+		loadAddress = int(parseUint)
 	}
 	if len(os.Args) > 3 && os.Args[3] == "dis" {
 		disassemble = true
@@ -71,9 +72,8 @@ func main() {
 	fmt.Printf("Length of file %s is %v ($%04X) bytes\n\n", os.Args[1], len(file), len(file))
 
 	// Copy file into memory and set PC to start address
-	fmt.Printf("Copying file into memory at $%04X to $%04X\n\n", startAddress, startAddress+len(file))
-	copy(memory[startAddress:], file)
-	//PC = startAddress
+	fmt.Printf("Copying file into memory at $%04X to $%04X\n\n", loadAddress, loadAddress+len(file))
+	copy(memory[loadAddress:], file)
 
 	// Start emulation
 	fmt.Printf("Starting emulation at $%04X\n\n", PC)
@@ -122,8 +122,9 @@ func printMachineState() {
 		fmt.Printf("\033[0;0H")
 	}
 
-	fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%02X\n\n", PC, A, X, Y, SR, byte(SP))
-	//fmt.Printf(";; A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X\n\n", A, X, Y, SR, SP)
+	if printHex {
+		fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%02X\n\n", PC, A, X, Y, SR, byte(SP))
+	}
 
 	if machineMonitor {
 		// Get terminal width and height
@@ -142,6 +143,10 @@ func printMachineState() {
 		}
 		time.Sleep(0 * time.Millisecond)
 	}
+}
+func consoleOutput() {
+	// Print ASCII character of byte stored at memory[displayAddress]
+	fmt.Printf("%c", memory[displayAddress])
 }
 func getSRBit(x byte) byte {
 	return (SR >> x) & 1
@@ -282,6 +287,8 @@ func LDA(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
+	printMachineState()
+
 }
 func LDX(addressingMode string) {
 	switch addressingMode {
@@ -329,6 +336,7 @@ func LDX(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
+	printMachineState()
 }
 func LDY(addressingMode string) {
 	switch addressingMode {
@@ -377,6 +385,7 @@ func LDY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
+	printMachineState()
 }
 func STA(addressingMode string) {
 	switch addressingMode {
@@ -428,6 +437,7 @@ func STA(addressingMode string) {
 		memory[address+Y] = A
 		incCount(2)
 	}
+	printMachineState()
 }
 func STX(addressingMode string) {
 	switch addressingMode {
@@ -450,6 +460,7 @@ func STX(addressingMode string) {
 		memory[address] = X
 		incCount(3)
 	}
+	printMachineState()
 }
 func STY(addressingMode string) {
 	switch addressingMode {
@@ -472,6 +483,7 @@ func STY(addressingMode string) {
 		memory[address] = Y
 		incCount(3)
 	}
+	printMachineState()
 }
 func CMP(addressingMode string) {
 	var value, result byte
@@ -541,6 +553,7 @@ func CMP(addressingMode string) {
 	} else {
 		incCount(3)
 	}
+	printMachineState()
 }
 func JMP(addressingMode string) {
 	switch addressingMode {
@@ -559,6 +572,7 @@ func JMP(addressingMode string) {
 	}
 	bytecounter = PC
 	incCount(0)
+	printMachineState()
 }
 func AND(addressingMode string) {
 	var value, result byte
@@ -659,6 +673,7 @@ func AND(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
+	printMachineState()
 }
 func EOR(addressingMode string) {
 	var value, result byte
@@ -759,6 +774,7 @@ func EOR(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
+	printMachineState()
 }
 func ORA(addressingMode string) {
 	var value, result byte
@@ -862,6 +878,7 @@ func ORA(addressingMode string) {
 	if readBit(7, result) == 1 {
 		setNegativeFlag()
 	}
+	printMachineState()
 }
 func BIT(addressingMode string) {
 	var value, result byte
@@ -899,6 +916,7 @@ func BIT(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
+	printMachineState()
 }
 func INC(addressingMode string) {
 	var value, result byte
@@ -956,6 +974,7 @@ func INC(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
+	printMachineState()
 }
 func DEC(addressingMode string) {
 	var value, result byte
@@ -1013,6 +1032,7 @@ func DEC(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
+	printMachineState()
 }
 func ADC(addressingMode string) {
 	var value byte
@@ -1119,6 +1139,7 @@ func ADC(addressingMode string) {
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
 	}
+	printMachineState()
 }
 func SBC(addressingMode string) {
 	var value byte
@@ -1204,6 +1225,7 @@ func SBC(addressingMode string) {
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
 	}
+	printMachineState()
 }
 func ROR(addressingMode string) {
 	var address, value, result byte
@@ -1277,6 +1299,7 @@ func ROR(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
+	printMachineState()
 }
 func ROL(addressingMode string) {
 	var address, value, result byte
@@ -1359,6 +1382,7 @@ func ROL(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
+	printMachineState()
 }
 func LSR(addressingMode string) {
 	var value, result byte
@@ -1426,6 +1450,7 @@ func LSR(addressingMode string) {
 	} else {
 		unsetCarryFlag()
 	}
+	printMachineState()
 }
 func ASL(addressingMode string) {
 	var value, result byte
@@ -1497,6 +1522,7 @@ func ASL(addressingMode string) {
 			unsetCarryFlag()
 		}
 	}
+	printMachineState()
 }
 func CPX(addressingMode string) {
 	var value, result byte
@@ -1544,6 +1570,7 @@ func CPX(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
+	printMachineState()
 }
 func CPY(addressingMode string) {
 	var value, result byte
@@ -1587,20 +1614,19 @@ func CPY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
+	printMachineState()
 }
 func reset() {
-	// Set PC to 0xFFFC
-	//PC = int(uint16(memory[0xFFFD])<<8 | uint16(memory[0xFFFC]))
-	// Set SP to 0x0100
 	SP = 0x01FF
 	// Set SR to 0b00110100
-	SR = 0b00110100
+	SR = 0b00110000
 }
 func execute() {
 	if disassemble {
 		fmt.Printf(" *= $%04X\n\n", PC)
 	}
 	for bytecounter = PC; PC < len(memory); instructionCounter++ {
+		//consoleOutput()
 		//  1 byte instructions with no operands
 		switch opcode() {
 		// Implied addressing mode instructions
@@ -1674,7 +1700,6 @@ func execute() {
 				}
 				fmt.Printf("CLC\n")
 			}
-
 			// Set SR carry flag bit 0 to 0
 			unsetCarryFlag()
 			incCount(1)
@@ -2052,13 +2077,15 @@ func execute() {
 				}
 				fmt.Printf("RTS\n")
 			}
-
-			// Store SP+1 as the low byte and SP as the high byte
-			address := int(memory[SP+1])<<8 | int(memory[SP])
-			PC = address
+			// Increment the stack pointer by 1 byte
+			SP++
+			//Get low byte of PC
+			low := uint16(memory[SP])
+			//Get high byte of PC
+			high := uint16(memory[SP+1])
+			//Update PC with the value stored in memory at the address pointed to by SP
+			PC = int((high << 8) | low)
 			bytecounter = PC
-			// Increment the stack pointer by 2 bytes
-			SP += 2
 			incCount(3)
 		case 0x38:
 			/*
@@ -4266,7 +4293,6 @@ func execute() {
 				}
 				fmt.Printf("ASL $%02X%02X\n", operand2(), operand1())
 			}
-
 			ASL("absolute")
 		case 0x2C:
 			/*
@@ -4290,7 +4316,6 @@ func execute() {
 				}
 				fmt.Printf("BIT $%02X%02X\n", operand2(), operand1())
 			}
-
 			BIT("absolute")
 		case 0xCD:
 			/*
@@ -4313,7 +4338,6 @@ func execute() {
 				fmt.Printf("CMP $%02X%02X\n", operand2(), operand1())
 			}
 			CMP("absolute")
-
 		case 0xEC:
 			/*
 				CPX - Compare Index Register X To Memory
@@ -4339,7 +4363,6 @@ func execute() {
 				}
 				fmt.Printf("CPX $%02X%02X\n", operand2(), operand1())
 			}
-
 			CPX("absolute")
 		case 0xCC:
 			/*
@@ -4365,7 +4388,6 @@ func execute() {
 				}
 				fmt.Printf("CPY $%02X%02X\n", operand2(), operand1())
 			}
-
 			CPY("absolute")
 		case 0xCE:
 			/*
@@ -4385,7 +4407,6 @@ func execute() {
 				}
 				fmt.Printf("DEC $%02X%02X\n", operand2(), operand1())
 			}
-
 			DEC("absolute")
 		case 0x4D:
 			/*
@@ -4405,7 +4426,6 @@ func execute() {
 				}
 				fmt.Printf("EOR $%02X%02X\n", operand2(), operand1())
 			}
-
 			EOR("absolute")
 		case 0xEE:
 			/*
@@ -4425,7 +4445,6 @@ func execute() {
 				}
 				fmt.Printf("INC $%02X%02X\n", operand2(), operand1())
 			}
-
 			INC("absolute")
 		case 0x4C:
 			/*
@@ -4472,6 +4491,7 @@ func execute() {
 			SP--
 			// Push high byte of PC onto stack
 			memory[SP] = byte(PC & 0xFF)
+			SP--
 			// Set the program counter to the absolute address from the operands
 			PC = int(operand2())<<8 | int(operand1())
 			bytecounter = PC
@@ -4494,7 +4514,6 @@ func execute() {
 				}
 				fmt.Printf("LDA $%04X\n", uint16(operand2())<<8|uint16(operand1()))
 			}
-
 			LDA("absolute")
 		case 0xAE:
 			/*
@@ -4513,7 +4532,6 @@ func execute() {
 				}
 				fmt.Printf("LDX $%02X%02X\n", operand2(), operand1())
 			}
-
 			LDX("absolute")
 		case 0xAC:
 			/*
@@ -4532,7 +4550,6 @@ func execute() {
 				}
 				fmt.Printf("LDY $%02X%02X\n", operand2(), operand1())
 			}
-
 			LDY("absolute")
 		case 0x4E:
 			/*
@@ -4557,7 +4574,6 @@ func execute() {
 				}
 				fmt.Printf("LSR $%02X%02X\n", operand2(), operand1())
 			}
-
 			LSR("absolute")
 		case 0x0D:
 			/*
@@ -4577,7 +4593,6 @@ func execute() {
 				}
 				fmt.Printf("ORA $%02X%02X\n", operand2(), operand1())
 			}
-
 			ORA("absolute")
 		case 0x2E:
 			/*
@@ -4600,7 +4615,6 @@ func execute() {
 				}
 				fmt.Printf("ROL $%02X%02X\n", operand2(), operand1())
 			}
-
 			ROL("absolute")
 		case 0x6E:
 			/*
@@ -4650,7 +4664,6 @@ func execute() {
 				}
 				fmt.Printf("SBC $%02X%02X\n", operand2(), operand1())
 			}
-
 			SBC("absolute")
 		case 0x8D:
 			/*
@@ -4684,7 +4697,6 @@ func execute() {
 				}
 				fmt.Printf("STX $%02X%02X\n", operand2(), operand1())
 			}
-
 			STX("absolute")
 		case 0x8C:
 			/*
@@ -4701,7 +4713,6 @@ func execute() {
 				}
 				fmt.Printf("STY $%02X%02X\n", operand2(), operand1())
 			}
-
 			STY("absolute")
 
 		// X Indexed Absolute addressing mode instructions
@@ -4740,7 +4751,6 @@ func execute() {
 				}
 				fmt.Printf("ADC $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			ADC("absolutex")
 		case 0x3D:
 			/*
@@ -4760,7 +4770,6 @@ func execute() {
 				}
 				fmt.Printf("AND $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			AND("absolutex")
 		case 0x1E:
 			/*
@@ -4784,7 +4793,6 @@ func execute() {
 				}
 				fmt.Printf("ASL $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			ASL("absolutex")
 		case 0xDD:
 			/*
@@ -4806,7 +4814,6 @@ func execute() {
 				}
 				fmt.Printf("CMP $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			CMP("absolutex")
 		case 0xDE:
 			/*
@@ -4846,7 +4853,6 @@ func execute() {
 				}
 				fmt.Printf("EOR $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			EOR("absolutex")
 		case 0xFE:
 			/*
@@ -4886,7 +4892,6 @@ func execute() {
 				}
 				fmt.Printf("LDA $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			LDA("absolutex")
 		case 0xBC:
 			/*
@@ -4904,7 +4909,6 @@ func execute() {
 				}
 				fmt.Printf("LDY $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			LDY("absolutex")
 		case 0x5E:
 			/*
@@ -4930,7 +4934,6 @@ func execute() {
 				}
 				fmt.Printf("LSR $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			LSR("absolutex")
 		case 0x1D:
 			/*
@@ -4950,7 +4953,6 @@ func execute() {
 				}
 				fmt.Printf("ORA $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			ORA("absolutex")
 		case 0x3E:
 			/*
@@ -4996,7 +4998,6 @@ func execute() {
 				}
 				fmt.Printf("ROR $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			ROR("absolutex")
 		case 0xFD:
 			/*
@@ -5021,7 +5022,6 @@ func execute() {
 				}
 				fmt.Printf("SBC $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			SBC("absolutex")
 		case 0x9D:
 			/*
@@ -5038,7 +5038,6 @@ func execute() {
 				}
 				fmt.Printf("STA $%02X%02X,X\n", operand2(), operand1())
 			}
-
 			STA("absolutex")
 
 		// Y Indexed Absolute addressing mode instructions
@@ -5075,7 +5074,6 @@ func execute() {
 				}
 				fmt.Printf("ADC $%04X,Y\n", int(operand2())<<8|int(operand1()))
 			}
-
 			ADC("absolutey")
 		case 0x39:
 			/*
@@ -5095,7 +5093,6 @@ func execute() {
 				}
 				fmt.Printf("AND $%02X%02X,Y\n", operand2(), operand1())
 			}
-
 			AND("absolutey")
 		case 0xD9:
 			/*
@@ -5117,7 +5114,6 @@ func execute() {
 				}
 				fmt.Printf("CMP $%02X%02X,Y\n", operand2(), operand1())
 			}
-
 			CMP("absolutey")
 		case 0x59:
 			/*
@@ -5137,7 +5133,6 @@ func execute() {
 				}
 				fmt.Printf("EOR $%02X%02X,Y\n", operand2(), operand1())
 			}
-
 			EOR("absolutey")
 		case 0xB9:
 			/*
@@ -5157,7 +5152,6 @@ func execute() {
 				}
 				fmt.Printf("LDA $%02X%02X,Y\n", operand2(), operand1())
 			}
-
 			LDA("absolutey")
 		case 0xBE:
 			/*
@@ -5195,7 +5189,6 @@ func execute() {
 				}
 				fmt.Printf("ORA $%02X%02X,Y\n", operand2(), operand1())
 			}
-
 			ORA("absolutey")
 		case 0xF9:
 			/*
@@ -5220,7 +5213,6 @@ func execute() {
 				}
 				fmt.Printf("SBC $%02X%02X,Y\n", operand2(), operand1())
 			}
-
 			SBC("absolutey")
 		case 0x99:
 			/*
@@ -5238,9 +5230,7 @@ func execute() {
 				}
 				fmt.Printf("STA $%02X%02X,Y\n", operand2(), operand1())
 			}
-
 			STA("absolutey")
-
 		// Absolute Indirect addressing mode instructions
 		case 0x6C:
 			/*
@@ -5257,15 +5247,9 @@ func execute() {
 				}
 				fmt.Printf("JMP ($%04X)\n", int(operand2())<<8|int(operand1()))
 			}
-
 			JMP("indirect")
 		}
 		printMachineState()
 	}
-	fmt.Printf("Number of instructions executed: %d\n", instructionCounter)
-	if memory[0x0210] == 0xFF {
-		fmt.Println("Program completed successfully!")
-	} else {
-		fmt.Printf("Program failed on opcode $%02X.\n", memory[0x0210])
-	}
+	fmt.Printf("memory[0x210] = %04X\n", memory[0x210])
 }
