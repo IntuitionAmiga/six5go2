@@ -4017,14 +4017,24 @@ func execute() {
 				fmt.Printf("BCC $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
 
-			// Get offset from relative address in operand
+			// Get offset from operand
 			offset := operand1()
-			// If carry flag is not set then branch to offset
+			// If carry flag is unset, branch to address
 			if getSRBit(0) == 0 {
-				// Add offset to program counter
-				PC += int(offset)
+				// Branch
+				// Add offset to lower 8bits of PC
+				PC = bytecounter + 3 + int(offset)&0xFF
+				// If the offset is negative, decrement the PC by 1
+				// If bit 7 is unset then it's negative
+				if readBit(7, offset) == 0 {
+					PC--
+				}
+				bytecounter = PC
+				incCount(0)
+			} else {
+				// Don't branch
+				incCount(2)
 			}
-			incCount(2)
 		case 0xB0:
 			/*
 				BCS - Branch on Carry Set
@@ -4041,14 +4051,24 @@ func execute() {
 				}
 				fmt.Printf("BCS $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
 			}
-			// Get offset from relative address in operand
+			// Get offset from operand
 			offset := operand1()
-
-			// If the carry flag is set, branch to the address in the operand
+			// If carry flag is set, branch to address
 			if getSRBit(0) == 1 {
-				PC = bytecounter + 2 + int(offset)&0xFF
+				// Branch
+				// Add offset to lower 8bits of PC
+				PC = bytecounter + 3 + int(offset)&0xFF
+				// If the offset is negative, decrement the PC by 1
+				// If bit 7 is unset then it's negative
+				if readBit(7, offset) == 0 {
+					PC--
+				}
+				bytecounter = PC
+				incCount(0)
+			} else {
+				// Don't branch
+				incCount(2)
 			}
-			incCount(2)
 
 		case 0xD0:
 			/*
