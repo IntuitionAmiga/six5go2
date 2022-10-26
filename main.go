@@ -71,7 +71,7 @@ func main() {
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
 	// Copy file into memory and set PC to start address
-	fmt.Printf("Copying file into memory at $%04X\n\n", startAddress)
+	fmt.Printf("Copying file into memory at $%04X to $%04X\n\n", startAddress, startAddress+len(file))
 	copy(memory[startAddress:], file)
 	//PC = startAddress
 
