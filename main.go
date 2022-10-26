@@ -139,7 +139,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		time.Sleep(0 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 func getSRBit(x byte) byte {
@@ -1110,6 +1110,8 @@ func ADC(addressingMode string) {
 	// If the result is 0, set the zero flag
 	if result == 0 {
 		setZeroFlag()
+	} else {
+		unsetZeroFlag()
 	}
 	// Set the accumulator to the result
 	A = byte(result)
@@ -2031,7 +2033,6 @@ func execute() {
 			//Update PC with the value stored in memory at the address pointed to by SP
 			PC = int((high << 8) | low)
 			bytecounter = PC
-			printMachineState()
 			incCount(0)
 		case 0x60:
 			/*
