@@ -131,7 +131,7 @@ func printMachineState() {
 		width, height, _ := getTermDim()
 		fmt.Printf("RAM dump $0000 - $%04X:\n\n", (height-5)*(width/4+6))
 
-		for i := 0; i < height-5; i++ {
+		for i := 0; i < height-7; i++ {
 			for j := 0; j < (width/4)+9; j++ {
 				if memory[i*32+j] == 0 {
 					fmt.Printf("\u001B[37m %02X", memory[i*32+j])
@@ -4464,6 +4464,10 @@ func execute() {
 					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, opcode(), operand1(), operand2())
 				}
 				fmt.Printf("JMP $%04X\n", int(operand2())<<8|int(operand1()))
+			}
+			// For AllSuiteA.bin 6502 opcode test suite
+			if memory[0x210] == 0xFF {
+				fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", memory[0x210])
 			}
 			JMP("absolute")
 		case 0x20:
