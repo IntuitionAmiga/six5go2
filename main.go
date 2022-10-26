@@ -1104,6 +1104,8 @@ func ADC(addressingMode string) {
 	// If bit 7 of the result is set, set the negative flag
 	if readBit(7, byte(result)) == 1 {
 		setNegativeFlag()
+	} else {
+		unsetNegativeFlag()
 	}
 	// If the result is 0, set the zero flag
 	if result == 0 {
