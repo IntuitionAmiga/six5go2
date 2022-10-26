@@ -64,11 +64,11 @@ func main() {
 		printHex = true
 	}
 
+	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
+
 	//  Read file
 	file, _ = os.ReadFile(os.Args[1])
 	fmt.Printf("Length of file %s is %v ($%04X) bytes\n\n", os.Args[1], len(file), len(file))
-
-	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
 	// Copy file into memory and set PC to start address
 	fmt.Printf("Copying file into memory at $%04X to $%04X\n\n", startAddress, startAddress+len(file))
@@ -122,7 +122,7 @@ func printMachineState() {
 		fmt.Printf("\033[0;0H")
 	}
 
-	fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X\n\n", PC, A, X, Y, SR, SP)
+	fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%02X\n\n", PC, A, X, Y, SR, byte(SP))
 	//fmt.Printf(";; A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%04X\n\n", A, X, Y, SR, SP)
 
 	if machineMonitor {
