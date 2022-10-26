@@ -1,5 +1,5 @@
-;	.ORG $4000
-*= $4000
+	.ORG $4000
+; *= $4000
 start:
 ; EXPECTED FINAL RESULTS: $0210 = FF
 ; (any other number will be the 

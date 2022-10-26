@@ -13,10 +13,11 @@ var (
 	printHex           bool
 	file               []byte
 	bytecounter        int // Byte position counter
-	machineMonitor         = false
-	disassemble            = false
-	once                   = true
-	instructionCounter     = 0
+	machineMonitor     = false
+	disassemble        = false
+	once               = true
+	instructionCounter = 0
+	startAddress       int
 
 	// CPURegisters and RAM
 	A      byte        = 0x0 // Accumulator
@@ -51,7 +52,7 @@ func main() {
 	}
 	if len(os.Args) > 2 {
 		parseUint, _ := strconv.ParseUint(os.Args[2], 16, 16)
-		PC = int(parseUint)
+		startAddress = int(parseUint)
 	}
 	if len(os.Args) > 3 && os.Args[3] == "dis" {
 		disassemble = true
@@ -69,9 +70,10 @@ func main() {
 
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
-	// Copy file into memory at PC
-	fmt.Printf("Copying file into memory at $%04X\n\n", PC)
-	copy(memory[PC:], file)
+	// Copy file into memory and set PC to start address
+	fmt.Printf("Copying file into memory at $%04X\n\n", startAddress)
+	copy(memory[startAddress:], file)
+	//PC = startAddress
 
 	// Start emulation
 	fmt.Printf("Starting emulation at $%04X\n\n", PC)
@@ -108,7 +110,6 @@ func getTermDim() (width, height int, err error) {
 	}
 	return int(termDim[1]), int(termDim[0]), nil
 }
-
 func printMachineState() {
 	if machineMonitor {
 		// fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
@@ -139,7 +140,7 @@ func printMachineState() {
 			}
 			fmt.Printf("\n")
 		}
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(0 * time.Millisecond)
 	}
 }
 func getSRBit(x byte) byte {
@@ -175,12 +176,6 @@ func unsetOverflowFlag() {
 func setBreakFlag() {
 	setSRBitOn(4)
 }
-
-/*
-	func unsetBreakFlag() {
-		setSRBitOff(4)
-	}
-*/
 func setDecimalFlag() {
 	setSRBitOn(3)
 }
@@ -1593,7 +1588,6 @@ func CPY(addressingMode string) {
 		unsetZeroFlag()
 	}
 }
-
 func reset() {
 	// Set PC to 0xFFFC
 	//PC = int(uint16(memory[0xFFFD])<<8 | uint16(memory[0xFFFC]))
@@ -1602,7 +1596,6 @@ func reset() {
 	// Set SR to 0b00110100
 	SR = 0b00110100
 }
-
 func execute() {
 	if disassemble {
 		fmt.Printf(" *= $%04X\n\n", PC)
@@ -1638,13 +1631,20 @@ func execute() {
 				fmt.Printf("BRK\n")
 			}
 
+			SP--
 			//  Push PC onto stack
 			memory[SP] = byte(PC >> 8)
+			SP--
 			// Store SR on stack
-			memory[SP-1] = SR
+			memory[SP] = SR
+			SP--
+			// Set PC low byte to memory[0xFFFE] and high byte to memory[0xFFFF]
+			PC = int(uint16(memory[0xFFFF])<<8 | uint16(memory[0xFFFE]))
+			bytecounter = PC
+
 			// Set SR interrupt disable bit to 1
 			setInterruptFlag()
-			// Set SR break command bit to 1
+			// Set SR break flag
 			setBreakFlag()
 			// Set SR decimal mode bit to 0
 			unsetDecimalFlag()
@@ -1657,7 +1657,7 @@ func execute() {
 			// Set SR zero bit to 0
 			unsetZeroFlag()
 			//PC += 2
-			incCount(2)
+			incCount(0)
 		case 0x18:
 			/*
 				CLC - Clear Carry Flag
