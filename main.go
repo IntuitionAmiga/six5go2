@@ -123,7 +123,7 @@ func printMachineState() {
 	}
 
 	if printHex {
-		fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SR=%08b (NVEBDIZC) SP=$%02X\n\n", PC, A, X, Y, SR, byte(SP))
+		fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SP=$%02X SR=%08b (NVEBDIZC)\n\n", PC, A, X, Y, byte(SP), SR)
 	}
 
 	if machineMonitor {
@@ -2053,8 +2053,10 @@ func execute() {
 			SP++
 			//Get low byte of PC
 			low := uint16(memory[SP])
+			// Increment the stack pointer by 1 byte
+			SP++
 			//Get high byte of PC
-			high := uint16(memory[SP+1])
+			high := uint16(memory[SP])
 			//Update PC with the value stored in memory at the address pointed to by SP
 			PC = int((high << 8) | low)
 			bytecounter = PC
@@ -2081,8 +2083,10 @@ func execute() {
 			SP++
 			//Get low byte of PC
 			low := uint16(memory[SP])
+			// Increment the stack pointer by 1 byte
+			SP++
 			//Get high byte of PC
-			high := uint16(memory[SP+1])
+			high := uint16(memory[SP])
 			//Update PC with the value stored in memory at the address pointed to by SP
 			PC = int((high << 8) | low)
 			bytecounter = PC
@@ -2237,8 +2241,8 @@ func execute() {
 				fmt.Printf("TSX\n")
 			}
 
-			// Update X with the value stored at the address pointed to by SP
-			X = memory[SP]
+			// Update X with the SP
+			X = byte(SP)
 			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 			if getXBit(7) == 1 {
 				setNegativeFlag()
@@ -2304,7 +2308,7 @@ func execute() {
 			}
 
 			// Set stack pointer to value of X register
-			memory[SP] = X
+			SP = uint(X)
 			incCount(1)
 		case 0x98:
 			/*
