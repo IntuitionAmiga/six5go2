@@ -2018,18 +2018,27 @@ func execute() {
 				}
 				fmt.Printf("RTI\n")
 			}
-
-			// Update SR with the value stored at the address pointed to by SP
+			// Increment the stack pointer by 1 byte
+			SP++
+			//Update SR with the value stored in memory at the address pointed to by SP
 			SR = memory[SP]
-			// Update PC with the value stored at the address pointed to by SP+1
-			PC = int(memory[SP] + 1)
-			incCount(1)
+			// Increment the stack pointer by 1 byte
+			SP++
+			//Get low byte of PC
+			low := uint16(memory[SP])
+			//Get high byte of PC
+			high := uint16(memory[SP+1])
+			//Update PC with the value stored in memory at the address pointed to by SP
+			PC = int((high << 8) | low)
+			bytecounter = PC
+			printMachineState()
+			incCount(0)
 		case 0x60:
 			/*
 				RTS - Return From Subroutine
 				Operation: PC↑, PC + 1 → PC
 
-				This instruction loads the program count low and program count high from the stack into the program
+				This instruction loads the program count high and program count low from the stack into the program
 				counter and increments the program counter so that it points to the instruction following the JSR.
 
 				The stack pointer is adjusted by incrementing it twice.
@@ -2043,7 +2052,7 @@ func execute() {
 				fmt.Printf("RTS\n")
 			}
 
-			// Store SP+1 as the high byte and SP as the low byte
+			// Store SP+1 as the low byte and SP as the high byte
 			address := int(memory[SP+1])<<8 | int(memory[SP])
 			PC = address
 			bytecounter = PC
@@ -2339,7 +2348,7 @@ func execute() {
 				Operation: 0 → /M7...M0/ → C
 
 				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the low bit which is shifted out of
+				with the higher bit of the result always being set to 0, and the high bit which is shifted out of
 				the field being stored in the carry flag.
 
 				The shift right instruction either affects the accumulator by shifting it right 1 or is a
@@ -2660,7 +2669,7 @@ func execute() {
 		/*
 			$nn
 
-			The zero page instructions allow for shorter code and execution times by only fetching the second byte of the instruction and assuming a zero high address byte. Careful use of the zero page can result in significant increase in code efficiency.
+			The zero page instructions allow for shorter code and execution times by only fetching the second byte of the instruction and assuming a zero low address byte. Careful use of the zero page can result in significant increase in code efficiency.
 
 			Bytes: 2
 		*/
@@ -2952,7 +2961,7 @@ func execute() {
 				Operation: 0 → /M7...M0/ → C
 
 				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the low bit which is shifted out of the
+				with the higher bit of the result always being set to 0, and the high bit which is shifted out of the
 				field being stored in the carry flag.
 
 				The shift right instruction either affects the accumulator by shifting it right 1 or is a
@@ -3122,7 +3131,7 @@ func execute() {
 		/*
 			$nn,X
 
-			This form of addressing is used in conjunction with the X index register. The effective address is calculated by adding the second byte to the contents of the index register. Since this is a form of "Zero Page" addressing, the content of the second byte references a location in page zero. Additionally, due to the “Zero Page" addressing nature of this mode, no carry is added to the high order 8 bits of memory and crossing of page boundaries does not occur.
+			This form of addressing is used in conjunction with the X index register. The effective address is calculated by adding the second byte to the contents of the index register. Since this is a form of "Zero Page" addressing, the content of the second byte references a location in page zero. Additionally, due to the “Zero Page" addressing nature of this mode, no carry is added to the low order 8 bits of memory and crossing of page boundaries does not occur.
 
 			Bytes: 2
 		*/
@@ -3276,7 +3285,7 @@ func execute() {
 				Operation: 0 → /M7...M0/ → C
 
 				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the low bit which is shifted out of the
+				with the higher bit of the result always being set to 0, and the high bit which is shifted out of the
 				field being stored in the carry flag.
 
 				The shift right instruction either affects the accumulator by shifting it right 1 or is a read/modify/write
@@ -3424,7 +3433,7 @@ func execute() {
 		/*
 			$nn,Y
 
-			This form of addressing is used in conjunction with the Y index register. The effective address is calculated by adding the second byte to the contents of the index register. Since this is a form of "Zero Page" addressing, the content of the second byte references a location in page zero. Additionally, due to the “Zero Page" addressing nature of this mode, no carry is added to the high order 8 bits of memory and crossing of page boundaries does not occur.
+			This form of addressing is used in conjunction with the Y index register. The effective address is calculated by adding the second byte to the contents of the index register. Since this is a form of "Zero Page" addressing, the content of the second byte references a location in page zero. Additionally, due to the “Zero Page" addressing nature of this mode, no carry is added to the low order 8 bits of memory and crossing of page boundaries does not occur.
 
 			Bytes: 2
 		*/
@@ -3468,7 +3477,7 @@ func execute() {
 		/*
 			($nn,X)
 
-			In indexed indirect addressing, the second byte of the instruction is added to the contents of the X index register, discarding the carry. The result of this addition points to a memory location on page zero whose contents is the low order eight bits of the effective address. The next memory location in page zero contains the high order eight bits of the effective address. Both memory locations specifying the high and low order bytes of the effective address must be in page zero.
+			In indexed indirect addressing, the second byte of the instruction is added to the contents of the X index register, discarding the carry. The result of this addition points to a memory location on page zero whose contents is the high order eight bits of the effective address. The next memory location in page zero contains the low order eight bits of the effective address. Both memory locations specifying the low and high order bytes of the effective address must be in page zero.
 
 			Bytes: 2
 		*/
@@ -3645,7 +3654,7 @@ func execute() {
 		/*
 			($nn),Y
 
-			In indirect indexed addressing, the second byte of the instruction points to a memory location in page zero. The contents of this memory location is added to the contents of the Y index register, the result being the low order eight bits of the effective address. The carry from this addition is added to the contents of the next page zero memory location, the result being the high order eight bits of the effective address.
+			In indirect indexed addressing, the second byte of the instruction points to a memory location in page zero. The contents of this memory location is added to the contents of the Y index register, the result being the high order eight bits of the effective address. The carry from this addition is added to the contents of the next page zero memory location, the result being the low order eight bits of the effective address.
 
 			Bytes: 2
 		*/
@@ -4185,7 +4194,7 @@ func execute() {
 		/*
 			$nnnn
 
-			In absolute addressing, the second byte of the instruction specifies the eight low order bits of the effective address while the third byte specifies the eight high order bits. Thus, the absolute addressing mode allows access to the entire 65 K bytes of addressable memory.
+			In absolute addressing, the second byte of the instruction specifies the eight high order bits of the effective address while the third byte specifies the eight low order bits. Thus, the absolute addressing mode allows access to the entire 65 K bytes of addressable memory.
 
 			Bytes: 3
 		*/
@@ -4444,12 +4453,12 @@ func execute() {
 
 				To accomplish this, JSR instruction stores the program counter address which points to the last byte
 				of the jump instruction onto the stack using the stack pointer. The stack byte contains the
-				program count high first, followed by program count low. The JSR then transfers the addresses following
-				the jump instruction to the	program counter low and the program counter high, thereby directing the
+				program count low first, followed by program count high. The JSR then transfers the addresses following
+				the jump instruction to the	program counter high and the program counter low, thereby directing the
 				program to begin at that new address.
 
 				The JSR instruction affects no flags, causes the stack pointer to be decremented by 2 and substitutes
-				new values into the program bytecounter low and the program bytecounter high.
+				new values into the program bytecounter high and the program bytecounter low.
 			*/
 			if disassemble {
 				if printHex {
@@ -4457,10 +4466,10 @@ func execute() {
 				}
 				fmt.Printf("JSR $%04X\n", int(operand2())<<8|int(operand1()))
 			}
-			// Push high byte of PC onto stack
+			// Push low byte of PC onto stack
 			memory[SP] = byte(PC >> 8)
 			SP--
-			// Push low byte of PC onto stack
+			// Push high byte of PC onto stack
 			memory[SP] = byte(PC & 0xFF)
 			// Set the program counter to the absolute address from the operands
 			PC = int(operand2())<<8 | int(operand1())
@@ -4530,7 +4539,7 @@ func execute() {
 				Operation: 0 → /M7...M0/ → C
 
 				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the low bit which is shifted out of the
+				with the higher bit of the result always being set to 0, and the high bit which is shifted out of the
 				field being stored in the carry flag.
 
 				The shift right instruction either affects the accumulator by shifting it right 1 or is a
@@ -4902,7 +4911,7 @@ func execute() {
 				Operation: 0 → /M7...M0/ → C
 
 				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the low bit which is shifted out of
+				with the higher bit of the result always being set to 0, and the high bit which is shifted out of
 				the field being stored in the carry flag.
 
 				The shift right instruction either affects the accumulator by shifting it right 1 or is a
