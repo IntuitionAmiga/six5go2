@@ -3,31 +3,33 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"syscall"
-	"time"
 	"unsafe"
 )
 
 var (
-	printHex           bool
-	file               []byte
-	bytecounter        int // Byte position counter
+	printHex           = true
+	disassemble        = true
 	machineMonitor     = false
-	disassemble        = false
-	once               = true
 	instructionCounter = 0
-	loadAddress        int
-	displayAddress     = 0xF001
+
+	// Fixed Addresses
+	KERNALROM          []byte
+	BASICROM           []byte
+	CHARACTERROM       []byte
+	kernalROMAddress   = 0xE000
+	basicROMAddress    = 0xA000
+	charROMAddress     = 0xD000
+	resetVectorAddress = 0xFFFE
 
 	// CPURegisters and RAM
-	A      byte        = 0x0 // Accumulator
-	X      byte        = 0x0 // X register
-	Y      byte        = 0x0 // Y register		(76543210) SR Bit 5 is always set
-	SR     byte              // Status Register	(NVEBDIZC)
-	SP     uint              // Stack Pointer
-	PC     int               // Program Counter
-	memory [65536]byte       // Memory
+	A      byte        = 0x0                                                                     // Accumulator
+	X      byte        = 0x0                                                                     // X register
+	Y      byte        = 0x0                                                                     // Y register		(76543210) SR Bit 5 is always set
+	SR     byte        = 0b00110100                                                              // Status Register	(NVEBDIZC)
+	SP     uint        = 0x01FF                                                                  // Stack Pointer
+	PC                 = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256 // Program Counter
+	memory [65537]byte                                                                           // Memory
 )
 
 const (
@@ -45,64 +47,87 @@ const (
 )
 
 func main() {
-	fmt.Printf("Six5go2 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley\n\n")
+	fmt.Printf("Six5go2 v2.0 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley\n\n")
+	/*
+		if len(os.Args) <= 0 {
+			instructions()
+			os.Exit(0)
+		}
 
-	if len(os.Args) <= 2 {
-		instructions()
-		os.Exit(0)
-	}
-	if len(os.Args) > 2 {
-		parseUint, _ := strconv.ParseUint(os.Args[2], 16, 16)
-		loadAddress = int(parseUint)
-	}
-	if len(os.Args) > 3 && os.Args[3] == "dis" {
-		disassemble = true
-	}
-	if len(os.Args) > 3 && os.Args[3] == "mon" {
-		machineMonitor = true
-	}
-	if len(os.Args) > 4 && os.Args[4] == "hex" {
-		printHex = true
-	}
+		if os.Args[1] == "mon" {
+			machineMonitor = true
+		}
 
+		if os.Args[1] == "dis" {
+			disassemble = true
+		}
+
+		if os.Args[1] == "dishex" {
+			disassemble = true
+			printHex = true
+		}
+	*/
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
-	//  Read file
-	file, _ = os.ReadFile(os.Args[1])
-	fmt.Printf("Length of file %s is %v ($%04X) bytes\n\n", os.Args[1], len(file), len(file))
-
-	// Copy file into memory and set PC to start address
-	fmt.Printf("Copying file into memory at $%04X to $%04X\n\n", loadAddress, loadAddress+len(file))
-	copy(memory[loadAddress:], file)
-
 	// Start emulation
-	fmt.Printf("Starting emulation at $%04X\n\n", PC)
+	loadROMs()
 	reset()
-	printMachineState()
+	fmt.Printf("Starting emulation at $%04X\n\n", PC)
 	execute()
 }
-func instructions() {
-	fmt.Printf("USAGE   - %s <target_filename> <hex_entry_point> <dis>/<mon> (Disassembler/Machine Monitor) <hex> (Hex opcodes as comments with disassembly)\n\n", os.Args[0])
-	fmt.Printf("EXAMPLE - %s AllSuiteA.bin 4000 mon\n\n", os.Args[0])
-	fmt.Printf("EXAMPLE - %s AllSuiteA.bin 4000 dis\n\n", os.Args[0])
-	fmt.Printf("EXAMPLE - %s AllSuiteA.bin 4000 dis hex\n\n", os.Args[0])
+
+func loadROMs() {
+	/*
+		//  Read c64 KERNAL ROM file
+		KERNALROM, _ = os.ReadFile("roms/c64/kernal.901227-03.bin")
+		fmt.Printf("Length of KERNALROM is %v ($%04X) bytes\n\n", len(KERNALROM), len(KERNALROM))
+		// Read c64 BASIC ROM file
+		BASICROM, _ = os.ReadFile("roms/c64/basic.901226-01.bin")
+		// Read c64 CHARACTER ROM file
+		CHARACTERROM, _ = os.ReadFile("roms/c64/characters.901225-01.bin")
+
+		// Copy KERNALROM into memory
+		fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
+		copy(memory[kernalROMAddress:], KERNALROM)
+		fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
+		copy(memory[basicROMAddress:], BASICROM)
+		fmt.Printf("Copying Character ROM into memory at $%04X to $%04X\n\n", charROMAddress, charROMAddress+len(CHARACTERROM))
+		copy(memory[charROMAddress:], CHARACTERROM)
+	*/
+
+	// Load AllSuiteA.bin into memory at $4000
+	ALLSUITEA, _ := os.ReadFile("roms/AllSuiteA.bin")
+	fmt.Printf("Copying AllSuiteA.bin into memory at $%04X to $%04X\n\n", 0x4000, 0x4000+len(ALLSUITEA))
+	copy(memory[0x4000:], ALLSUITEA)
+
+	/*
+		// Load 6502_functional_test.bin into memory at $C000
+		FT, _ := os.ReadFile("roms/6502_functional_test.bin")
+		fmt.Printf("Copying 6502_functional_test.bin into memory at $%04X to $%04X\n\n", 0x400, 0x400+len(FT))
+		copy(memory[0x400:], FT)
+	*/
 }
+
 func opcode() byte {
-	return memory[bytecounter]
+	return memory[PC]
 }
 func operand1() byte {
-	return memory[bytecounter+1]
+	return memory[PC+1]
 }
 func operand2() byte {
-	return memory[bytecounter+2]
+	return memory[PC+2]
 }
 func incCount(amount int) {
-	//printMachineState()
-	if bytecounter+amount < len(file)-1 && amount != 0 {
-		bytecounter += amount
+	printMachineState()
+
+	if PC == 0xFFFF {
+		PC = 0x0000
+	} else {
+		PC += amount
 	}
-	PC += amount
+	instructionCounter++
 }
+
 func getTermDim() (width, height int, err error) {
 	var termDim [4]uint16
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(0), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&termDim)), 0, 0, 0); err != 0 {
@@ -110,43 +135,49 @@ func getTermDim() (width, height int, err error) {
 	}
 	return int(termDim[1]), int(termDim[0]), nil
 }
+
+func reset() {
+	SP = 0x01FF
+	// Set SR to 0b00110100
+	SR = 0b00110100
+	// Set PC to value stored at reset vector address
+	PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
+	// AllSuiteA starts at $4000
+	//PC = 0x4000
+	// 6502_functional_test starts at $C000
+	//PC = 0x400
+}
 func printMachineState() {
-	if machineMonitor {
-		// fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
-		// Clear the screen once
-		if once {
-			fmt.Printf("\033[2J")
-		}
-		once = false
-		// Move cursor to top left
-		fmt.Printf("\033[0;0H")
-	}
-
-	if printHex {
-		fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SP=$%02X SR=%08b (NVEBDIZC)\n\n", PC, A, X, Y, byte(SP), SR)
-	}
+	// Print PC, content of memory at PC, register values and ASCII value of memory all on one line
+	fmt.Printf(";; PC=%04X, A=$%02X X=$%02X Y=$%02X SP=$%04X mem(SP)=$%04X mem(SP+1)=$%04X SR=%08b (NVEBDIZC)\n", PC, A, X, Y, SP, memory[SP], memory[SP+1], SR)
+	// Wait for keypress
+	//fmt.Scanln()
 
 	if machineMonitor {
-		// Get terminal width and height
-		width, height, _ := getTermDim()
-		fmt.Printf("RAM dump $0000 - $%04X:\n\n", (height-5)*(width/4+6))
-
-		for i := 0; i < height-7; i++ {
-			for j := 0; j < (width/4)+9; j++ {
-				if memory[i*32+j] == 0 {
-					fmt.Printf("\u001B[37m %02X", memory[i*32+j])
+		// Get terminal height
+		//_, height, _ := getTermDim()
+		// Print 16 bytes of memory per line starting at PC
+		fmt.Printf("PC: $%04X\n", PC)
+		for i := 0; i < len(memory); i++ {
+			fmt.Printf("$%04X: ", PC+i*16)
+			for j := 0; j < 16; j++ {
+				fmt.Printf("%02X ", memory[PC+i*16+j])
+			}
+			// Print ASCII representation of memory
+			fmt.Printf(" |  ")
+			for j := 0; j < 16; j++ {
+				if memory[PC+i*16+j] >= 32 && memory[PC+i*16+j] <= 126 {
+					fmt.Printf("%c", memory[PC+i*16+j])
 				} else {
-					fmt.Printf("\u001B[3%dm %02X", (memory[i*32+j])%7+1, memory[i*32+j])
+					fmt.Printf(".")
 				}
 			}
-			fmt.Printf("\n")
+			fmt.Printf("A=$%02X X=$%02X Y=$%02X SP=$%02X SR=%08b\n", A, X, Y, byte(SP), SR)
+			//fmt.Scanln()
+			//time.Sleep(50 * time.Millisecond)
 		}
-		time.Sleep(0 * time.Millisecond)
 	}
-}
-func consoleOutput() {
-	// Print ASCII character of byte stored at memory[displayAddress]
-	fmt.Printf("%c", memory[displayAddress])
+
 }
 func getSRBit(x byte) byte {
 	return (SR >> x) & 1
@@ -208,6 +239,20 @@ func unsetCarryFlag() {
 func readBit(bit byte, value byte) int {
 	// Read bit from value and return it
 	return int((value >> bit) & 1)
+}
+func decSP() {
+	if SP == 0x0100 {
+		SP = 0x01FF
+	} else {
+		SP--
+	}
+}
+func incSP() {
+	if SP == 0x01FF {
+		SP = 0x0100
+	} else {
+		SP++
+	}
 }
 
 // 6502 mnemonics with multiple addressing modes
@@ -287,8 +332,6 @@ func LDA(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-	printMachineState()
-
 }
 func LDX(addressingMode string) {
 	switch addressingMode {
@@ -336,7 +379,6 @@ func LDX(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
 }
 func LDY(addressingMode string) {
 	switch addressingMode {
@@ -385,7 +427,7 @@ func LDY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+
 }
 func STA(addressingMode string) {
 	switch addressingMode {
@@ -437,7 +479,7 @@ func STA(addressingMode string) {
 		memory[address+Y] = A
 		incCount(2)
 	}
-	printMachineState()
+
 }
 func STX(addressingMode string) {
 	switch addressingMode {
@@ -460,7 +502,7 @@ func STX(addressingMode string) {
 		memory[address] = X
 		incCount(3)
 	}
-	printMachineState()
+
 }
 func STY(addressingMode string) {
 	switch addressingMode {
@@ -483,7 +525,7 @@ func STY(addressingMode string) {
 		memory[address] = Y
 		incCount(3)
 	}
-	printMachineState()
+
 }
 func CMP(addressingMode string) {
 	var value, result byte
@@ -531,6 +573,7 @@ func CMP(addressingMode string) {
 	result = A - value
 	//fmt.Printf("A: %X, value: %X, result: %X\n", A, value, result)
 	// If the result is 0, set the zero flag
+	// Print zero flag
 	if result == 0 {
 		setZeroFlag()
 	} else {
@@ -553,7 +596,7 @@ func CMP(addressingMode string) {
 	} else {
 		incCount(3)
 	}
-	printMachineState()
+	//printMachineState()
 }
 func JMP(addressingMode string) {
 	switch addressingMode {
@@ -570,9 +613,8 @@ func JMP(addressingMode string) {
 		// Set the program counter to the indirect address
 		PC = int(indirectAddress)
 	}
-	bytecounter = PC
 	incCount(0)
-	printMachineState()
+	//printMachineState()
 }
 func AND(addressingMode string) {
 	var value, result byte
@@ -673,7 +715,7 @@ func AND(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-	printMachineState()
+
 }
 func EOR(addressingMode string) {
 	var value, result byte
@@ -774,7 +816,7 @@ func EOR(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-	printMachineState()
+
 }
 func ORA(addressingMode string) {
 	var value, result byte
@@ -878,7 +920,7 @@ func ORA(addressingMode string) {
 	if readBit(7, result) == 1 {
 		setNegativeFlag()
 	}
-	printMachineState()
+
 }
 func BIT(addressingMode string) {
 	var value, result byte
@@ -916,7 +958,7 @@ func BIT(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+
 }
 func INC(addressingMode string) {
 	var value, result byte
@@ -974,7 +1016,7 @@ func INC(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+
 }
 func DEC(addressingMode string) {
 	var value, result byte
@@ -1032,7 +1074,7 @@ func DEC(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+
 }
 func ADC(addressingMode string) {
 	var value byte
@@ -1139,7 +1181,7 @@ func ADC(addressingMode string) {
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
 	}
-	printMachineState()
+
 }
 func SBC(addressingMode string) {
 	var value byte
@@ -1225,7 +1267,7 @@ func SBC(addressingMode string) {
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
 	}
-	printMachineState()
+
 }
 func ROR(addressingMode string) {
 	var address, value, result byte
@@ -1299,7 +1341,7 @@ func ROR(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
-	printMachineState()
+
 }
 func ROL(addressingMode string) {
 	var address, value, result byte
@@ -1382,7 +1424,7 @@ func ROL(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
-	printMachineState()
+
 }
 func LSR(addressingMode string) {
 	var value, result byte
@@ -1450,7 +1492,7 @@ func LSR(addressingMode string) {
 	} else {
 		unsetCarryFlag()
 	}
-	printMachineState()
+
 }
 func ASL(addressingMode string) {
 	var value, result byte
@@ -1522,7 +1564,7 @@ func ASL(addressingMode string) {
 			unsetCarryFlag()
 		}
 	}
-	printMachineState()
+
 }
 func CPX(addressingMode string) {
 	var value, result byte
@@ -1570,7 +1612,7 @@ func CPX(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+
 }
 func CPY(addressingMode string) {
 	var value, result byte
@@ -1614,19 +1656,11 @@ func CPY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+
 }
-func reset() {
-	SP = 0x01FF
-	// Set SR to 0b00110100
-	SR = 0b00110000
-}
+
 func execute() {
-	if disassemble {
-		fmt.Printf(" *= $%04X\n\n", PC)
-	}
-	for bytecounter = PC; PC < len(memory); instructionCounter++ {
-		//consoleOutput()
+	for PC < len(memory) {
 		//  1 byte instructions with no operands
 		switch opcode() {
 		// Implied addressing mode instructions
@@ -1656,22 +1690,17 @@ func execute() {
 				}
 				fmt.Printf("BRK\n")
 			}
-
-			SP--
-			//  Push PC onto stack
-			memory[SP] = byte(PC >> 8)
-			SP--
+			// Push PC+2 to stack
+			//memory[SP] = byte(PC >> 8)
+			memory[SP] = byte(PC + 2)
+			decSP()
 			// Store SR on stack
 			memory[SP] = SR
-			SP--
-			// Set PC low byte to memory[0xFFFE] and high byte to memory[0xFFFF]
-			PC = int(uint16(memory[0xFFFF])<<8 | uint16(memory[0xFFFE]))
-			bytecounter = PC
-
-			// Set SR interrupt disable bit to 1
-			setInterruptFlag()
+			decSP()
 			// Set SR break flag
 			setBreakFlag()
+			// Set SR interrupt disable bit to 1
+			setInterruptFlag()
 			// Set SR decimal mode bit to 0
 			unsetDecimalFlag()
 			// Set SR overflow bit to 0
@@ -1682,8 +1711,14 @@ func execute() {
 			unsetNegativeFlag()
 			// Set SR zero bit to 0
 			unsetZeroFlag()
-			//PC += 2
-			incCount(0)
+			// Set PC to interrupt vector
+			fmt.Printf("$FFFE: %04X\n", memory[0xFFFE])
+			fmt.Printf("$FFFF: %04X\n", memory[0xFFFF])
+
+			fmt.Printf("Reset vector address: %04X\n", resetVectorAddress)
+			fmt.Printf("PC: %04x\n", int(memory[resetVectorAddress])+int(memory[resetVectorAddress+1])*256)
+			PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
+			incCount(1)
 		case 0x18:
 			/*
 				CLC - Clear Carry Flag
@@ -1955,10 +1990,11 @@ func execute() {
 				fmt.Printf("PHP\n")
 			}
 
-			// Push SR to stack
-			memory[SP] = SR
 			// Decrement the stack pointer by 1 byte
 			SP--
+			// Push SR to stack
+			memory[SP+1] = SR
+
 			incCount(1)
 		case 0x68:
 			/*
@@ -1982,10 +2018,10 @@ func execute() {
 				fmt.Printf("PLA\n")
 			}
 
+			// Update accumulator with value stored in memory address pointed to by SP
+			A = memory[SP+1]
 			// Increment the stack pointer by 1 byte
 			SP++
-			// Update accumulator with value stored in memory address pointed to by SP
-			A = memory[SP]
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if getABit(7) == 1 {
 				setNegativeFlag()
@@ -2017,10 +2053,11 @@ func execute() {
 				}
 				fmt.Printf("PLP\n")
 			}
+
+			// Update SR with the value stored at the address pointed to by SP
+			SR = memory[SP+1]
 			// Increment the stack pointer by 1 byte
 			SP++
-			// Update SR with the value stored at the address pointed to by SP
-			SR = memory[SP]
 			incCount(1)
 		case 0x40:
 			/*
@@ -2045,10 +2082,11 @@ func execute() {
 				}
 				fmt.Printf("RTI\n")
 			}
+
+			//Update SR with the value stored in memory at the address pointed to by SP
+			SR = memory[SP+1]
 			// Increment the stack pointer by 1 byte
 			SP++
-			//Update SR with the value stored in memory at the address pointed to by SP
-			SR = memory[SP]
 			// Increment the stack pointer by 1 byte
 			SP++
 			//Get low byte of PC
@@ -2059,7 +2097,6 @@ func execute() {
 			high := uint16(memory[SP])
 			//Update PC with the value stored in memory at the address pointed to by SP
 			PC = int((high << 8) | low)
-			bytecounter = PC
 			incCount(0)
 		case 0x60:
 			/*
@@ -2089,7 +2126,6 @@ func execute() {
 			high := uint16(memory[SP])
 			//Update PC with the value stored in memory at the address pointed to by SP
 			PC = int((high << 8) | low)
-			bytecounter = PC
 			incCount(3)
 		case 0x38:
 			/*
@@ -3895,7 +3931,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BPL $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
+				fmt.Printf("BPL $%02X\n", (PC+2+int(operand1()))&0xFF)
 			}
 
 			// Get offset from operand
@@ -3904,13 +3940,12 @@ func execute() {
 			if getSRBit(7) == 0 {
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = bytecounter + 3 + int(offset)&0xFF
+				PC = PC + 3 + int(offset)&0xFF
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				bytecounter = PC
 				incCount(0)
 			} else {
 				// Don't branch
@@ -3930,7 +3965,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BMI $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
+				fmt.Printf("BMI $%02X\n", (PC+2+int(operand1()))&0xFF)
 			}
 
 			// Get offset from operand
@@ -3939,13 +3974,12 @@ func execute() {
 			if getSRBit(7) == 1 {
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = bytecounter + 3 + int(offset)&0xFF
+				PC = PC + 3 + int(offset)&0xFF
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				bytecounter = PC
 				incCount(0)
 			} else {
 				// Don't branch
@@ -3965,7 +3999,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BVC $%02X\n", bytecounter+2+int(operand1()))
+				fmt.Printf("BVC $%02X\n", PC+2+int(operand1()))
 			}
 
 			// Get offset from operand
@@ -3974,13 +4008,12 @@ func execute() {
 			if getSRBit(6) == 0 {
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = bytecounter + 3 + int(offset)&0xFF
+				PC = PC + 3 + int(offset)&0xFF
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				bytecounter = PC
 				incCount(0)
 			} else {
 				// Don't branch
@@ -4020,7 +4053,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BVS $%04X\n", bytecounter+2+int(operand1()))
+				fmt.Printf("BVS $%04X\n", PC+2+int(operand1()))
 			}
 
 			// Get offset from operand
@@ -4029,13 +4062,12 @@ func execute() {
 			if getSRBit(6) == 1 {
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = bytecounter + 3 + int(offset)&0xFF
+				PC = PC + 3 + int(offset)&0xFF
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				bytecounter = PC
 				incCount(0)
 			} else {
 				// Don't branch
@@ -4048,14 +4080,14 @@ func execute() {
 
 				This instruction tests the state of the carry bit and takes a conditional branch if the carry bit is reset.
 
-				It affects no flags or registers other than the program bytecounter and then only if the C flag is not on.
+				It affects no flags or registers other than the program counter and then only if the C flag is not on.
 			*/
 
 			if disassemble {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BCC $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
+				fmt.Printf("BCC $%02X\n", (PC+2+int(operand1()))&0xFF)
 			}
 
 			// Get offset from operand
@@ -4064,13 +4096,12 @@ func execute() {
 			if getSRBit(0) == 0 {
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = bytecounter + 3 + int(offset)&0xFF
+				PC = PC + 3 + int(offset)&0xFF
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				bytecounter = PC
 				incCount(0)
 			} else {
 				// Don't branch
@@ -4090,7 +4121,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BCS $%02X\n", (bytecounter+2+int(operand1()))&0xFF)
+				fmt.Printf("BCS $%02X\n", (PC+2+int(operand1()))&0xFF)
 			}
 			// Get offset from operand
 			offset := operand1()
@@ -4098,13 +4129,12 @@ func execute() {
 			if getSRBit(0) == 1 {
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = bytecounter + 3 + int(offset)&0xFF
+				PC = PC + 3 + int(offset)&0xFF
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				bytecounter = PC
 				incCount(0)
 			} else {
 				// Don't branch
@@ -4127,7 +4157,7 @@ func execute() {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BNE $%04X\n", (bytecounter+2+int(operand1()))&0xFF)
+				fmt.Printf("BNE $%04X\n", (PC+2+int(operand1()))&0xFF)
 			}
 
 			// Get offset from operand
@@ -4136,13 +4166,12 @@ func execute() {
 			if getSRBit(1) == 0 {
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = bytecounter + 3 + int(offset)&0xFF
+				PC = PC + 3 + int(offset)&0xFF
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				bytecounter = PC
 				incCount(0)
 			} else {
 				// Don't branch
@@ -4157,14 +4186,14 @@ func execute() {
 
 				It takes a conditional branch whenever the Z flag is on or the previous result is equal to 0.
 
-				BEQ does not affect any of the flags or registers other than the program bytecounter and only then
+				BEQ does not affect any of the flags or registers other than the program counter and only then
 				when the Z flag is set.
 			*/
 			if disassemble {
 				if printHex {
 					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
 				}
-				fmt.Printf("BEQ $%04X\n", bytecounter+2+int(operand1()))
+				fmt.Printf("BEQ $%04X\n", PC+2+int(operand1()))
 			}
 
 			// Get offset from address in operand
@@ -4174,30 +4203,10 @@ func execute() {
 			// If Z flag is set, branch to address
 			if getSRBit(1) == 1 {
 				PC = relativeAddress
-				bytecounter = PC
 				incCount(0)
 			} else {
 				incCount(2)
 			}
-
-			/*
-				// If Z flag is set, branch to relative address
-				if getSRBit(1) == 1 {
-					// If relative address is negative, subtract from PC
-					if relativeAddress<<7 == 0b10000000 {
-						PC -= int(offset)
-						bytecounter = PC
-						incCount(0)
-					} else {
-						// If relative address is positive, add to PC
-						PC = relativeAddress
-						bytecounter = PC
-						incCount(0)
-					}
-				} else {
-					// If Z flag is not set, don't branch
-					incCount(2)
-				}*/
 		case 0xF6:
 			/*
 				INC - Increment Memory By One
@@ -4452,10 +4461,10 @@ func execute() {
 			INC("absolute")
 		case 0x4C:
 			/*
-				JMP - JMP Indirect
+				JMP - JMP Absolute
 				Operation: [PC + 1] → PCL, [PC + 2] → PCH
 
-				This instruction establishes a new valne for the program counter.
+				This instruction establishes a new value for the program counter.
 
 				It affects only the program counter in the microprocessor and affects no flags in the status register.
 			*/
@@ -4466,9 +4475,12 @@ func execute() {
 				fmt.Printf("JMP $%04X\n", int(operand2())<<8|int(operand1()))
 			}
 			// For AllSuiteA.bin 6502 opcode test suite
+
 			if memory[0x210] == 0xFF {
 				fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", memory[0x210])
+				os.Exit(0)
 			}
+
 			JMP("absolute")
 		case 0x20:
 			/*
@@ -4486,7 +4498,7 @@ func execute() {
 				program to begin at that new address.
 
 				The JSR instruction affects no flags, causes the stack pointer to be decremented by 2 and substitutes
-				new values into the program bytecounter high and the program bytecounter low.
+				new values into the program counter high and the program counter low.
 			*/
 			if disassemble {
 				if printHex {
@@ -4494,15 +4506,17 @@ func execute() {
 				}
 				fmt.Printf("JSR $%04X\n", int(operand2())<<8|int(operand1()))
 			}
+
 			// Push low byte of PC onto stack
 			memory[SP] = byte(PC >> 8)
-			SP--
+			decSP()
+
 			// Push high byte of PC onto stack
 			memory[SP] = byte(PC & 0xFF)
-			SP--
+			decSP()
 			// Set the program counter to the absolute address from the operands
 			PC = int(operand2())<<8 | int(operand1())
-			bytecounter = PC
+
 			incCount(0)
 		case 0xAD:
 			/*
@@ -5257,7 +5271,6 @@ func execute() {
 			}
 			JMP("indirect")
 		}
-		printMachineState()
 	}
 	fmt.Printf("memory[0x210] = %04X\n", memory[0x210])
 }
