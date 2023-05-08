@@ -97,7 +97,7 @@ func operand2() byte {
 	return memory[bytecounter+2]
 }
 func incCount(amount int) {
-	//printMachineState()
+	printMachineState()
 	if bytecounter+amount < len(file)-1 && amount != 0 {
 		bytecounter += amount
 	}
@@ -111,6 +111,11 @@ func getTermDim() (width, height int, err error) {
 	return int(termDim[1]), int(termDim[0]), nil
 }
 func printMachineState() {
+	// Print PC, content of memory at PC, register values and ASCII value of memory all on one line
+	fmt.Printf(";; PC=%04X, A=$%02X X=$%02X Y=$%02X SP=$%04X mem(SP)=$%04X mem(SP+1)=$%04X SR=%08b (NVEBDIZC)\n", PC, A, X, Y, SP, memory[SP], memory[SP+1], SR)
+	// Wait for keypress
+	//fmt.Scanln()
+
 	if machineMonitor {
 		// fmt.Print("\033[H\033[2J") // ANSI escape code hack to clear the screen
 		// Clear the screen once
@@ -122,9 +127,9 @@ func printMachineState() {
 		fmt.Printf("\033[0;0H")
 	}
 
-	if printHex {
-		fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SP=$%02X SR=%08b (NVEBDIZC)\n\n", PC, A, X, Y, byte(SP), SR)
-	}
+//	if printHex {
+//		fmt.Printf(";; PC=$%04X A=$%02X X=$%02X Y=$%02X SP=$%02X SR=%08b (NVEBDIZC)\n\n", PC, A, X, Y, byte(SP), SR)
+//	}
 
 	if machineMonitor {
 		// Get terminal width and height
@@ -287,7 +292,7 @@ func LDA(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-	printMachineState()
+	//printMachineState()
 
 }
 func LDX(addressingMode string) {
@@ -336,7 +341,7 @@ func LDX(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func LDY(addressingMode string) {
 	switch addressingMode {
@@ -385,7 +390,7 @@ func LDY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+//	printMachineState()
 }
 func STA(addressingMode string) {
 	switch addressingMode {
@@ -437,7 +442,7 @@ func STA(addressingMode string) {
 		memory[address+Y] = A
 		incCount(2)
 	}
-	printMachineState()
+	//printMachineState()
 }
 func STX(addressingMode string) {
 	switch addressingMode {
@@ -460,7 +465,7 @@ func STX(addressingMode string) {
 		memory[address] = X
 		incCount(3)
 	}
-	printMachineState()
+	//printMachineState()
 }
 func STY(addressingMode string) {
 	switch addressingMode {
@@ -483,7 +488,7 @@ func STY(addressingMode string) {
 		memory[address] = Y
 		incCount(3)
 	}
-	printMachineState()
+	//printMachineState()
 }
 func CMP(addressingMode string) {
 	var value, result byte
@@ -553,7 +558,7 @@ func CMP(addressingMode string) {
 	} else {
 		incCount(3)
 	}
-	printMachineState()
+	//printMachineState()
 }
 func JMP(addressingMode string) {
 	switch addressingMode {
@@ -572,7 +577,7 @@ func JMP(addressingMode string) {
 	}
 	bytecounter = PC
 	incCount(0)
-	printMachineState()
+	//printMachineState()
 }
 func AND(addressingMode string) {
 	var value, result byte
@@ -673,7 +678,7 @@ func AND(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func EOR(addressingMode string) {
 	var value, result byte
@@ -774,7 +779,7 @@ func EOR(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func ORA(addressingMode string) {
 	var value, result byte
@@ -878,7 +883,7 @@ func ORA(addressingMode string) {
 	if readBit(7, result) == 1 {
 		setNegativeFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func BIT(addressingMode string) {
 	var value, result byte
@@ -916,7 +921,7 @@ func BIT(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func INC(addressingMode string) {
 	var value, result byte
@@ -974,7 +979,7 @@ func INC(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func DEC(addressingMode string) {
 	var value, result byte
@@ -1032,7 +1037,7 @@ func DEC(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func ADC(addressingMode string) {
 	var value byte
@@ -1139,7 +1144,7 @@ func ADC(addressingMode string) {
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
 	}
-	printMachineState()
+	//printMachineState()
 }
 func SBC(addressingMode string) {
 	var value byte
@@ -1225,7 +1230,7 @@ func SBC(addressingMode string) {
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
 	}
-	printMachineState()
+	//printMachineState()
 }
 func ROR(addressingMode string) {
 	var address, value, result byte
@@ -1299,7 +1304,7 @@ func ROR(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
-	printMachineState()
+	//printMachineState()
 }
 func ROL(addressingMode string) {
 	var address, value, result byte
@@ -1382,7 +1387,7 @@ func ROL(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
-	printMachineState()
+	//printMachineState()
 }
 func LSR(addressingMode string) {
 	var value, result byte
@@ -1450,7 +1455,7 @@ func LSR(addressingMode string) {
 	} else {
 		unsetCarryFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func ASL(addressingMode string) {
 	var value, result byte
@@ -1522,7 +1527,7 @@ func ASL(addressingMode string) {
 			unsetCarryFlag()
 		}
 	}
-	printMachineState()
+	//printMachineState()
 }
 func CPX(addressingMode string) {
 	var value, result byte
@@ -1570,7 +1575,7 @@ func CPX(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func CPY(addressingMode string) {
 	var value, result byte
@@ -1614,7 +1619,7 @@ func CPY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	printMachineState()
+	//printMachineState()
 }
 func reset() {
 	SP = 0x01FF
@@ -4455,7 +4460,7 @@ func execute() {
 				JMP - JMP Indirect
 				Operation: [PC + 1] → PCL, [PC + 2] → PCH
 
-				This instruction establishes a new valne for the program counter.
+				This instruction establishes a new value for the program counter.
 
 				It affects only the program counter in the microprocessor and affects no flags in the status register.
 			*/
@@ -4468,6 +4473,7 @@ func execute() {
 			// For AllSuiteA.bin 6502 opcode test suite
 			if memory[0x210] == 0xFF {
 				fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", memory[0x210])
+				os.Exit(0)
 			}
 			JMP("absolute")
 		case 0x20:
@@ -5257,7 +5263,7 @@ func execute() {
 			}
 			JMP("indirect")
 		}
-		printMachineState()
+		//printMachineState()
 	}
 	fmt.Printf("memory[0x210] = %04X\n", memory[0x210])
 }
