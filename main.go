@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"syscall"
 	"unsafe"
@@ -16,12 +17,13 @@ var (
 	instructionCounter = 0
 
 	// Fixed Addresses
-	KERNALROM          []byte
-	BASICROM           []byte
+	KERNALROM = make([]byte, 8192) // 8KB
+	BASICROM  = make([]byte, 8192) // 8KB
+
 	CHARACTERROM       []byte
 	kernalROMAddress   = 0xE000
-	basicROMAddress    = 0xA000
-	charROMAddress     = 0xD000
+	basicROMAddress    = 0xC000
+	charROMAddress     = 0x8000
 	resetVectorAddress = 0xFFFE
 
 	// CPURegisters and RAM
@@ -66,10 +68,10 @@ func main() {
 	execute()
 }
 
+/*
 func loadROMs() {
-
 	//  Read c64 KERNAL ROM file
-	/*
+
 		KERNALROM, _ = os.ReadFile("roms/c64/kernal.901227-03.bin")
 		fmt.Printf("Length of KERNALROM is %v ($%04X) bytes\n\n", len(KERNALROM), len(KERNALROM))
 		// Read c64 BASIC ROM file
@@ -84,33 +86,44 @@ func loadROMs() {
 		copy(memory[basicROMAddress:], BASICROM)
 		fmt.Printf("Copying Character ROM into memory at $%04X to $%04X\n\n", charROMAddress, charROMAddress+len(CHARACTERROM))
 		copy(memory[charROMAddress:], CHARACTERROM)
-	*/
+
 
 	// Load AllSuiteA.bin into memory at $4000
-	ALLSUITEA, _ := os.ReadFile("roms/AllSuiteA.bin")
-	fmt.Printf("Copying AllSuiteA.bin into memory at $%04X to $%04X\n\n", 0x4000, 0x4000+len(ALLSUITEA))
-	copy(memory[0x4000:], ALLSUITEA)
+	//ALLSUITEA, _ := os.ReadFile("roms/AllSuiteA.bin")
+	//fmt.Printf("Copying AllSuiteA.bin into memory at $%04X to $%04X\n\n", 0x4000, 0x4000+len(ALLSUITEA))
+	//copy(memory[0x4000:], ALLSUITEA)
 
-	/*
+
 		// Load 6502_functional_test.bin into memory at $C000
 		FT, _ := os.ReadFile("roms/6502_functional_test.bin")
 		fmt.Printf("Copying 6502_functional_test.bin into memory at $%04X to $%04X\n\n", 0x400, 0x400+len(FT))
 		copy(memory[0x400:], FT)
-	*/
-}
 
-// Memory map of Commodore Plus/4
-// 0x0000 - 0x1FFF = RAM
-// 0x2000 - 0x3FFF = I/O
-// 0x4000 - 0x7FFF = RAM
-// 0x8000 - 0x9FFF = I/O
-// 0xA000 - 0xBFFF = BASIC ROM
-// 0xC000 - 0xCFFF = RAM
-// 0xD000 - 0xDFFF = Character ROM
-// 0xE000 - 0xFFFF = KERNAL ROM
-// 0xFFFC - 0xFFFD = Reset Vector
-// 0xFFFE - 0xFFFF = NMI Vector
-// 0xFFFA - 0xFFFB = IRQ/BRK Vector
+}
+*/
+
+// Load Plus/4 ROMs into memory map at correct addresses
+func loadROMs() {
+
+	// Open the file.
+	file, _ := os.Open("roms/plus4/basic.318006-01.bin")
+
+	// Copy KERNALROM into memory
+	_, _ = io.ReadFull(file, KERNALROM)
+	fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
+	copy(memory[kernalROMAddress:], KERNALROM)
+
+	// Copy BASICROM into memory
+	_, _ = io.ReadFull(file, BASICROM)
+	fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
+	copy(memory[basicROMAddress:], BASICROM)
+
+	// Read Plus/4 CHARACTER ROM file
+	//CHARACTERROM, _ = os.ReadFile("roms/plus4/characters.901225-01.bin")
+	//fmt.Printf("Copying Character ROM into memory at $%04X to $%04X\n\n", charROMAddress, charROMAddress+len(CHARACTERROM))
+	//copy(memory[charROMAddress:], CHARACTERROM)
+
+}
 
 // Write a byte to memory
 func write(addr int, value byte) {
@@ -141,7 +154,7 @@ func displayCharacter(petscii byte) {
 // When input is received from the terminal, convert it from ASCII to PETSCII
 // and store it in memory at the address specified by the keyboard buffer pointer
 func inputCharacter(ascii byte) {
-	write(keyboardBufferPointer, asciiToPetscii(ascii))
+	//write(keyboardBufferPointer, asciiToPetscii(ascii))
 
 }
 
