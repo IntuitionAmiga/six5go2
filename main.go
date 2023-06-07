@@ -67,8 +67,9 @@ func main() {
 }
 
 func loadROMs() {
+
+	//  Read c64 KERNAL ROM file
 	/*
-		//  Read c64 KERNAL ROM file
 		KERNALROM, _ = os.ReadFile("roms/c64/kernal.901227-03.bin")
 		fmt.Printf("Length of KERNALROM is %v ($%04X) bytes\n\n", len(KERNALROM), len(KERNALROM))
 		// Read c64 BASIC ROM file
@@ -96,6 +97,52 @@ func loadROMs() {
 		fmt.Printf("Copying 6502_functional_test.bin into memory at $%04X to $%04X\n\n", 0x400, 0x400+len(FT))
 		copy(memory[0x400:], FT)
 	*/
+}
+
+// Memory map of Commodore Plus/4
+// 0x0000 - 0x1FFF = RAM
+// 0x2000 - 0x3FFF = I/O
+// 0x4000 - 0x7FFF = RAM
+// 0x8000 - 0x9FFF = I/O
+// 0xA000 - 0xBFFF = BASIC ROM
+// 0xC000 - 0xCFFF = RAM
+// 0xD000 - 0xDFFF = Character ROM
+// 0xE000 - 0xFFFF = KERNAL ROM
+// 0xFFFC - 0xFFFD = Reset Vector
+// 0xFFFE - 0xFFFF = NMI Vector
+// 0xFFFA - 0xFFFB = IRQ/BRK Vector
+
+// Write a byte to memory
+func write(addr int, value byte) {
+	memory[addr] = value
+}
+
+// Read a byte from memory
+func read(addr int) byte {
+	return memory[addr]
+}
+
+// Convert PETSCII to ASCII
+func petsciiToAscii(petscii byte) byte {
+	return petscii ^ 0b01000000
+}
+
+// Convert ASCII to PETSCII
+func asciiToPetscii(ascii byte) byte {
+	return ascii ^ 0b01000000
+}
+
+// When a character is meant to be displayed on the Plus/4 screen,
+// convert it from PETSCII to ASCII, then write it to the terminal
+func displayCharacter(petscii byte) {
+	fmt.Printf("%c", petsciiToAscii(petscii))
+}
+
+// When input is received from the terminal, convert it from ASCII to PETSCII
+// and store it in memory at the address specified by the keyboard buffer pointer
+func inputCharacter(ascii byte) {
+	write(keyboardBufferPointer, asciiToPetscii(ascii))
+
 }
 
 func opcode() byte {
@@ -1678,11 +1725,13 @@ func execute() {
 			// Set SR zero bit to 0
 			unsetZeroFlag()
 			// Set PC to interrupt vector
-			fmt.Printf("$FFFE: %04X\n", memory[0xFFFE])
-			fmt.Printf("$FFFF: %04X\n", memory[0xFFFF])
+			/*
+				fmt.Printf("$FFFE: %04X\n", memory[0xFFFE])
+				fmt.Printf("$FFFF: %04X\n", memory[0xFFFF])
 
-			fmt.Printf("Reset vector address: %04X\n", resetVectorAddress)
-			fmt.Printf("PC: %04x\n", int(memory[resetVectorAddress])+int(memory[resetVectorAddress+1])*256)
+				fmt.Printf("Reset vector address: %04X\n", resetVectorAddress)
+				fmt.Printf("PC: %04x\n", int(memory[resetVectorAddress])+int(memory[resetVectorAddress+1])*256)
+			*/
 			PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
 			incCount(1)
 		case 0x18:
