@@ -24,7 +24,7 @@ var (
 	kernalROMAddress        = 0xE000
 	basicROMAddress         = 0x8000
 	charROMAddress          = 0x8000
-	resetVectorAddress      = 0xFFFC - kernalROMAddress
+	resetVectorAddress      = 0xFFFC
 	stackBaseAddress   uint = 0x0100
 
 	// CPURegisters and RAM
@@ -56,7 +56,7 @@ func reset() {
 	// Set SR to 0b00110100
 	SR = 0b00110100
 	// Set PC to value stored at reset vector address
-	PC = int(memory[kernalROMAddress+resetVectorAddress]) + int(memory[kernalROMAddress+resetVectorAddress+1])*256
+	//PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
 	//PC = 0xFFF9
 
 }
@@ -67,6 +67,8 @@ func loadROMs() {
 	fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
 	copy(memory[basicROMAddress:], BASICROM)
 	// Copy KERNALROM into memory
+	// Read file from 8193rd byte until end into KERNALROM
+	_, _ = file.Seek(8192, 0)
 	_, _ = io.ReadFull(file, KERNALROM)
 	fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
 	copy(memory[kernalROMAddress:], KERNALROM)
