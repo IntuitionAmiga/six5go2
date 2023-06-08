@@ -56,9 +56,8 @@ func reset() {
 	// Set SR to 0b00110100
 	SR = 0b00110100
 	// Set PC to value stored at reset vector address
-	//PC = int(memory[kernalROMAddress+resetVectorAddress]) + int(memory[kernalROMAddress+resetVectorAddress+1])*256
-	//PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
 	PC = int(memory[kernalROMAddress+resetVectorAddress]) + int(memory[kernalROMAddress+resetVectorAddress+1])*256
+	//PC = 0xFFF9
 
 }
 func loadROMs() {
