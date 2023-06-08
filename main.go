@@ -24,7 +24,7 @@ var (
 	kernalROMAddress        = 0xE000
 	basicROMAddress         = 0x8000
 	charROMAddress          = 0x8000
-	resetVectorAddress      = 0x1FFC
+	resetVectorAddress      = 0xFFFC - kernalROMAddress
 	stackBaseAddress   uint = 0x0100
 
 	// CPURegisters and RAM
@@ -51,6 +51,28 @@ const (
 	INDIRECTY   = "indirecty"
 )
 
+func reset() {
+	SP = 0x01FF
+	// Set SR to 0b00110100
+	SR = 0b00110100
+	// Set PC to value stored at reset vector address
+	//PC = int(memory[kernalROMAddress+resetVectorAddress]) + int(memory[kernalROMAddress+resetVectorAddress+1])*256
+	//PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
+	PC = int(memory[kernalROMAddress+resetVectorAddress]) + int(memory[kernalROMAddress+resetVectorAddress+1])*256
+
+}
+func loadROMs() {
+	file, _ := os.Open("roms/plus4/kernal-318005-05.bin")
+	// Copy BASICROM into memory
+	_, _ = io.ReadFull(file, BASICROM)
+	fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
+	copy(memory[basicROMAddress:], BASICROM)
+	// Copy KERNALROM into memory
+	_, _ = io.ReadFull(file, KERNALROM)
+	fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
+	copy(memory[kernalROMAddress:], KERNALROM)
+}
+
 func main() {
 	fmt.Printf("Six5go2 v2.0 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley\n\n")
 	flag.Parse()
@@ -68,18 +90,6 @@ func main() {
 	reset()
 	fmt.Printf("Starting emulation at $%04X\n\n", PC)
 	execute()
-}
-
-func loadROMs() {
-	file, _ := os.Open("roms/plus4/kernal-318005-05.bin")
-	// Copy BASICROM into memory
-	_, _ = io.ReadFull(file, BASICROM)
-	fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
-	copy(memory[basicROMAddress:], BASICROM)
-	// Copy KERNALROM into memory
-	_, _ = io.ReadFull(file, KERNALROM)
-	fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
-	copy(memory[kernalROMAddress:], KERNALROM)
 }
 
 func kernalRoutines() {
@@ -143,14 +153,6 @@ func getTermDim() (width, height int, err error) {
 		return -1, -1, err
 	}
 	return int(termDim[1]), int(termDim[0]), nil
-}
-
-func reset() {
-	SP = 0x01FF
-	// Set SR to 0b00110100
-	SR = 0b00110100
-	// Set PC to value stored at reset vector address
-	PC = int(memory[kernalROMAddress+resetVectorAddress]) + int(memory[kernalROMAddress+resetVectorAddress+1])*256
 }
 
 func printMachineState() {
