@@ -22,18 +22,18 @@ var (
 
 	CHARACTERROM       []byte
 	kernalROMAddress   = 0xE000
-	basicROMAddress    = 0xC000
+	basicROMAddress    = 0x8000
 	charROMAddress     = 0x8000
-	resetVectorAddress = 0xFFFE
+	resetVectorAddress = 0x1FFC
 
 	// CPURegisters and RAM
-	A      byte        = 0x0                                                                     // Accumulator
-	X      byte        = 0x0                                                                     // X register
-	Y      byte        = 0x0                                                                     // Y register		(76543210) SR Bit 5 is always set
-	SR     byte        = 0b00110100                                                              // Status Register	(NVEBDIZC)
-	SP     uint        = 0x01FF                                                                  // Stack Pointer
-	PC                 = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256 // Program Counter
-	memory [65536]byte                                                                           // Memory
+	A      byte        = 0x0        // Accumulator
+	X      byte        = 0x0        // X register
+	Y      byte        = 0x0        // Y register		(76543210) SR Bit 5 is always set
+	SR     byte        = 0b00110100 // Status Register	(NVEBDIZC)
+	SP     uint        = 0x01FF     // Stack Pointer
+	PC     int                      // Program Counter
+	memory [65536]byte              // Memory
 )
 
 const (
@@ -102,27 +102,27 @@ func loadROMs() {
 }
 */
 
-// Load Plus/4 ROMs into memory map at correct addresses
+// Load C16 ROMs into memory map at correct addresses
+/*	The first 8KB ($0000 - $1FFF in the file) is the BASIC ROM and the second 8KB ($2000 - $3FFF in the file)
+	is the Kernal ROM.
+	You would load the BASIC part at $8000 - $9FFF in memory and the Kernal part at $E000 - $FFFF.
+*/
+
 func loadROMs() {
-
-	// Open the file.
-	file, _ := os.Open("roms/plus4/basic.318006-01.bin")
-
+	file, _ := os.Open("roms/plus4/kernal-318005-05.bin")
+	// Copy BASICROM into memory
+	_, _ = io.ReadFull(file, BASICROM)
+	fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
+	copy(memory[basicROMAddress:], BASICROM)
 	// Copy KERNALROM into memory
 	_, _ = io.ReadFull(file, KERNALROM)
 	fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
 	copy(memory[kernalROMAddress:], KERNALROM)
 
-	// Copy BASICROM into memory
-	_, _ = io.ReadFull(file, BASICROM)
-	fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
-	copy(memory[basicROMAddress:], BASICROM)
-
-	// Read Plus/4 CHARACTER ROM file
-	//CHARACTERROM, _ = os.ReadFile("roms/plus4/characters.901225-01.bin")
-	//fmt.Printf("Copying Character ROM into memory at $%04X to $%04X\n\n", charROMAddress, charROMAddress+len(CHARACTERROM))
-	//copy(memory[charROMAddress:], CHARACTERROM)
-
+	//resetVectorAddress := 0x1FFC
+	fmt.Printf("Reset vector address: $%04X\n", resetVectorAddress)
+	fmt.Printf("Reset vector (in KERNALROM): $%04X\n", int(KERNALROM[resetVectorAddress])+int(KERNALROM[resetVectorAddress+1])*256)
+	fmt.Printf("Reset vector (in memory): $%04X\n", int(memory[kernalROMAddress+resetVectorAddress])+int(memory[kernalROMAddress+resetVectorAddress+1])*256)
 }
 
 // Write a byte to memory
@@ -193,7 +193,13 @@ func reset() {
 	// Set SR to 0b00110100
 	SR = 0b00110100
 	// Set PC to value stored at reset vector address
-	PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
+	PC = int(memory[kernalROMAddress+resetVectorAddress]) + int(memory[kernalROMAddress+resetVectorAddress+1])*256
+	// Print values stored at reset vector addresses
+	fmt.Printf("Reset vector address: $%04X\n", resetVectorAddress)
+	//fmt.Printf("Reset vector low: $%02X\n", resetVectorLow)
+	//fmt.Printf("Reset vector high: $%02X\n", resetVectorHigh)
+	fmt.Printf("Reset vector: $%04X\n", PC)
+
 	// AllSuiteA starts at $4000
 	//PC = 0x4000
 	// 6502_functional_test starts at $C000
@@ -266,17 +272,19 @@ func readBit(bit byte, value byte) int {
 	// Read bit from value and return it
 	return int((value >> bit) & 1)
 }
+
 func decSP() {
 	if SP == 0x0100 {
 		SP = 0x01FF
-	} else {
+	} else if SP > 0x0100 {
 		SP--
 	}
 }
+
 func incSP() {
 	if SP == 0x01FF {
 		SP = 0x0100
-	} else {
+	} else if SP < 0x01FF {
 		SP++
 	}
 }
@@ -1716,36 +1724,22 @@ func execute() {
 				}
 				fmt.Printf("BRK\n")
 			}
-			// Push PC+2 to stack
-			//memory[SP] = byte(PC >> 8)
-			memory[SP] = byte(PC + 2)
+			// Increment PC
+			PC++
+			// Push PC+1 to stack
+			memory[SP] = byte((PC + 1) >> 8) // High byte
 			decSP()
-			// Store SR on stack
-			memory[SP] = SR
+			memory[SP] = byte((PC + 1) & 0xFF) // Low byte
 			decSP()
 			// Set SR break flag
 			setBreakFlag()
+			// Store SR on stack
+			memory[SP] = SR
+			decSP()
 			// Set SR interrupt disable bit to 1
 			setInterruptFlag()
-			// Set SR decimal mode bit to 0
-			unsetDecimalFlag()
-			// Set SR overflow bit to 0
-			unsetOverflowFlag()
-			// Set SR carry bit to 0
-			unsetCarryFlag()
-			// Set SR negative bit to 0
-			unsetNegativeFlag()
-			// Set SR zero bit to 0
-			unsetZeroFlag()
 			// Set PC to interrupt vector
-			/*
-				fmt.Printf("$FFFE: %04X\n", memory[0xFFFE])
-				fmt.Printf("$FFFF: %04X\n", memory[0xFFFF])
-
-				fmt.Printf("Reset vector address: %04X\n", resetVectorAddress)
-				fmt.Printf("PC: %04x\n", int(memory[resetVectorAddress])+int(memory[resetVectorAddress+1])*256)
-			*/
-			PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
+			PC = int(memory[0xFFFE]) + int(memory[0xFFFF])*256
 			incCount(1)
 		case 0x18:
 			/*
@@ -1997,10 +1991,15 @@ func execute() {
 			}
 
 			// Update memory address pointed to by SP with value stored in accumulator
-			memory[SP] = A
+			memory[0x0100+SP] = A
 			// Decrement the stack pointer by 1 byte
-			SP--
+			if SP > 0 {
+				SP--
+			} else {
+				SP = 0xFF
+			}
 			incCount(1)
+
 		case 0x08:
 			/*
 				PHP - Push Processor Status On Stack
