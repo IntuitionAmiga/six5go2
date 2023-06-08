@@ -21,10 +21,11 @@ var (
 	BASICROM  = make([]byte, 8192) // 8KB
 
 	CHARACTERROM       []byte
-	kernalROMAddress   = 0xE000
-	basicROMAddress    = 0x8000
-	charROMAddress     = 0x8000
-	resetVectorAddress = 0x1FFC
+	kernalROMAddress        = 0xE000
+	basicROMAddress         = 0x8000
+	charROMAddress          = 0x8000
+	resetVectorAddress      = 0x1FFC
+	stackBaseAddress   uint = 0x0100
 
 	// CPURegisters and RAM
 	A      byte        = 0x0        // Accumulator
@@ -53,11 +54,12 @@ const (
 func main() {
 	fmt.Printf("Six5go2 v2.0 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley\n\n")
 	flag.Parse()
-	if len(os.Args) < 2 {
+
+	/*if len(os.Args) < 2 {
 		fmt.Printf("Usage: %s [options]\n", os.Args[0])
 		flag.PrintDefaults()
 		os.Exit(0)
-	}
+	}*/
 
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
@@ -67,46 +69,6 @@ func main() {
 	fmt.Printf("Starting emulation at $%04X\n\n", PC)
 	execute()
 }
-
-/*
-func loadROMs() {
-	//  Read c64 KERNAL ROM file
-
-		KERNALROM, _ = os.ReadFile("roms/c64/kernal.901227-03.bin")
-		fmt.Printf("Length of KERNALROM is %v ($%04X) bytes\n\n", len(KERNALROM), len(KERNALROM))
-		// Read c64 BASIC ROM file
-		BASICROM, _ = os.ReadFile("roms/c64/basic.901226-01.bin")
-		// Read c64 CHARACTER ROM file
-		CHARACTERROM, _ = os.ReadFile("roms/c64/characters.901225-01.bin")
-
-		// Copy KERNALROM into memory
-		fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
-		copy(memory[kernalROMAddress:], KERNALROM)
-		fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
-		copy(memory[basicROMAddress:], BASICROM)
-		fmt.Printf("Copying Character ROM into memory at $%04X to $%04X\n\n", charROMAddress, charROMAddress+len(CHARACTERROM))
-		copy(memory[charROMAddress:], CHARACTERROM)
-
-
-	// Load AllSuiteA.bin into memory at $4000
-	//ALLSUITEA, _ := os.ReadFile("roms/AllSuiteA.bin")
-	//fmt.Printf("Copying AllSuiteA.bin into memory at $%04X to $%04X\n\n", 0x4000, 0x4000+len(ALLSUITEA))
-	//copy(memory[0x4000:], ALLSUITEA)
-
-
-		// Load 6502_functional_test.bin into memory at $C000
-		FT, _ := os.ReadFile("roms/6502_functional_test.bin")
-		fmt.Printf("Copying 6502_functional_test.bin into memory at $%04X to $%04X\n\n", 0x400, 0x400+len(FT))
-		copy(memory[0x400:], FT)
-
-}
-*/
-
-// Load C16 ROMs into memory map at correct addresses
-/*	The first 8KB ($0000 - $1FFF in the file) is the BASIC ROM and the second 8KB ($2000 - $3FFF in the file)
-	is the Kernal ROM.
-	You would load the BASIC part at $8000 - $9FFF in memory and the Kernal part at $E000 - $FFFF.
-*/
 
 func loadROMs() {
 	file, _ := os.Open("roms/plus4/kernal-318005-05.bin")
@@ -118,44 +80,32 @@ func loadROMs() {
 	_, _ = io.ReadFull(file, KERNALROM)
 	fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
 	copy(memory[kernalROMAddress:], KERNALROM)
-
-	//resetVectorAddress := 0x1FFC
-	fmt.Printf("Reset vector address: $%04X\n", resetVectorAddress)
-	fmt.Printf("Reset vector (in KERNALROM): $%04X\n", int(KERNALROM[resetVectorAddress])+int(KERNALROM[resetVectorAddress+1])*256)
-	fmt.Printf("Reset vector (in memory): $%04X\n", int(memory[kernalROMAddress+resetVectorAddress])+int(memory[kernalROMAddress+resetVectorAddress+1])*256)
 }
 
-// Write a byte to memory
-func write(addr int, value byte) {
-	memory[addr] = value
-}
+func kernalRoutines() {
+	//CHROUT $FFD2
+	if PC == 0xFFD2 {
+		fmt.Printf("PC: %X\n", PC)
+		// This is a CHROUT call
+		ch := A // The ASCII value of the character to output is in the accumulator
 
-// Read a byte from memory
-func read(addr int) byte {
-	return memory[addr]
-}
+		// Handle control characters
+		if ch == 13 { // Carriage return
+			fmt.Print("\r")
+		} else if ch == 10 { // Line feed
+			fmt.Print("\n")
+		} else if ch == 8 { // Backspace
+			fmt.Print("\b")
+		} else if ch == 9 { // Tab
+			fmt.Print("\t")
+		} else { // Not a control character
+			fmt.Printf("%c", ch)
+		}
 
-// Convert PETSCII to ASCII
-func petsciiToAscii(petscii byte) byte {
-	return petscii ^ 0b01000000
-}
-
-// Convert ASCII to PETSCII
-func asciiToPetscii(ascii byte) byte {
-	return ascii ^ 0b01000000
-}
-
-// When a character is meant to be displayed on the Plus/4 screen,
-// convert it from PETSCII to ASCII, then write it to the terminal
-func displayCharacter(petscii byte) {
-	fmt.Printf("%c", petsciiToAscii(petscii))
-}
-
-// When input is received from the terminal, convert it from ASCII to PETSCII
-// and store it in memory at the address specified by the keyboard buffer pointer
-func inputCharacter(ascii byte) {
-	//write(keyboardBufferPointer, asciiToPetscii(ascii))
-
+		// Advance PC past the JSR instruction
+		PC += 3
+		return
+	}
 }
 
 func opcode() byte {
@@ -172,10 +122,17 @@ func incCount(amount int) {
 		printMachineState()
 	}
 
-	if PC == 0xFFFF {
+	/*if PC == 0xFFFF {
 		PC = 0x0000
 	} else {
 		PC += amount
+	}
+	instructionCounter++
+	*/
+
+	PC += amount
+	if PC > 0xFFFF {
+		PC &= 0xFFFF
 	}
 	instructionCounter++
 }
@@ -194,17 +151,8 @@ func reset() {
 	SR = 0b00110100
 	// Set PC to value stored at reset vector address
 	PC = int(memory[kernalROMAddress+resetVectorAddress]) + int(memory[kernalROMAddress+resetVectorAddress+1])*256
-	// Print values stored at reset vector addresses
-	fmt.Printf("Reset vector address: $%04X\n", resetVectorAddress)
-	//fmt.Printf("Reset vector low: $%02X\n", resetVectorLow)
-	//fmt.Printf("Reset vector high: $%02X\n", resetVectorHigh)
-	fmt.Printf("Reset vector: $%04X\n", PC)
-
-	// AllSuiteA starts at $4000
-	//PC = 0x4000
-	// 6502_functional_test starts at $C000
-	//PC = 0x400
 }
+
 func printMachineState() {
 	// Print PC, content of memory at PC, register values and ASCII value of memory all on one line
 	fmt.Printf(";; PC=%04X, A=$%02X X=$%02X Y=$%02X SP=$%04X mem(SP)=$%04X mem(SP+1)=$%04X SR=%08b (NVEBDIZC)\n", PC, A, X, Y, SP, memory[SP], memory[SP+1], SR)
@@ -272,7 +220,6 @@ func readBit(bit byte, value byte) int {
 	// Read bit from value and return it
 	return int((value >> bit) & 1)
 }
-
 func decSP() {
 	if SP == 0x0100 {
 		SP = 0x01FF
@@ -280,7 +227,6 @@ func decSP() {
 		SP--
 	}
 }
-
 func incSP() {
 	if SP == 0x01FF {
 		SP = 0x0100
@@ -513,7 +459,6 @@ func STA(addressingMode string) {
 		memory[address+Y] = A
 		incCount(2)
 	}
-
 }
 func STX(addressingMode string) {
 	switch addressingMode {
@@ -648,7 +593,6 @@ func JMP(addressingMode string) {
 		PC = int(indirectAddress)
 	}
 	incCount(0)
-	//printMachineState()
 }
 func AND(addressingMode string) {
 	var value, result byte
@@ -1458,7 +1402,6 @@ func ROL(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
-
 }
 func LSR(addressingMode string) {
 	var value, result byte
@@ -1991,7 +1934,7 @@ func execute() {
 			}
 
 			// Update memory address pointed to by SP with value stored in accumulator
-			memory[0x0100+SP] = A
+			memory[stackBaseAddress+SP] = A
 			// Decrement the stack pointer by 1 byte
 			if SP > 0 {
 				SP--
@@ -1999,7 +1942,6 @@ func execute() {
 				SP = 0xFF
 			}
 			incCount(1)
-
 		case 0x08:
 			/*
 				PHP - Push Processor Status On Stack
@@ -2020,8 +1962,7 @@ func execute() {
 			// Decrement the stack pointer by 1 byte
 			SP--
 			// Push SR to stack
-			memory[SP+1] = SR
-
+			memory[stackBaseAddress+SP] = SR
 			incCount(1)
 		case 0x68:
 			/*
@@ -2046,9 +1987,9 @@ func execute() {
 			}
 
 			// Update accumulator with value stored in memory address pointed to by SP
-			A = memory[SP+1]
-			// Increment the stack pointer by 1 byte
-			SP++
+			A = memory[stackBaseAddress+SP]
+			// Decrement the stack pointer by 1 byte
+			decSP()
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if getABit(7) == 1 {
 				setNegativeFlag()
@@ -2082,9 +2023,9 @@ func execute() {
 			}
 
 			// Update SR with the value stored at the address pointed to by SP
-			SR = memory[SP+1]
-			// Increment the stack pointer by 1 byte
-			SP++
+			SR = memory[stackBaseAddress+SP]
+			// Decrement the stack pointer by 1 byte
+			decSP()
 			incCount(1)
 		case 0x40:
 			/*
@@ -2110,21 +2051,25 @@ func execute() {
 				fmt.Printf("RTI\n")
 			}
 
-			//Update SR with the value stored in memory at the address pointed to by SP
-			SR = memory[SP+1]
+			// Update SR with the value stored in memory at the address pointed to by SP
+			SR = memory[stackBaseAddress+SP]
+			// Decrement the stack pointer by 1 byte
+			decSP()
 			// Increment the stack pointer by 1 byte
-			SP++
+			incSP()
+			// Get low byte of PC
+			low := uint16(memory[stackBaseAddress+SP])
+			// Decrement the stack pointer by 1 byte
+			decSP()
 			// Increment the stack pointer by 1 byte
-			SP++
-			//Get low byte of PC
-			low := uint16(memory[SP])
-			// Increment the stack pointer by 1 byte
-			SP++
-			//Get high byte of PC
-			high := uint16(memory[SP])
-			//Update PC with the value stored in memory at the address pointed to by SP
+			incSP()
+			// Get high byte of PC
+			high := uint16(memory[stackBaseAddress+SP])
+			// Decrement the stack pointer by 1 byte
+			decSP()
+			// Update PC with the value stored in memory at the address pointed to by SP
 			PC = int((high << 8) | low)
-			incCount(0)
+			incCount(1)
 		case 0x60:
 			/*
 				RTS - Return From Subroutine
@@ -2144,15 +2089,19 @@ func execute() {
 				fmt.Printf("RTS\n")
 			}
 			// Increment the stack pointer by 1 byte
-			SP++
-			//Get low byte of PC
-			low := uint16(memory[SP])
+			incSP()
+			// Get low byte of PC
+			low := uint16(memory[0x0100+SP])
+			// Decrement the stack pointer by 1 byte
+			decSP()
 			// Increment the stack pointer by 1 byte
-			SP++
-			//Get high byte of PC
-			high := uint16(memory[SP])
-			//Update PC with the value stored in memory at the address pointed to by SP
-			PC = int((high << 8) | low)
+			incSP()
+			// Get high byte of PC
+			high := uint16(memory[0x0100+SP])
+			// Decrement the stack pointer by 1 byte
+			decSP()
+			// Update PC with the value stored in memory at the address pointed to by SP
+			PC = int((high<<8)|low) + 1
 			incCount(3)
 		case 0x38:
 			/*
@@ -4501,12 +4450,6 @@ func execute() {
 				}
 				fmt.Printf("JMP $%04X\n", int(operand2())<<8|int(operand1()))
 			}
-			// For AllSuiteA.bin 6502 opcode test suite
-
-			if memory[0x210] == 0xFF {
-				fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", memory[0x210])
-				os.Exit(0)
-			}
 
 			JMP("absolute")
 		case 0x20:
@@ -5298,6 +5241,6 @@ func execute() {
 			}
 			JMP("indirect")
 		}
+		kernalRoutines()
 	}
-	fmt.Printf("memory[0x210] = %04X\n", memory[0x210])
 }
