@@ -5,36 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"syscall"
-	"unsafe"
-)
-
-var (
-	printHex     = flag.Bool("hex", false, "Hex dump mode")
-	disassemble  = flag.Bool("dis", false, "Disassembler mode")
-	stateMonitor = flag.Bool("state", false, "State monitor mode")
-
-	instructionCounter = 0
-
-	// Fixed Addresses
-	KERNALROM = make([]byte, 8192) // 8KB
-	BASICROM  = make([]byte, 8192) // 8KB
-
-	CHARACTERROM       []byte
-	kernalROMAddress        = 0xE000
-	basicROMAddress         = 0x8000
-	charROMAddress          = 0x8000
-	resetVectorAddress      = 0xFFFC
-	stackBaseAddress   uint = 0x0100
-
-	// CPURegisters and RAM
-	A      byte        = 0x0        // Accumulator
-	X      byte        = 0x0        // X register
-	Y      byte        = 0x0        // Y register		(76543210) SR Bit 5 is always set
-	SR     byte        = 0b00110100 // Status Register	(NVEBDIZC)
-	SP     uint        = 0x01FF     // Stack Pointer
-	PC     int                      // Program Counter
-	memory [65536]byte              // Memory
 )
 
 const (
@@ -51,24 +21,52 @@ const (
 	INDIRECTY   = "indirecty"
 )
 
+var (
+	printHex     = flag.Bool("hex", false, "Hex dump mode")
+	disassemble  = flag.Bool("dis", false, "Disassembler mode")
+	stateMonitor = flag.Bool("state", false, "State monitor mode")
+
+	instructionCounter = 0
+
+	// Fixed Addresses
+	BASICROM      = make([]byte, 16384)
+	KERNALROM     = make([]byte, 16384)
+	THREEPLUS1ROM = make([]byte, 16384)
+
+	basicROMAddress      = 0x8000
+	kernalROMAddress     = 0xC000
+	threePlus1ROMAddress = 0xD000
+
+	resetVectorAddress      = 0xFFFC
+	stackBaseAddress   uint = 0x0100
+
+	// CPURegisters and RAM
+	A      byte        = 0x0        // Accumulator
+	X      byte        = 0x0        // X register
+	Y      byte        = 0x0        // Y register		(76543210) SR Bit 5 is always set
+	SR     byte        = 0b00110100 // Status Register	(NVEBDIZC)
+	SP     uint        = 0x01FF     // Stack Pointer
+	PC     int                      // Program Counter
+	memory [65536]byte              // Memory
+)
+
 func reset() {
-	SP = 0x01FF
+	SP = stackBaseAddress
 	// Set SR to 0b00110100
 	SR = 0b00110100
 	// Set PC to value stored at reset vector address
-	//PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
-	//PC = 0xFFF9
-
+	PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
 }
+
 func loadROMs() {
-	file, _ := os.Open("roms/plus4/kernal-318005-05.bin")
-	// Copy BASICROM into memory
+	// Copy the BASIC ROM into memory
+	file, _ := os.Open("roms/plus4/basic-318006-01.bin")
 	_, _ = io.ReadFull(file, BASICROM)
 	fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
 	copy(memory[basicROMAddress:], BASICROM)
-	// Copy KERNALROM into memory
-	// Read file from 8193rd byte until end into KERNALROM
-	_, _ = file.Seek(8192, 0)
+
+	// Copy the Kernal ROM into memory
+	file, _ = os.Open("roms/plus4/kernal-318005-05.bin")
 	_, _ = io.ReadFull(file, KERNALROM)
 	fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
 	copy(memory[kernalROMAddress:], KERNALROM)
@@ -129,10 +127,6 @@ func operand2() byte {
 	return memory[PC+2]
 }
 func incCount(amount int) {
-	if *stateMonitor {
-		printMachineState()
-	}
-
 	/*if PC == 0xFFFF {
 		PC = 0x0000
 	} else {
@@ -145,15 +139,11 @@ func incCount(amount int) {
 	if PC > 0xFFFF {
 		PC &= 0xFFFF
 	}
-	instructionCounter++
-}
 
-func getTermDim() (width, height int, err error) {
-	var termDim [4]uint16
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(0), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&termDim)), 0, 0, 0); err != 0 {
-		return -1, -1, err
+	//If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
+	if amount != 0 {
+		instructionCounter++
 	}
-	return int(termDim[1]), int(termDim[0]), nil
 }
 
 func printMachineState() {
@@ -1685,7 +1675,8 @@ func execute() {
 			// Set SR interrupt disable bit to 1
 			setInterruptFlag()
 			// Set PC to interrupt vector
-			PC = int(memory[0xFFFE]) + int(memory[0xFFFF])*256
+			//PC = int(memory[0xFFFE]) + int(memory[0xFFFF])*256
+			reset()
 			incCount(1)
 		case 0x18:
 			/*
@@ -4480,13 +4471,14 @@ func execute() {
 				fmt.Printf("JSR $%04X\n", int(operand2())<<8|int(operand1()))
 			}
 
-			// Push low byte of PC onto stack
-			memory[SP] = byte(PC >> 8)
+			// Push high byte of PC onto stack
+			memory[SP] = byte((PC >> 8) & 0xFF)
 			decSP()
 
-			// Push high byte of PC onto stack
+			// Push low byte of PC onto stack
 			memory[SP] = byte(PC & 0xFF)
 			decSP()
+
 			// Set the program counter to the absolute address from the operands
 			PC = int(operand2())<<8 | int(operand1())
 
@@ -5245,5 +5237,8 @@ func execute() {
 			JMP("indirect")
 		}
 		kernalRoutines()
+		if *stateMonitor {
+			printMachineState()
+		}
 	}
 }
