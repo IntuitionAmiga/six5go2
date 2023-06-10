@@ -87,7 +87,11 @@ func main() {
 	// Start emulation
 	loadROMs()
 	reset()
+
 	fmt.Printf("Starting emulation at $%04X\n\n", PC)
+	printMachineState()
+	fmt.Printf("\n")
+
 	execute()
 }
 
@@ -141,7 +145,7 @@ func incCount(amount int) {
 	if PC > 0xFFFF {
 		PC &= 0xFFFF
 	}
-	fmt.Printf("PC inside incCount(): %X\n", PC)
+	//fmt.Printf("PC inside incCount(): %X\n", PC)
 
 	//If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
 	if amount != 0 {
@@ -308,6 +312,12 @@ func LDA(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
+
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func LDX(addressingMode string) {
 	switch addressingMode {
@@ -403,7 +413,11 @@ func LDY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func STA(addressingMode string) {
 	switch addressingMode {
@@ -455,6 +469,7 @@ func STA(addressingMode string) {
 		memory[address+Y] = A
 		incCount(2)
 	}
+
 }
 func STX(addressingMode string) {
 	switch addressingMode {
@@ -477,7 +492,6 @@ func STX(addressingMode string) {
 		memory[address] = X
 		incCount(3)
 	}
-
 }
 func STY(addressingMode string) {
 	switch addressingMode {
@@ -500,7 +514,11 @@ func STY(addressingMode string) {
 		memory[address] = Y
 		incCount(3)
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func CMP(addressingMode string) {
 	var value, result byte
@@ -571,7 +589,11 @@ func CMP(addressingMode string) {
 	} else {
 		incCount(3)
 	}
-	//printMachineState()
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func JMP(addressingMode string) {
 	switch addressingMode {
@@ -689,7 +711,11 @@ func AND(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func EOR(addressingMode string) {
 	var value, result byte
@@ -790,7 +816,11 @@ func EOR(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func ORA(addressingMode string) {
 	var value, result byte
@@ -894,7 +924,11 @@ func ORA(addressingMode string) {
 	if readBit(7, result) == 1 {
 		setNegativeFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func BIT(addressingMode string) {
 	var value, result byte
@@ -932,7 +966,11 @@ func BIT(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func INC(addressingMode string) {
 	var value, result byte
@@ -990,7 +1028,11 @@ func INC(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func DEC(addressingMode string) {
 	var value, result byte
@@ -1048,7 +1090,11 @@ func DEC(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func ADC(addressingMode string) {
 	var value byte
@@ -1155,7 +1201,11 @@ func ADC(addressingMode string) {
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func SBC(addressingMode string) {
 	var value byte
@@ -1241,7 +1291,11 @@ func SBC(addressingMode string) {
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func ROR(addressingMode string) {
 	var address, value, result byte
@@ -1315,7 +1369,11 @@ func ROR(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func ROL(addressingMode string) {
 	var address, value, result byte
@@ -1398,6 +1456,11 @@ func ROL(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func LSR(addressingMode string) {
 	var value, result byte
@@ -1465,7 +1528,11 @@ func LSR(addressingMode string) {
 	} else {
 		unsetCarryFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func ASL(addressingMode string) {
 	var value, result byte
@@ -1537,7 +1604,11 @@ func ASL(addressingMode string) {
 			unsetCarryFlag()
 		}
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func CPX(addressingMode string) {
 	var value, result byte
@@ -1585,7 +1656,11 @@ func CPX(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 func CPY(addressingMode string) {
 	var value, result byte
@@ -1629,7 +1704,11 @@ func CPY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-
+	if *stateMonitor { // Move cursor up two lines from current position
+		//fmt.Printf("\033[2A")
+		printMachineState()
+		fmt.Printf("\n")
+	}
 }
 
 func execute() {
@@ -1720,6 +1799,12 @@ func execute() {
 
 			unsetDecimalFlag()
 			incCount(1)
+
+			if *stateMonitor { // Move cursor up two lines from current position
+				//fmt.Printf("\033[2A")
+				printMachineState()
+				fmt.Printf("\n")
+			}
 		case 0x58:
 			/*
 				CLI - Clear Interrupt Disable
@@ -3914,10 +3999,7 @@ func execute() {
 			// If N flag is not set, branch to address
 			if getSRBit(7) == 0 {
 				// Branch
-				fmt.Printf("PC before updating PC with targetAddress: %X\n", PC)
 				PC = targetAddress
-				fmt.Printf("signedOffset: %X\n", signedOffset)
-				fmt.Printf("PC inside BPL after updating PC with targetAddress: %X\n", PC)
 				//incCount(0)
 				instructionCounter++
 			} else {
@@ -4136,22 +4218,19 @@ func execute() {
 			}
 
 			// Get offset from operand
-			offset := operand1()
-			// If Z flag is not set, branch to address
-			if getSRBit(1) == 0 {
-				// Branch
-				// Add offset to lower 8bits of PC
-				PC = PC + 3 + int(offset)&0xFF
-				// If the offset is negative, decrement the PC by 1
-				// If bit 7 is unset then it's negative
-				if readBit(7, offset) == 0 {
-					PC--
-				}
-				incCount(0)
-			} else {
-				// Don't branch
-				incCount(2)
-			}
+			offset := int8(operand1())
+
+			// Calculate branch target address
+			branchTarget := PC + 2 + int(offset)
+
+			// Increment PC by instruction size plus offset
+			PC += 2 + int(offset)
+
+			// Update PC to branch target address
+			PC = branchTarget
+
+			incCount(0)
+
 		case 0xF0:
 			/*
 				BEQ - Branch on Result Zero
@@ -5242,8 +5321,12 @@ func execute() {
 			JMP("indirect")
 		}
 		kernalRoutines()
-		if *stateMonitor {
+
+		if *stateMonitor { // Move cursor up two lines from current position
+			//fmt.Printf("\033[2A")
 			printMachineState()
+			//wait for keypress
+			//fmt.Scanln()
 		}
 	}
 }
