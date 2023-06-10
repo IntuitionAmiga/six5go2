@@ -38,7 +38,7 @@ var (
 	threePlus1ROMAddress = 0xD000
 
 	resetVectorAddress      = 0xFFFC
-	stackBaseAddress   uint = 0x0100
+	SPBaseAddress      uint = 0x01FF
 
 	// CPURegisters and RAM
 	A      byte        = 0x0        // Accumulator
@@ -51,7 +51,7 @@ var (
 )
 
 func reset() {
-	SP = stackBaseAddress
+	SP = SPBaseAddress
 	// Set SR to 0b00110100
 	SR = 0b00110100
 	// Set PC to value stored at reset vector address
@@ -92,7 +92,9 @@ func main() {
 }
 
 func kernalRoutines() {
-	//CHROUT $FFD2
+	//CHROUT routine is at $FFD2
+	//Print the character in the accumulator to the screen
+	//Advance PC past the JSR instruction (3 bytes) because the JSR instruction is 3 bytes long
 	if PC == 0xFFD2 {
 		fmt.Printf("PC: %X\n", PC)
 		// This is a CHROUT call
@@ -112,7 +114,7 @@ func kernalRoutines() {
 		}
 
 		// Advance PC past the JSR instruction
-		PC += 3
+		incCount(3)
 		return
 	}
 }
@@ -139,6 +141,7 @@ func incCount(amount int) {
 	if PC > 0xFFFF {
 		PC &= 0xFFFF
 	}
+	fmt.Printf("PC inside incCount(): %X\n", PC)
 
 	//If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
 	if amount != 0 {
@@ -1928,7 +1931,7 @@ func execute() {
 			}
 
 			// Update memory address pointed to by SP with value stored in accumulator
-			memory[stackBaseAddress+SP] = A
+			memory[SPBaseAddress+SP] = A
 			// Decrement the stack pointer by 1 byte
 			if SP > 0 {
 				SP--
@@ -1956,7 +1959,7 @@ func execute() {
 			// Decrement the stack pointer by 1 byte
 			SP--
 			// Push SR to stack
-			memory[stackBaseAddress+SP] = SR
+			memory[SPBaseAddress+SP] = SR
 			incCount(1)
 		case 0x68:
 			/*
@@ -1981,7 +1984,7 @@ func execute() {
 			}
 
 			// Update accumulator with value stored in memory address pointed to by SP
-			A = memory[stackBaseAddress+SP]
+			A = memory[SPBaseAddress+SP]
 			// Decrement the stack pointer by 1 byte
 			decSP()
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
@@ -2017,7 +2020,7 @@ func execute() {
 			}
 
 			// Update SR with the value stored at the address pointed to by SP
-			SR = memory[stackBaseAddress+SP]
+			SR = memory[SPBaseAddress+SP]
 			// Decrement the stack pointer by 1 byte
 			decSP()
 			incCount(1)
@@ -2046,19 +2049,19 @@ func execute() {
 			}
 
 			// Update SR with the value stored in memory at the address pointed to by SP
-			SR = memory[stackBaseAddress+SP]
+			SR = memory[SPBaseAddress+SP]
 			// Decrement the stack pointer by 1 byte
 			decSP()
 			// Increment the stack pointer by 1 byte
 			incSP()
 			// Get low byte of PC
-			low := uint16(memory[stackBaseAddress+SP])
+			low := uint16(memory[SPBaseAddress+SP])
 			// Decrement the stack pointer by 1 byte
 			decSP()
 			// Increment the stack pointer by 1 byte
 			incSP()
 			// Get high byte of PC
-			high := uint16(memory[stackBaseAddress+SP])
+			high := uint16(memory[SPBaseAddress+SP])
 			// Decrement the stack pointer by 1 byte
 			decSP()
 			// Update PC with the value stored in memory at the address pointed to by SP
@@ -3904,23 +3907,25 @@ func execute() {
 				fmt.Printf("BPL $%02X\n", (PC+2+int(operand1()))&0xFF)
 			}
 
-			// Get offset from operand
 			offset := operand1()
+			signedOffset := int8(offset)
+			// Calculate the branch target address
+			targetAddress := PC + 2 + int(signedOffset)
 			// If N flag is not set, branch to address
 			if getSRBit(7) == 0 {
 				// Branch
-				// Add offset to lower 8bits of PC
-				PC = PC + 3 + int(offset)&0xFF
-				// If the offset is negative, decrement the PC by 1
-				// If bit 7 is unset then it's negative
-				if readBit(7, offset) == 0 {
-					PC--
-				}
-				incCount(0)
+				fmt.Printf("PC before updating PC with targetAddress: %X\n", PC)
+				PC = targetAddress
+				fmt.Printf("signedOffset: %X\n", signedOffset)
+				fmt.Printf("PC inside BPL after updating PC with targetAddress: %X\n", PC)
+				//incCount(0)
+				instructionCounter++
 			} else {
 				// Don't branch
+				// Increment the instruction counter by 2
 				incCount(2)
 			}
+
 		case 0x30:
 			/*
 				BMI - Branch on Result Minus
