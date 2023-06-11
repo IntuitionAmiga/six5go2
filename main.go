@@ -4218,18 +4218,32 @@ func execute() {
 			}
 
 			// Get offset from operand
-			offset := int8(operand1())
+			offset := operand1()
 
-			// Calculate branch target address
-			branchTarget := PC + 2 + int(offset)
+			// If Z flag is not set, branch to address
+			if getSRBit(1) == 0 {
+				// Calculate the branch target address
+				targetAddr := PC + 2 + int(int8(offset))
 
-			// Increment PC by instruction size plus offset
-			PC += 2 + int(offset)
+				// Update the program counter
+				PC = targetAddr
 
-			// Update PC to branch target address
-			PC = branchTarget
+				// Check if the branch target address overflows or underflows
+				if targetAddr < 0x0000 || targetAddr > 0xFFFF {
+					// Correct the overflow or underflow by wrapping the address
+					PC &= 0xFFFF
+				}
 
-			incCount(0)
+				// Check if the branch crosses a page boundary
+				if (PC & 0xFF00) != (targetAddr & 0xFF00) {
+					incCount(2) // Add extra cycle if branch crosses page boundary
+				} else {
+					incCount(1) // Account for the cycle used by the branch instruction
+				}
+			} else {
+				// Don't branch
+				incCount(2)
+			}
 
 		case 0xF0:
 			/*
