@@ -22,9 +22,9 @@ const (
 )
 
 var (
-	printHex     = flag.Bool("hex", false, "Hex dump mode")
-	disassemble  = flag.Bool("dis", false, "Disassembler mode")
-	stateMonitor = flag.Bool("state", false, "State monitor mode")
+	disassemble             = flag.Bool("dis", false, "Disassembler mode")
+	stateMonitor            = flag.Bool("state", false, "State monitor mode")
+	disassembledInstruction string
 
 	instructionCounter = 0
 
@@ -32,44 +32,61 @@ var (
 	BASICROM      = make([]byte, 16384)
 	KERNALROM     = make([]byte, 16384)
 	THREEPLUS1ROM = make([]byte, 16384)
+	AllSuiteAROM  = make([]byte, 16384)
 
 	basicROMAddress      = 0x8000
 	kernalROMAddress     = 0xC000
 	threePlus1ROMAddress = 0xD000
+	AllSuiteAROMAddress  = 0x4000
 
-	resetVectorAddress      = 0xFFFC
-	SPBaseAddress      uint = 0x01FF
+	resetVectorAddress          = 0xFFFC
+	interruptVectorAddress      = 0xFFFE
+	SPBaseAddress          uint = 0x00FF
 
 	// CPURegisters and RAM
-	A      byte        = 0x0        // Accumulator
-	X      byte        = 0x0        // X register
-	Y      byte        = 0x0        // Y register		(76543210) SR Bit 5 is always set
-	SR     byte        = 0b00110100 // Status Register	(NVEBDIZC)
-	SP     uint        = 0x01FF     // Stack Pointer
-	PC     int                      // Program Counter
-	memory [65536]byte              // Memory
+	A      byte        = 0x0    // Accumulator
+	X      byte        = 0x0    // X register
+	Y      byte        = 0x0    // Y register		(76543210) SR Bit 5 is always set
+	SR     byte                 // Status Register	(NVEBDIZC)
+	SP     uint        = 0x01FF // Stack Pointer
+	PC     int                  // Program Counter
+	memory [65536]byte          // Memory
 )
 
 func reset() {
 	SP = SPBaseAddress
 	// Set SR to 0b00110100
-	SR = 0b00110100
+	SR = 0b00110110
 	// Set PC to value stored at reset vector address
 	PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
 }
 
 func loadROMs() {
-	// Copy the BASIC ROM into memory
-	file, _ := os.Open("roms/plus4/basic-318006-01.bin")
-	_, _ = io.ReadFull(file, BASICROM)
-	fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
-	copy(memory[basicROMAddress:], BASICROM)
+	/*
+		// Copy the BASIC ROM into memory
+		file, _ := os.Open("roms/plus4/basic-318006-01.bin")
+		_, _ = io.ReadFull(file, BASICROM)
+		fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
+		copy(memory[basicROMAddress:], BASICROM)
 
-	// Copy the Kernal ROM into memory
-	file, _ = os.Open("roms/plus4/kernal-318005-05.bin")
-	_, _ = io.ReadFull(file, KERNALROM)
-	fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
-	copy(memory[kernalROMAddress:], KERNALROM)
+		// Copy the Kernal ROM into memory
+		file, _ = os.Open("roms/plus4/kernal-318005-05.bin")
+		_, _ = io.ReadFull(file, KERNALROM)
+		fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
+		copy(memory[kernalROMAddress:], KERNALROM)
+
+	*/
+	// Copy AllSuiteA ROM into memory
+	file, _ := os.Open("roms/AllSuiteA.bin")
+	_, _ = io.ReadFull(file, AllSuiteAROM)
+	fmt.Printf("Copying AllSuiteA ROM into memory at $%04X to $%04X\n\n", AllSuiteAROMAddress, AllSuiteAROMAddress+len(AllSuiteAROM))
+	copy(memory[AllSuiteAROMAddress:], AllSuiteAROM)
+	// Set the interrupt vector addresses manually
+	memory[0xFFFE] = AllSuiteAROM[len(AllSuiteAROM)-2]
+	memory[0xFFFF] = AllSuiteAROM[len(AllSuiteAROM)-1]
+	memory[0xFFFE] = 0x00 // Low byte of 0x4000
+	memory[0xFFFF] = 0x40 // High byte of 0x4000
+
 }
 
 func main() {
@@ -87,39 +104,52 @@ func main() {
 	// Start emulation
 	loadROMs()
 	reset()
-
-	fmt.Printf("Starting emulation at $%04X\n\n", PC)
-	printMachineState()
-	fmt.Printf("\n")
-
 	execute()
 }
 
+func disassembleOpcode() {
+	if *disassemble {
+		fmt.Printf("%s\n", disassembledInstruction)
+	}
+}
+func petsciiToAscii(petscii uint8) uint8 {
+	// Convert PETSCII to ASCII
+	if petscii >= 65 && petscii <= 90 { // PETSCII uppercase
+		return petscii + 32 // To ASCII lowercase
+	} else if petscii >= 193 && petscii <= 218 { // PETSCII lowercase
+		return petscii - 96 // To ASCII uppercase
+	} else if petscii >= 219 && petscii <= 250 { // PETSCII graphics
+		return petscii - 128 // To ASCII graphics
+	}
+	return petscii
+}
+
 func kernalRoutines() {
-	//CHROUT routine is at $FFD2
-	//Print the character in the accumulator to the screen
-	//Advance PC past the JSR instruction (3 bytes) because the JSR instruction is 3 bytes long
+	// CHROUT routine is at $FFD2
 	if PC == 0xFFD2 {
-		fmt.Printf("PC: %X\n", PC)
 		// This is a CHROUT call
-		ch := A // The ASCII value of the character to output is in the accumulator
+		ch := petsciiToAscii(A) // Convert PETSCII to ASCII
 
 		// Handle control characters
-		if ch == 13 { // Carriage return
+		switch ch {
+		case 13: // Carriage return
 			fmt.Print("\r")
-		} else if ch == 10 { // Line feed
+		case 10: // Line feed
 			fmt.Print("\n")
-		} else if ch == 8 { // Backspace
+		case 8: // Backspace
 			fmt.Print("\b")
-		} else if ch == 9 { // Tab
+		case 9: // Tab
 			fmt.Print("\t")
-		} else { // Not a control character
-			fmt.Printf("%c", ch)
+		default: // Not a control character
+			if ch >= 32 && ch <= 126 { // Check if the ASCII value is a printable character
+				fmt.Printf("%c", ch)
+			} else {
+				fmt.Printf("Invalid ASCII value: %d\n", ch)
+			}
 		}
 
 		// Advance PC past the JSR instruction
 		incCount(3)
-		return
 	}
 }
 
@@ -133,29 +163,64 @@ func operand2() byte {
 	return memory[PC+2]
 }
 func incCount(amount int) {
-	/*if PC == 0xFFFF {
-		PC = 0x0000
-	} else {
-		PC += amount
+	if *stateMonitor {
+		if disassembledInstruction != "BRK" {
+			printMachineState()
+		}
 	}
-	instructionCounter++
-	*/
-
 	PC += amount
 	if PC > 0xFFFF {
-		PC &= 0xFFFF
+		PC = 0x0000 + (PC & 0xFFFF)
 	}
-	//fmt.Printf("PC inside incCount(): %X\n", PC)
 
-	//If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
+	// If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
 	if amount != 0 {
 		instructionCounter++
 	}
 }
 
 func printMachineState() {
-	// Print PC, content of memory at PC, register values and ASCII value of memory all on one line
-	fmt.Printf(";; PC=%04X, A=$%02X X=$%02X Y=$%02X SP=$%04X mem(SP)=$%04X mem(SP+1)=$%04X SR=%08b (NVEBDIZC)\n", PC, A, X, Y, SP, memory[SP], memory[SP+1], SR)
+	// Imitate Virtual 6502 and print PC, opcode, operand1 if two byte instruction, operand2 if three byte instruction, disassembled instruction and any operands with correct addressing mode, "|",accumulator hex value, X register hex value, Y register hex value, SP as hex value,"|", SP as binary digits
+	fmt.Printf("%04X ", PC)
+
+	// If opcode() is a 1 byte instruction, print opcode
+	if opcode() == 0x00 || opcode() == 0x08 || opcode() == 0x10 || opcode() == 0x18 || opcode() == 0x20 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x40 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A || opcode() == 0x60 {
+		fmt.Printf("%02X ", opcode())
+	}
+
+	// If opcode() is a 2 byte instruction, print opcode and operand1
+	// 		fmt.Printf("%02X %02X ", opcode(), operand1())
+	// The 0x hex opcodes for the 2 byte instructions on the 6502 are
+	if opcode() == 0x69 || opcode() == 0x29 || opcode() == 0xC9 || opcode() == 0xE0 || opcode() == 0xC0 || opcode() == 0x49 || opcode() == 0xA9 || opcode() == 0xA2 || opcode() == 0xA0 || opcode() == 0x09 || opcode() == 0xE9 || opcode() == 0x65 || opcode() == 0x25 || opcode() == 0x06 || opcode() == 0x24 || opcode() == 0xC5 || opcode() == 0xE4 || opcode() == 0xC4 || opcode() == 0xC6 || opcode() == 0x45 || opcode() == 0xE6 || opcode() == 0xA5 || opcode() == 0xA6 || opcode() == 0xA4 || opcode() == 0x46 || opcode() == 0x05 || opcode() == 0x26 || opcode() == 0x66 || opcode() == 0xE5 || opcode() == 0x85 || opcode() == 0x86 || opcode() == 0x84 || opcode() == 0x90 || opcode() == 0xB0 || opcode() == 0xF0 || opcode() == 0x30 || opcode() == 0xD0 || opcode() == 0x10 || opcode() == 0x50 || opcode() == 0x70 {
+		fmt.Printf("%02X %02X ", opcode(), operand1())
+	}
+
+	// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
+	// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
+	if opcode() == 0x6D || opcode() == 0x2D || opcode() == 0x0E || opcode() == 0x2C || opcode() == 0xCD || opcode() == 0xEC || opcode() == 0xCC || opcode() == 0xCE || opcode() == 0x4D || opcode() == 0xEE || opcode() == 0x4C || opcode() == 0x20 || opcode() == 0xAD || opcode() == 0xAC || opcode() == 0xAE || opcode() == 0x4E || opcode() == 0x0D || opcode() == 0x2E || opcode() == 0x6E || opcode() == 0xED || opcode() == 0x8D || opcode() == 0x8E || opcode() == 0x8C || opcode() == 0x7D || opcode() == 0x79 || opcode() == 0x3D || opcode() == 0x39 || opcode() == 0x1E || opcode() == 0xDD || opcode() == 0xD9 || opcode() == 0xDE || opcode() == 0x5D || opcode() == 0x59 || opcode() == 0xFE || opcode() == 0xBD || opcode() == 0xB9 || opcode() == 0xBC || opcode() == 0xBE || opcode() == 0x5E || opcode() == 0x1D || opcode() == 0x19 || opcode() == 0x3E || opcode() == 0x7E || opcode() == 0xFD || opcode() == 0xF9 || opcode() == 0x9D || opcode() == 0x95 || opcode() == 0x99 || opcode() == 0xB5 || opcode() == 0x91 || opcode() == 0xB1 || opcode() == 0x81 || opcode() == 0xA1 || opcode() == 0x94 || opcode() == 0x96 || opcode() == 0xB4 || opcode() == 0xB6 || opcode() == 0x35 || opcode() == 0x15 || opcode() == 0x55 || opcode() == 0x21 || opcode() == 0x01 || opcode() == 0x41 || opcode() == 0x31 || opcode() == 0x11 || opcode() == 0x51 || opcode() == 0xF6 || opcode() == 0xD6 || opcode() == 0x4A || opcode() == 0x0A || opcode() == 0x16 || opcode() == 0x56 || opcode() == 0x36 || opcode() == 0x76 || opcode() == 0x75 || opcode() == 0xF5 || opcode() == 0xD5 || opcode() == 0xC1 || opcode() == 0xD1 || opcode() == 0x61 || opcode() == 0xE1 || opcode() == 0x71 || opcode() == 0xF1 {
+		fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
+	}
+
+	// Print disassembled instruction
+	fmt.Printf("\t%s", disassembledInstruction)
+	// Print A,X,Y,SP as hex values
+	fmt.Printf("\t|%02X %02X %02X %02X| ", A, X, Y, SP)
+
+	// SR flags are     N,V,-,B,D,I,Z,C
+	// SR flag bits are 7,6,5,4,3,2,1,0
+
+	//getSRBit flags for 7,6,3,2,1,0 and print as binary digits
+	//getSRBit flags for N,V,D,I,Z and C and print as binary digits
+	fmt.Printf("%b", getSRBit(7))
+	fmt.Printf("%b", getSRBit(6))
+	fmt.Printf("%b", getSRBit(3))
+	fmt.Printf("%b", getSRBit(2))
+	fmt.Printf("%b", getSRBit(1))
+	fmt.Printf("%b |\n", getSRBit(0))
+
+	// Print full SR as binary digits with zero padding
+	//fmt.Printf("%08b |\n", SR)
+
 	// Wait for keypress
 	//fmt.Scanln()
 }
@@ -192,6 +257,9 @@ func unsetOverflowFlag() {
 func setBreakFlag() {
 	setSRBitOn(4)
 }
+func unsetBreakFlag() {
+	setSRBitOff(4)
+}
 func setDecimalFlag() {
 	setSRBitOn(3)
 }
@@ -222,8 +290,10 @@ func readBit(bit byte, value byte) int {
 }
 func decSP() {
 	if SP == 0x0100 {
+		// Wrap around to top of stack at 0x01FF
 		SP = 0x01FF
-	} else if SP > 0x0100 {
+	} else {
+		// Decrement SP normally
 		SP--
 	}
 }
@@ -231,7 +301,7 @@ func incSP() {
 	if SP == 0x01FF {
 		SP = 0x0100
 	} else if SP < 0x01FF {
-		SP++
+		incSP()
 	}
 }
 
@@ -292,10 +362,16 @@ func LDA(addressingMode string) {
 		A = value
 		incCount(2)
 	case INDIRECTY: // Indirect, Y
-		// Get address
-		address := memory[operand1()]
-		// Get the value at the address
-		value := memory[address+Y]
+		// Get zero-page address
+		zeroPageAddr := operand1()
+		// Fetch the 16-bit address from zero-page
+		loByte := memory[zeroPageAddr]
+		hiByte := memory[(zeroPageAddr+1)&0xFF] // Ensure it wraps within the zero page
+		address := uint16(hiByte)<<8 | uint16(loByte)
+		// Add Y to the fetched address
+		finalAddress := address + uint16(Y)
+		// Get the value at the final address
+		value := memory[finalAddress]
 		// Set the accumulator to the value
 		A = value
 		incCount(2)
@@ -311,12 +387,6 @@ func LDA(addressingMode string) {
 		setNegativeFlag()
 	} else {
 		unsetNegativeFlag()
-	}
-
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
 	}
 }
 func LDX(addressingMode string) {
@@ -395,7 +465,7 @@ func LDY(addressingMode string) {
 		incCount(3)
 	case ABSOLUTEX: // Absolute, X
 		// Get the 16bit X indexed absolute memory address
-		address := int(operand2())<<8 | int(operand1()) + int(X)
+		address := (int(operand2())<<8 | int(operand1())) + int(X)
 		value := memory[address]
 		// Update Y with the value stored at the address
 		Y = value
@@ -413,113 +483,76 @@ func LDY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
 func STA(addressingMode string) {
 	switch addressingMode {
-	case ZEROPAGE: // Zero Page
-		// Get address from operand1()
+	case ZEROPAGE:
 		address := operand1()
-		// Store contents of Accumulator in memory
 		memory[address] = A
 		incCount(2)
-	case ZEROPAGEX: // Zero Page, X
-		// Get the X Indexed Zero Page address
-		address := operand1() + X
-		// Store contents of Accumulator in X indexed memory
+	case ZEROPAGEX:
+		address := (operand1() + X) & 0xFF // Ensure wraparound in Zero Page
 		memory[address] = A
 		incCount(2)
-	case ABSOLUTE: // Absolute
-		// Get 16 bit absolute address from operand 1 and operand 2
+	case ABSOLUTE:
 		address := uint16(operand2())<<8 | uint16(operand1())
-		// Update the memory at the address stored in operand 1 and operand 2 with the value of the accumulator
 		memory[address] = A
 		incCount(3)
-	case ABSOLUTEX: // Absolute, X
-		// Get 16 bit X indexed absolute memory address
-		address := int(operand2())<<8 | int(operand1()) + int(X)
+	case ABSOLUTEX:
+		address := (uint16(operand2())<<8 | uint16(operand1())) + uint16(X)
 		memory[address] = A
 		incCount(3)
-	case ABSOLUTEY: // Absolute, Y
-		// Get 16bit absolute address
-		address := uint16(operand2())<<8 | uint16(operand1())
-		// Update the memory at the Y indexed address stored in operand 1 and operand 2 with the value of the accumulator
-		memory[int(address)+int(Y)] = A
+	case ABSOLUTEY:
+		address := (uint16(operand2())<<8 | uint16(operand1())) + uint16(Y)
+		memory[address] = A
 		incCount(3)
-	case INDIRECTX: // Indirect, X
-		// Get the 16bit X indexed zero page indirect address
-		indirectAddress := uint16(int(operand1()) + int(X)&0xFF)
-		// Get the value at the indirect address
-		indirectValue := memory[indirectAddress]
-		// Get the value at the indirect address + 1
-		indirectValue2 := memory[(indirectAddress + 1)]
-		// Combine the two values to get the address
-		indirectAddress = uint16(int(indirectValue) + int(indirectValue2)<<8)
-		// Set the value at the address to the value of A
-		memory[indirectAddress] = A
+	case INDIRECTX:
+		zeroPageAddress := (operand1() + X) & 0xFF
+		address := uint16(memory[zeroPageAddress]) | uint16(memory[(zeroPageAddress+1)&0xFF])<<8
+		memory[address] = A
 		incCount(2)
-	case INDIRECTY: // Indirect, Y
-		// Get address
-		address := memory[operand1()]
-		// Load accumulator with address+Y index value
-		memory[address+Y] = A
+	case INDIRECTY:
+		zeroPageAddress := operand1()
+		address := uint16(memory[zeroPageAddress]) | uint16(memory[(zeroPageAddress+1)&0xFF])<<8
+		memory[address+uint16(Y)] = A
 		incCount(2)
 	}
-
 }
+
 func STX(addressingMode string) {
 	switch addressingMode {
-	case ZEROPAGE: // Zero Page
-		// Get address from operand1()
+	case ZEROPAGE:
 		address := operand1()
-		// Store contents of X register in memory address at operand1()
 		memory[address] = X
 		incCount(2)
-	case ZEROPAGEY: // Zero Page, Y
-		// Get Y indexed Zero Page address
-		address := operand1() + Y
-		// Store contents of X register in Y indexed memory address
+	case ZEROPAGEY: // Note the change from ZEROPAGEX to ZEROPAGEY
+		address := (operand1() + Y) & 0xFF // We add Y here, not X
 		memory[address] = X
 		incCount(2)
-	case ABSOLUTE: // Absolute
-		// Get the 16 bit address from operand 1 and operand 2
+	case ABSOLUTE:
 		address := uint16(operand2())<<8 | uint16(operand1())
-		// Update the memory at the address stored in operand 1 and operand 2 with the value of the X register
 		memory[address] = X
 		incCount(3)
 	}
 }
+
 func STY(addressingMode string) {
 	switch addressingMode {
-	case ZEROPAGE: // Zero Page
-		// Get address
+	case ZEROPAGE:
 		address := operand1()
-		// Store Y register in memory at address in operand1()
 		memory[address] = Y
 		incCount(2)
-	case ZEROPAGEX: // Zero Page, X
-		// Get X indexed Zero Page address
-		address := operand1() + X
-		// Store contents of Y register in X indexed memory address
+	case ZEROPAGEX:
+		address := (operand1() + X) & 0xFF
 		memory[address] = Y
 		incCount(2)
-	case ABSOLUTE: // Absolute
-		// Get the 16 bit address from operands
+	case ABSOLUTE:
 		address := uint16(operand2())<<8 | uint16(operand1())
-		// Update the memory at the address stored in operand 1 and operand 2 with the value of the Y register
 		memory[address] = Y
 		incCount(3)
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
+
 func CMP(addressingMode string) {
 	var value, result byte
 	switch addressingMode {
@@ -552,19 +585,17 @@ func CMP(addressingMode string) {
 		// Get the value at the address
 		value = memory[address]
 	case INDIRECTX: // Indirect, X
-		// Get the address of the operand
-		address := int(operand1()) + int(X)
-		// Get the value of the operand
+		zeroPageAddress := operand1() + X
+		address := uint16(memory[zeroPageAddress&0xFF]) | (uint16(memory[(zeroPageAddress+1)&0xFF]) << 8)
 		value = memory[address]
 	case INDIRECTY: // Indirect, Y
-		// Get address from operand1() and add Y to it
-		address := memory[operand1()] + Y
-		// Get value at address
-		value = memory[address]
+		zeroPageAddress := operand1()
+		indirectAddress := uint16(memory[zeroPageAddress]) | (uint16(memory[(zeroPageAddress+1)&0xFF]) << 8)
+		finalAddress := indirectAddress + uint16(Y)
+		value = memory[finalAddress]
 	}
 	// Subtract the value from the accumulator
 	result = A - value
-	//fmt.Printf("A: %X, value: %X, result: %X\n", A, value, result)
 	// If the result is 0, set the zero flag
 	// Print zero flag
 	if result == 0 {
@@ -589,11 +620,6 @@ func CMP(addressingMode string) {
 	} else {
 		incCount(3)
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
 func JMP(addressingMode string) {
 	switch addressingMode {
@@ -605,13 +631,16 @@ func JMP(addressingMode string) {
 	case INDIRECT:
 		// Get the 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
-		// Get the indirect address
-		indirectAddress := uint16(memory[address+1])<<8 | uint16(memory[address])
+		// Handle 6502 page boundary bug
+		loByteAddress := address
+		hiByteAddress := (address & 0xFF00) | ((address + 1) & 0xFF) // Ensure it wraps within the page
+		indirectAddress := uint16(memory[hiByteAddress])<<8 | uint16(memory[loByteAddress])
 		// Set the program counter to the indirect address
 		PC = int(indirectAddress)
 	}
 	incCount(0)
 }
+
 func AND(addressingMode string) {
 	var value, result byte
 	switch addressingMode {
@@ -710,11 +739,6 @@ func AND(addressingMode string) {
 		setNegativeFlag()
 	} else {
 		unsetNegativeFlag()
-	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
 	}
 }
 func EOR(addressingMode string) {
@@ -816,11 +840,6 @@ func EOR(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
 func ORA(addressingMode string) {
 	var value, result byte
@@ -864,56 +883,32 @@ func ORA(addressingMode string) {
 		A = result
 		incCount(3)
 	case ABSOLUTEX:
-		// Get address
-		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
-		// Get value at address
+		address := (uint16(operand1()) + uint16(X)) | uint16(operand2())<<8
 		value = memory[address]
-		// OR the value with the accumulator
-		result = A | value
-		// Set the accumulator to the result
-		A = result
+		A |= value
 		incCount(3)
 	case ABSOLUTEY:
-		// Get the address
-		address := int(operand2())<<8 | int(operand1()) + int(Y)
-		// Get the value at the address
+		address := (uint16(operand1()) + uint16(Y)) | uint16(operand2())<<8
 		value = memory[address]
-		// OR the value with the accumulator
-		result = A | value
-		// Set the accumulator to the result
-		A = result
+		A |= value
 		incCount(3)
 	case INDIRECTX:
-		// Get the address
-		indirectAddress := int(operand1()) + int(X)
-		address := int(memory[indirectAddress]) + int(memory[indirectAddress+1])<<8
-		// Get the value from the address
+		zeroPageAddress := (operand1() + X) & 0xFF
+		effectiveAddrLo := memory[zeroPageAddress]
+		effectiveAddrHi := memory[(zeroPageAddress+1)&0xFF]
+		address := uint16(effectiveAddrHi)<<8 | uint16(effectiveAddrLo)
 		value = memory[address]
-		// OR the value with the accumulator
-		result = A | value
-		// Set the accumulator to the result
-		A = result
+		A |= value
 		incCount(2)
 	case INDIRECTY:
-		// Get the 16bit address
-		address := uint16(int(operand1()))
-		// Get the indirect address
-		indirectAddress1 := memory[address]
-		indirectAddress2 := memory[address+1]
-		indirectAddress := uint16(int(indirectAddress1)+int(indirectAddress2)<<8) + uint16(Y)
-		// Get the value at the address
-		value = memory[indirectAddress]
-		// OR the value with the accumulator
-		result = A | value
-		// Set the accumulator to the result
-		A = result
+		zeroPageAddress := operand1()
+		effectiveAddrLo := memory[zeroPageAddress]
+		effectiveAddrHi := memory[(zeroPageAddress+1)&0xFF]
+		address := (uint16(effectiveAddrHi)<<8 | uint16(effectiveAddrLo)) + uint16(Y)
+		value = memory[address]
+		A |= value
 		incCount(2)
 	}
-	/*
-		This instruction affects the accumulator;
-		sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-		sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
-	*/
 	// If the result is 0, set the zero flag
 	if result == 0 {
 		setZeroFlag()
@@ -923,11 +918,6 @@ func ORA(addressingMode string) {
 	// If bit 7 of the result is set, set the negative flag
 	if readBit(7, result) == 1 {
 		setNegativeFlag()
-	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
 	}
 }
 func BIT(addressingMode string) {
@@ -966,56 +956,38 @@ func BIT(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
 func INC(addressingMode string) {
-	var value, result byte
+	var address uint16
+	var result byte
+
 	switch addressingMode {
 	case ZEROPAGE:
 		// Get the address from the operand
-		address := operand1()
-		// Get the value at the address
-		value = memory[address]
-		// Increment the value
-		result = value + 1
-		// Set the value at the address to the result
-		memory[address] = result
+		address = uint16(operand1())
 		incCount(2)
 	case ZEROPAGEX:
-		// Get the address from the operand
-		address := operand1() + X
-		// Get the value at the address
-		value = memory[address]
-		// Increment the value
-		result = value + 1
-		// Set the value at the address to the result
-		memory[address] = result
+		// Get the address from the operand with X offset
+		address = uint16(operand1() + X)
 		incCount(2)
 	case ABSOLUTE:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(operand2())<<8 | uint16(operand1())
-		// Get value at address
-		value = memory[address]
-		// Increment the value
-		result = value + 1
-		// Set the value at the address to the result
-		memory[address] = result
+		// Get 16-bit address from operand1 and operand2
+		address = uint16(operand2())<<8 | uint16(operand1())
 		incCount(3)
 	case ABSOLUTEX:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
-		// Get value at address
-		value = memory[address]
-		// Increment the value
-		result = value + 1
-		// Set the value at the address to the result
-		memory[address] = result
+		// Get 16-bit address from operand1 and operand2 with X offset
+		address = (uint16(operand2())<<8 | uint16(operand1())) + uint16(X)
 		incCount(3)
 	}
+
+	// Fetch the value from the address
+	value := memory[address]
+	// Increment the value (wrapping around for 8-bit values)
+	result = value + 1
+	// Write the result back to memory
+	memory[address] = result
+
+	// Update status flags
 	// If bit 7 of the result is set, set the negative flag
 	if readBit(7, result) == 1 {
 		setNegativeFlag()
@@ -1027,57 +999,39 @@ func INC(addressingMode string) {
 		setZeroFlag()
 	} else {
 		unsetZeroFlag()
-	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
 	}
 }
 func DEC(addressingMode string) {
-	var value, result byte
+	var address uint16
+	var result byte
+
 	switch addressingMode {
 	case ZEROPAGE:
 		// Get the address from the operand
-		address := operand1()
-		// Get the value at the address
-		value = memory[address]
-		// Decrement the value
-		result = value - 1
-		// Set the value at the address to the result
-		memory[address] = result
+		address = uint16(operand1())
 		incCount(2)
 	case ZEROPAGEX:
-		// Get the address from the operand
-		address := operand1() + X
-		// Get the value at the address
-		value = memory[address]
-		// Decrement the value
-		result = value - 1
-		// Set the value at the address to the result
-		memory[address] = result
+		// Get the address from the operand with X offset
+		address = uint16(operand1() + X)
 		incCount(2)
 	case ABSOLUTE:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(operand2())<<8 | uint16(operand1())
-		// Get value at address
-		value = memory[address]
-		// Decrement the value
-		result = value - 1
-		// Set the value at the address to the result
-		memory[address] = result
+		// Get 16-bit address from operand1 and operand2
+		address = uint16(operand2())<<8 | uint16(operand1())
 		incCount(3)
 	case ABSOLUTEX:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
-		// Get value at address
-		value = memory[address]
-		// Decrement the value
-		result = value - 1
-		// Set the value at the address to the result
-		memory[address] = result
+		// Get 16-bit address from operand1 and operand2 with X offset
+		address = (uint16(operand2())<<8 | uint16(operand1())) + uint16(X)
 		incCount(3)
 	}
+
+	// Fetch the value from the address
+	value := memory[address]
+	// Decrement the value (wrapping around for 8-bit values)
+	result = value - 1
+	// Write the result back to memory
+	memory[address] = result
+
+	// Update status flags
 	// If bit 7 of the result is set, set the negative flag
 	if readBit(7, result) == 1 {
 		setNegativeFlag()
@@ -1089,11 +1043,6 @@ func DEC(addressingMode string) {
 		setZeroFlag()
 	} else {
 		unsetZeroFlag()
-	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
 	}
 }
 func ADC(addressingMode string) {
@@ -1143,18 +1092,6 @@ func ADC(addressingMode string) {
 		// Get the value at the address
 		value = memory[address]
 	}
-	/*
-		This instruction adds the value of memory and carry from the previous operation to the value of the accumulator
-		and stores the result in the accumulator.
-
-		This instruction affects the accumulator;
-		sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99,
-		otherwise carry is reset.
-		The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
-		otherwise overflow is reset.
-		The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
-		The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
-	*/
 
 	// Add the value to the accumulator
 	result = int(A) + int(value)
@@ -1200,11 +1137,6 @@ func ADC(addressingMode string) {
 	}
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
-	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
 	}
 }
 func SBC(addressingMode string) {
@@ -1291,11 +1223,6 @@ func SBC(addressingMode string) {
 	if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
 		incCount(3)
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
 func ROR(addressingMode string) {
 	var address, value, result byte
@@ -1368,11 +1295,6 @@ func ROR(addressingMode string) {
 		// Store the value back into memory
 		memory[address16] = result
 		incCount(3)
-	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
 	}
 }
 func ROL(addressingMode string) {
@@ -1456,11 +1378,6 @@ func ROL(addressingMode string) {
 		memory[address16] = result
 		incCount(3)
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
 func LSR(addressingMode string) {
 	var value, result byte
@@ -1479,9 +1396,9 @@ func LSR(addressingMode string) {
 		// Get the value at the address
 		value = memory[address]
 		// Shift the value right 1 bit
-		value >>= 1
+		result = value >> 1
 		// Store the value back into memory
-		memory[address] = value
+		memory[address] = result
 		incCount(2)
 	case ZEROPAGEX:
 		// Get the X indexed address
@@ -1489,9 +1406,9 @@ func LSR(addressingMode string) {
 		// Get the value at the X indexed address
 		value = memory[address]
 		// Shift the value right 1 bit
-		value >>= 1
+		result = value >> 1
 		// Store the shifted value in memory
-		memory[address] = value
+		memory[address] = result
 		incCount(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operands
@@ -1499,21 +1416,23 @@ func LSR(addressingMode string) {
 		// Get the value stored at the address in the operands
 		value = memory[address]
 		// Shift the value right 1 bit
-		value >>= 1
+		result = value >> 1
 		// Store the shifted value back in memory
-		memory[address] = value
+		memory[address] = result
 		incCount(3)
 	case ABSOLUTEX:
 		// Get the 16bit X indexed absolute memory address
-		address := int(operand2())<<8 | int(operand1()) + int(X)
+		address := uint16(operand2())<<8 | uint16(operand1())
+		address += uint16(X)
 		// Get the value stored at the address
 		value = memory[address]
 		// Shift the value right 1 bit
-		value >>= 1
+		result = value >> 1
 		// Store the shifted value back in memory
-		memory[address] = value
+		memory[address] = result
 		incCount(3)
 	}
+
 	// Reset the SR negative flag
 	unsetNegativeFlag()
 	// If result is 0 then set SR zero flag else reset it
@@ -1528,12 +1447,8 @@ func LSR(addressingMode string) {
 	} else {
 		unsetCarryFlag()
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
+
 func ASL(addressingMode string) {
 	var value, result byte
 	switch addressingMode {
@@ -1592,24 +1507,22 @@ func ASL(addressingMode string) {
 	} else {
 		unsetNegativeFlag()
 	}
-	// If the result is 0, set the Zero flag to 1 else unset zero flag and set carry flag to bit 7 of value
+
+	// If the result is 0, set the Zero flag to 1 else unset zero flag
 	if result == 0 {
 		setZeroFlag()
 	} else {
 		unsetZeroFlag()
-		// Set the Carry flag to the bit 7 of input value
-		if readBit(7, value) == 1 {
-			setCarryFlag()
-		} else {
-			unsetCarryFlag()
-		}
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
+
+	// Set the Carry flag based on the original value's bit 7 before the shift operation
+	if readBit(7, value) == 1 {
+		setCarryFlag()
+	} else {
+		unsetCarryFlag()
 	}
 }
+
 func CPX(addressingMode string) {
 	var value, result byte
 	switch addressingMode {
@@ -1656,11 +1569,6 @@ func CPX(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
 func CPY(addressingMode string) {
 	var value, result byte
@@ -1704,15 +1612,16 @@ func CPY(addressingMode string) {
 	} else {
 		unsetZeroFlag()
 	}
-	if *stateMonitor { // Move cursor up two lines from current position
-		//fmt.Printf("\033[2A")
-		printMachineState()
-		fmt.Printf("\n")
-	}
 }
 
 func execute() {
 	for PC < len(memory) {
+		//debug option to break out from borked opcode infinite loop
+		/*if PC == 0x451D {
+			// exit to OS
+			os.Exit(0)
+		}*/
+
 		//  1 byte instructions with no operands
 		switch opcode() {
 		// Implied addressing mode instructions
@@ -1724,147 +1633,77 @@ func execute() {
 		case 0x00:
 			/*
 				BRK - Break Command
-				Operation: PC + 2↓, [FFFE] → PCL, [FFFF] → PCH
-
-				The break command causes the microprocessor to go through an interrupt sequence under program control.
-
-				This means that the program counter of the second byte after the BRK is automatically stored on the
-				stack along with the processor status at the beginning of the break instruction.
-
-				The microprocessor then transfers control to the interrupt vector.
-
-				Other than changing the program counter, the break instruction changes no values in either the
-				registers or the flags.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("BRK\n")
-			}
+			disassembledInstruction = fmt.Sprintf("BRK")
+			disassembleOpcode()
 			// Increment PC
 			PC++
-			// Push PC+1 to stack
+
+			// Decrement SP and Push high byte of (PC+1) onto stack
+			decSP()
 			memory[SP] = byte((PC + 1) >> 8) // High byte
+
+			// Decrement SP and Push low byte of (PC+1) onto stack
 			decSP()
 			memory[SP] = byte((PC + 1) & 0xFF) // Low byte
-			decSP()
+
 			// Set SR break flag
 			setBreakFlag()
-			// Store SR on stack
-			memory[SP] = SR
+
+			// Decrement SP and Store SR on stack
 			decSP()
+			memory[SP] = SR
+
 			// Set SR interrupt disable bit to 1
 			setInterruptFlag()
-			// Set PC to interrupt vector
-			//PC = int(memory[0xFFFE]) + int(memory[0xFFFF])*256
-			reset()
-			incCount(1)
+
+			// Set PC to interrupt vector address
+			//PC = interruptVectorAddress | interruptVectorAddress + 1
+			PC = int(uint16(memory[0xFFFF])<<8 | uint16(memory[0xFFFE])) //PC = int(memory[0xFFFE]) + int(memory[0xFFFF])*256
+
+			incCount(0)
 		case 0x18:
 			/*
 				CLC - Clear Carry Flag
-				Operation: 0 → C
-
-				This instruction initializes the carry flag to a 0. This operation should normally precede an ADC loop.
-				It is also useful when used with a R0L instruction to clear a bit in memory.
-
-				This instruction affects no registers in the microprocessor and no flags other than the carry flag which is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("CLC\n")
-			}
+			disassembledInstruction = fmt.Sprintf("CLC")
+			disassembleOpcode()
 			// Set SR carry flag bit 0 to 0
 			unsetCarryFlag()
 			incCount(1)
 		case 0xD8:
 			/*
 				CLD - Clear Decimal Mode
-				Operation: 0 → D
-
-				This instruction sets the decimal mode flag to a 0. This all subsequent ADC and SBC instructions
-				to operate as simple operations.
-
-				CLD affects no registers in the microprocessor and no flags other than the decimal mode flag which
-				is set to a 0.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("CLD\n")
-			}
 
+			disassembledInstruction = fmt.Sprintf("CLD")
+			disassembleOpcode()
 			unsetDecimalFlag()
 			incCount(1)
-
-			if *stateMonitor { // Move cursor up two lines from current position
-				//fmt.Printf("\033[2A")
-				printMachineState()
-				fmt.Printf("\n")
-			}
 		case 0x58:
 			/*
 				CLI - Clear Interrupt Disable
-				Operation: 0 → I
-
-				This instruction initializes the interrupt disable to a 0.
-				his allows the microprocessor to receive interrupts.
-
-				It affects no registers in the microprocessor and no flags other than the interrupt disable
-				which is cleared.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("CLI\n")
-			}
-
+			disassembledInstruction = fmt.Sprintf("CLI")
+			disassembleOpcode()
 			// Set SR interrupt disable bit 2 to 0
 			unsetInterruptFlag()
 			incCount(1)
 		case 0xB8:
 			/*
 				CLV - Clear Overflow Flag
-				Operation: 0 → V
-
-				This instruction clears the overflow flag to a 0. This command is used in conjunction with the
-				set overflow pin which can change the state of the overflow flag with an external signal.
-
-				CLV affects no registers in the microprocessor and no flags other than the overflow flag which
-				is set to a 0.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("CLV\n")
-			}
-
+			disassembledInstruction = fmt.Sprintf("CLV")
+			disassembleOpcode()
 			// Set SR overflow flag bit 6 to 0
 			unsetOverflowFlag()
 			incCount(1)
 		case 0xCA:
 			/*
 				DEX - Decrement Index Register X By One
-				Operation: X - 1 → X
-
-				This instruction subtracts one from the current value of the index register X and stores the result
-				in the index register X.
-
-				DEX does not affect the carry or overflow flag, it
-				sets the N flag if it has bit 7 on as a result of the decrement, otherwise it resets the N flag;
-				sets the Z flag if X is a 0 as a result of the decrement, otherwise it resets the Z flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("DEX\n")
-			}
+			disassembledInstruction = fmt.Sprintf("DEX")
+			disassembleOpcode()
 
 			// Decrement the X register by 1
 			X--
@@ -1884,24 +1723,9 @@ func execute() {
 		case 0x88:
 			/*
 				DEY - Decrement Index Register Y By One
-				Operation: Y - 1 → Y
-
-				This instruction subtracts one from the current value in the index register Y and stores the result
-				into the index register Y. The result does not affect or consider carry so that the value in the index
-				register Y is decremented to 0 and then through 0 to FF.
-
-				Decrement Y does not affect the carry or overflow flags;
-				if the Y register contains bit 7 on as a result of the decrement the N flag is set,
-				otherwise the N flag is reset.
-				If the Y register is 0 as a result of the decrement, the Z flag is set otherwise the Z flag is reset.
-				This instruction only affects the index register Y.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("DEY\n")
-			}
+			disassembledInstruction = fmt.Sprintf("DEY")
+			disassembleOpcode()
 
 			// Decrement the  Y register by 1
 			Y--
@@ -1915,24 +1739,9 @@ func execute() {
 		case 0xE8:
 			/*
 				INX - Increment Index Register X By One
-				Operation: X + 1 → X
-
-				Increment X adds 1 to the current value of the X register.
-				This is an 8-bit increment which does not affect the carry operation, therefore,
-				if the value of X before the increment was FF, the resulting value is 00.
-
-				INX does not affect the carry or overflow flags;
-				it sets the N flag if the result of the increment has a one in bit 7, otherwise resets N;
-				sets the Z flag if the result of the increment is 0, otherwise it resets the Z flag.
-
-				INX does not affect any other register other than the X register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("INX\n")
-			}
+			disassembledInstruction = fmt.Sprintf("INX")
+			disassembleOpcode()
 
 			// Increment the X register by 1
 			X++
@@ -1952,23 +1761,9 @@ func execute() {
 		case 0xC8:
 			/*
 				INY - Increment Index Register Y By One
-				Operation: Y + 1 → Y
-
-				Increment Y increments or adds one to the current value in the Y register,
-				storing the result in the Y register.
-
-				As in the case of INX the primary application is to step thru a set of values using the Y register.
-
-				The INY does not affect the carry or overflow flags, sets the N flag if the result of the increment
-				has a one in bit 7, otherwise resets N,
-				sets Z if as a result of the increment the Y register is zero otherwise resets the Z flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("INY\n")
-			}
+			disassembledInstruction = fmt.Sprintf("INY")
+			disassembleOpcode()
 
 			// Increment the  Y register by 1
 			Y++
@@ -1988,32 +1783,16 @@ func execute() {
 		case 0xEA:
 			/*
 				NOP - No Operation
-				Operation: No operation
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("NOP\n")
-			}
-			incCount(1)
+			disassembledInstruction = fmt.Sprintf("NOP")
+			disassembleOpcode()
+			incCount(2)
 		case 0x48:
 			/*
 				PHA - Push Accumulator On Stack
-				Operation: A↓
-
-				This instruction transfers the current value of the accumulator to the next location on the stack,
-				automatically decrementing the stack to point to the next empty location.
-
-				The Push A instruction only affects the stack pointer register which is decremented by 1 as a result of
-				the operation. It affects no flags.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("PHA\n")
-			}
+			disassembledInstruction = fmt.Sprintf("PHA")
+			disassembleOpcode()
 
 			// Update memory address pointed to by SP with value stored in accumulator
 			memory[SPBaseAddress+SP] = A
@@ -2027,19 +1806,9 @@ func execute() {
 		case 0x08:
 			/*
 				PHP - Push Processor Status On Stack
-				Operation: P↓
-
-				This instruction transfers the contents of the processor status register unchanged to the stack,
-				as governed by the stack pointer.
-
-				The PHP instruction affects no registers or flags in the microprocessor.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("PHP\n")
-			}
+			disassembledInstruction = fmt.Sprintf("PHP")
+			disassembleOpcode()
 
 			// Decrement the stack pointer by 1 byte
 			SP--
@@ -2049,24 +1818,9 @@ func execute() {
 		case 0x68:
 			/*
 				PLA - Pull Accumulator From Stack
-				Operation: A↑
-
-				This instruction adds 1 to the current value of the stack pointer and uses it to address the stack
-				and loads the contents of the stack into the A register.
-
-				The PLA instruction does not affect the carry or overflow flags.
-				It sets N if the bit 7 is on in accumulator A as a result of instructions, otherwise it is reset.
-				If accumulator A is zero as a result of the PLA, then the Z flag is set, otherwise it is reset.
-
-				The PLA instruction changes content of the accumulator A to the contents of the memory location at
-				stack register plus 1 and also increments the stack register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("PLA\n")
-			}
+			disassembledInstruction = fmt.Sprintf("PLA")
+			disassembleOpcode()
 
 			// Update accumulator with value stored in memory address pointed to by SP
 			A = memory[SPBaseAddress+SP]
@@ -2088,21 +1842,9 @@ func execute() {
 		case 0x28:
 			/*
 				PLP - Pull Processor Status From Stack
-				Operation: P↑
-
-				This instruction transfers the next value on the stack to the Processor Status register,
-				thereby changing all of the flags and setting the mode switches to the values from the stack.
-
-				The PLP instruction affects no registers in the processor other than the status register.
-
-				This instruction could affect all flags in the status register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("PLP\n")
-			}
+			disassembledInstruction = fmt.Sprintf("PLP")
+			disassembleOpcode()
 
 			// Update SR with the value stored at the address pointed to by SP
 			SR = memory[SPBaseAddress+SP]
@@ -2112,26 +1854,9 @@ func execute() {
 		case 0x40:
 			/*
 				RTI - Return From Interrupt
-				Operation: P↑ PC↑
-
-				This instruction transfers from the stack into the microprocessor the processor status and the
-				program counter location for the instruction which was interrupted.
-
-				By virtue of the interrupt having stored this data before executing the instruction and the fact
-				that the RTI re-initialises the microprocessor to the same state as when it was interrupted, the
-				combination of interrupt plus RTI allows truly reentrant coding.
-
-				The RTI instruction re-initialises all flags to the position to the point they were at the time
-				the interrupt was taken and sets the program counter back to its pre-interrupt state.
-
-				It affects no other registers in the microprocessor.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("RTI\n")
-			}
+			disassembledInstruction = fmt.Sprintf("RTI")
+			disassembleOpcode()
 
 			// Update SR with the value stored in memory at the address pointed to by SP
 			SR = memory[SPBaseAddress+SP]
@@ -2155,54 +1880,27 @@ func execute() {
 		case 0x60:
 			/*
 				RTS - Return From Subroutine
-				Operation: PC↑, PC + 1 → PC
-
-				This instruction loads the program count high and program count low from the stack into the program
-				counter and increments the program counter so that it points to the instruction following the JSR.
-
-				The stack pointer is adjusted by incrementing it twice.
-
-				The RTS instruction does not affect any flags and affects only PCL and PCH.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("RTS\n")
-			}
+			disassembledInstruction = fmt.Sprintf("RTS")
+			disassembleOpcode()
 			// Increment the stack pointer by 1 byte
-			incSP()
-			// Get low byte of PC
-			low := uint16(memory[0x0100+SP])
-			// Decrement the stack pointer by 1 byte
-			decSP()
+			//SP++
+			//Get low byte of PC
+			low := uint16(memory[SP])
 			// Increment the stack pointer by 1 byte
-			incSP()
-			// Get high byte of PC
-			high := uint16(memory[0x0100+SP])
-			// Decrement the stack pointer by 1 byte
-			decSP()
-			// Update PC with the value stored in memory at the address pointed to by SP
-			PC = int((high<<8)|low) + 1
-			incCount(3)
+			//SP++
+			//Get high byte of PC
+			high := uint16(memory[SP+1])
+			//Update PC with the value stored in memory at the address pointed to by SP
+			PC = int((high << 8) | low)
+			incCount(0)
+
 		case 0x38:
 			/*
 				SEC - Set Carry Flag
-				Operation: 1 → C
-
-				This instruction initializes the carry flag to a 1.
-				This operation should normally precede an SBC loop.
-				It is also useful when used with a ROL instruction to initialize a bit in memory to a 1.
-
-				This instruction affects no registers in the microprocessor and no flags other than the carry
-				flag which is set.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
-				}
-				fmt.Printf("SEC\n")
-			}
+			disassembledInstruction = fmt.Sprintf("SEC")
+			disassembleOpcode()
 
 			// Set SR carry flag bit 0 to 1
 			setCarryFlag()
@@ -2210,20 +1908,9 @@ func execute() {
 		case 0xF8:
 			/*
 				SED - Set Decimal Mode
-				Operation: 1 → D
-
-				This instruction sets the decimal mode flag D to a 1.
-				This makes all subsequent ADC and SBC instructions operate as a decimal arithmetic operation.
-
-				SED affects no registers in the microprocessor and no flags other than the decimal mode which
-				is set to a 1.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("SED\n")
-			}
+			disassembledInstruction = fmt.Sprintf("SED")
+			disassembleOpcode()
 
 			// Set SR decimal mode flag to 1
 			setDecimalFlag()
@@ -2231,19 +1918,9 @@ func execute() {
 		case 0x78:
 			/*
 				SEI - Set Interrupt Disable
-				Operation: 1 → I
-
-				This instruction initializes the interrupt disable to a 1.
-				It is used to mask interrupt requests during system reset operations and during interrupt commands.
-
-				It affects no registers in the microprocessor and no flags other than the interrupt disable which is set.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("SEI\n")
-			}
+			disassembledInstruction = fmt.Sprintf("SEI")
+			disassembleOpcode()
 
 			// Set SR interrupt disable bit 2 to 1
 			setInterruptFlag()
@@ -2251,21 +1928,9 @@ func execute() {
 		case 0xAA:
 			/*
 				TAX - Transfer Accumulator To Index X
-				Operation: A → X
-
-				This instruction takes the value from accumulator A and transfers or loads it into the index register X
-				without disturbing the content of the accumulator A.
-
-				TAX only affects the index register X, does not affect the carry or overflow flags.
-				The N flag is set if the resultant value in the index register X has bit 7 on, otherwise N is reset.
-				The Z bit is set if the content of the register X is 0 as a result of the operation, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("TAX\n")
-			}
+			disassembledInstruction = fmt.Sprintf("TAX")
+			disassembleOpcode()
 
 			// Update X with the value of A
 			X = A
@@ -2285,21 +1950,9 @@ func execute() {
 		case 0xA8:
 			/*
 				TAY - Transfer Accumulator To Index Y
-				Operation: A → Y
-
-				This instruction moves the value of the accumulator into index register Y without affecting
-				the accumulator.
-
-				TAY instruction only affects the Y register and does not affect either the carry or overflow flags.
-				If the index register Y has bit 7 on, then N is set, otherwise it is reset.
-				If the content of the index register Y equals 0 as a result of the operation, Z is set on, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("TAY\n")
-			}
+			disassembledInstruction = fmt.Sprintf("TAY")
+			disassembleOpcode()
 
 			// Set Y register to the value of the accumulator
 			Y = A
@@ -2319,21 +1972,9 @@ func execute() {
 		case 0xBA:
 			/*
 				TSX - Transfer Stack Pointer To Index X
-				Operation: S → X
-
-				This instruction transfers the value in the stack pointer to the index register X.
-
-				TSX does not affect the carry or overflow flags.
-				It sets N if bit 7 is on in index X as a result of the instruction, otherwise it is reset.
-				If index X is zero as a result of the TSX, the Z flag is set, otherwise it is reset.
-				TSX changes the value of index X, making it equal to the content of the stack pointer.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("TSX\n")
-			}
+			disassembledInstruction = fmt.Sprintf("TSX")
+			disassembleOpcode()
 
 			// Update X with the SP
 			X = byte(SP)
@@ -2353,21 +1994,9 @@ func execute() {
 		case 0x8A:
 			/*
 				TXA - Transfer Index X To Accumulator
-				Operation: X → A
-
-				This instruction moves the value that is in the index register X to the accumulator A without disturbing
-				the content of the index register X.
-
-				TXA does not affect any register other than the accumulator and does not affect the carry or overflow flag.
-				If the result in A has bit 7 on, then the N flag is set, otherwise it is reset.
-				If the resultant value in the accumulator is 0, then the Z flag is set, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("TXA\n")
-			}
+			disassembledInstruction = fmt.Sprintf("TXA")
+			disassembleOpcode()
 
 			// Set accumulator to value of X register
 			A = X
@@ -2387,19 +2016,9 @@ func execute() {
 		case 0x9A:
 			/*
 				TXS - Transfer Index X To Stack Pointer
-				Operation: X → S
-
-				This instruction transfers the value in the index register X to the stack pointer.
-
-				TXS changes only the stack pointer, making it equal to the content of the index register X.
-				It does not affect any of the flags.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("TXS\n")
-			}
+			disassembledInstruction = fmt.Sprintf("TXS")
+			disassembleOpcode()
 
 			// Set stack pointer to value of X register
 			SP = uint(X)
@@ -2407,22 +2026,9 @@ func execute() {
 		case 0x98:
 			/*
 				TYA - Transfer Index Y To Accumulator
-				Operation: Y → A
-
-				This instruction moves the value that is in the index register Y to accumulator A without disturbing
-				the content of the register Y.
-
-				TYA does not affect any other register other than the accumulator and does not affect the carry
-				or overflow flag.
-				If the result in the accumulator A has bit 7 on, the N flag is set, otherwise it is reset.
-				If the resultant value in the accumulator A is 0, then the Z flag is set, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Implied)\t\n", PC, opcode())
-				}
-				fmt.Printf("TYA\n")
-			}
+			disassembledInstruction = fmt.Sprintf("TYA")
+			disassembleOpcode()
 
 			// Set accumulator to value of Y register
 			A = Y
@@ -2451,92 +2057,32 @@ func execute() {
 		case 0x0A:
 			/*
 				ASL - Arithmetic Shift Left
-				Operation: C ← /M7...M0/ ← 0
-
-				The shift left instruction shifts either the accumulator or the address memory location 1 bit to
-				the left, with the bit 0 always being set to 0 and the the input bit 7 being stored in the carry flag.
-
-				ASL either shifts the accumulator left 1 bit or is a read/modify/write instruction that affects only memory.
-
-				The instruction does not affect the overflow bit, sets N equal to the result bit 7 (bit 6 in the input),
-				sets Z flag if the result is equal to 0, otherwise resets Z and stores the input bit 7 in the carry flag
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
-				}
-				fmt.Printf("ASL\n")
-			}
+			disassembledInstruction = fmt.Sprintf("ASL")
+			disassembleOpcode()
 			ASL("accumulator")
 		case 0x4A:
 			/*
 				LSR - Logical Shift Right
-				Operation: 0 → /M7...M0/ → C
-
-				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the high bit which is shifted out of
-				the field being stored in the carry flag.
-
-				The shift right instruction either affects the accumulator by shifting it right 1 or is a
-				read/modify/write instruction which changes a specified memory location but does not affect
-				any internal registers. The shift right does not affect the overflow flag.
-				The N flag is always reset.
-				The Z flag is set if the result of the shift is 0 and reset otherwise.
-				The carry is set equal to bit 0 of the input.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
-				}
-				fmt.Printf("LSR\n")
-			}
+			disassembledInstruction = fmt.Sprintf("LSR")
+			disassembleOpcode()
 
 			LSR("accumulator")
 		case 0x2A:
 			/*
 				ROL - Rotate Left
-				Operation: C ← /M7...M0/ ← C
-
-				The rotate left instruction shifts either the accumulator or addressed memory left 1 bit, with
-				the input carry being stored in bit 0 and with the input bit 7 being stored in the carry flags.
-
-				The ROL instruction either shifts the accumulator left 1 bit and stores the carry in accumulator bit 0
-				or does not affect the internal registers at all.
-				The ROL instruction sets carry equal to the input bit 7,
-				sets N equal to the input bit 6,
-				sets the Z flag if the result of the rotate is 0,
-				otherwise it resets Z and does not affect the overflow flag at all.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
-				}
-				fmt.Printf("ROL\n")
-			}
+			disassembledInstruction = fmt.Sprintf("ROL")
+			disassembleOpcode()
 
 			ROL("accumulator")
 		case 0x6A:
 			/*
 				ROR - Rotate Right
-				Operation: C → /M7...M0/ → C
-
-				The rotate right instruction shifts either the accumulator or addressed memory right 1 bit with
-				bit 0 shifted into the carry and carry shifted into bit 7.
-
-				The ROR instruction either shifts the accumulator right 1 bit and stores the carry in accumulator
-				bit 7 or does not affect the internal registers at all.
-				The ROR instruction sets carry equal to input bit 0,
-				sets N equal to the input carry and sets the Z flag if the result of the rotate is 0;
-				It otherwise it resets Z and does not affect the overflow flag at all.
-
-				(Available on Microprocessors after June, 1976)
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x\t\t(Accumulator)\t\n", PC, opcode())
-				}
-				fmt.Printf("ROR\n")
-			}
+			disassembledInstruction = fmt.Sprintf("ROR")
+			disassembleOpcode()
 			ROR("accumulator")
 		}
 
@@ -2553,242 +2099,88 @@ func execute() {
 		case 0x69:
 			/*
 				ADC - Add Memory to Accumulator with Carry
-				Operation: A + M + C → A, C
-
-				This instruction adds the value of memory and carry from the previous operation to the value of the
-				accumulator and stores the result in the accumulator.
-
-				This instruction affects the accumulator; sets the carry flag when the sum of a binary add exceeds
-				255 or when the sum of a decimal add exceeds 99, otherwise carry is reset.
-
-				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
-				otherwise overflow is reset.
-
-				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
-
-				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ADC #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ADC #$%02X", operand1())
+			disassembleOpcode()
 
 			ADC("immediate")
 		case 0x29:
 			/*
 				AND - "AND" Memory with Accumulator
-				Operation: A ∧ M → A
-
-				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
-				AND operation and stores the result back in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("AND #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("AND #$%02X", operand1())
+			disassembleOpcode()
 
 			AND("immediate")
 		case 0xC9:
 			/*
 				CMP - Compare Memory and Accumulator
-				Operation: A - M
-
-				This instruction subtracts the contents of memory from the contents of the accumulator.
-
-				The use of the CMP affects the following flags: Z flag is set on an equal comparison, reset otherwise;
-				the N flag is set or reset by the result bit 7,
-				the carry flag is set when the value in memory is less than or equal to the accumulator,
-				reset when it is greater than the accumulator.
-
-				The accumulator is not affected.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("CMP #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CMP #$%02X", operand1())
+			disassembleOpcode()
 
 			CMP("immediate")
 		case 0xE0:
 			/*
 				CPX - Compare Index Register X To Memory
-				Operation: X - M
-
-				This instruction subtracts the value of the addressed memory location from the content of index
-				register X using the adder but does not store the result;
-				therefore, its only use is to set the N, Z and C flags to allow for comparison between the index
-				register X and the value in memory.
-
-				The CPX instruction does not affect any register in the machine; it also does not affect the overflow flag.
-				It causes the carry to be set on if the absolute value of the index register X is equal to or greater
-				than the data from memory.
-				If the value of the memory is greater than the content of the index register X, carry is reset.
-				If the results of the subtraction contain a bit 7, then the N flag is set, if not, it is reset.
-				If the value in memory is equal to the value in index register X, the Z flag is set, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("CPX #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CPX #$%02X", operand1())
+			disassembleOpcode()
 
 			CPX("immediate")
 		case 0xC0:
 			/*
 				CPY - Compare Index Register Y To Memory
-				Operation: Y - M
-
-				This instruction performs a two's complement subtraction between the index register Y and the
-				specified memory location. The results of the subtraction are not stored anywhere. The instruction is
-				strictly used to set the flags.
-
-				CPY affects no registers in the microprocessor and also does not affect the overflow flag.
-
-				If the value in the index register Y is equal to or greater than the value in the memory,
-				the carry flag will be set, otherwise it will be cleared.
-
-				If the results of the subtraction contain bit 7 on the N bit will be set, otherwise it will be cleared.
-
-				If the value in the index register Y and the value in the memory are equal, the zero flag will be set,
-				otherwise it will be cleared.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("CPY #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CPY #$%02X", operand1())
+			disassembleOpcode()
 
 			CPY("immediate")
 		case 0x49:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
-				Operation: A ⊻ M → A
-
-				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
-				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("EOR #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("EOR #$%02X", operand1())
+			disassembleOpcode()
 
 			EOR("immediate")
 		case 0xA9:
 			/*
 				LDA - Load Accumulator with Memory
-				Operation: M → A
-
-				When instruction LDA is executed by the microprocessor, data is transferred from memory to the
-				accumulator and stored in the accumulator.
-
-				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
-				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
-				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDA #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDA #$%02X", operand1())
+			disassembleOpcode()
 			LDA("immediate")
 		case 0xA2:
 			/*
 				LDX - Load Index Register X From Memory
-				Operation: M → X
-
-				Load the index register X from memory.
-
-				LDX does not affect the C or V flags; sets Z if the value loaded was zero, otherwise resets it;
-				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDX #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDX #$%02X", operand1())
+			disassembleOpcode()
+
 			LDX("immediate")
 		case 0xA0:
 			/*
 				LDY - Load Index Register Y From Memory
-				Operation: M → Y
-
-				Load the index register Y from memory.
-
-				LDY does not affect the C or V flags,
-				sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
-				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDY #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDY #$%02X", operand1())
+			disassembleOpcode()
 
 			LDY("immediate")
 		case 0x09:
 			/*
 				ORA - "OR" Memory with Accumulator
-				Operation: A ∨ M → A
-
-				The ORA instruction transfers the memory and the accumulator to the adder which performs a binary "OR"
-				on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ORA #$%02x\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ORA #$%02X", operand1())
+			disassembleOpcode()
 
 			ORA("immediate")
 		case 0xE9:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
-				Operation: A - M - ~C → A
-
-				This instruction subtracts the value of memory and borrow from the value of the accumulator,
-				using two's complement arithmetic, and stores the result in the accumulator.
-
-				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates
-				that a borrow has not occurred.
-
-				This instruction affects the accumulator.
-				The carry flag is set if the result is greater than or equal to 0.
-				The carry flag is reset when the result is less than 0, indicating a borrow.
-				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
-				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
-				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Immediate)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("SBC #$%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("SBC #$%02X", operand1())
+			disassembleOpcode()
 			SBC("immediate")
 
 		// Zero Page addressing mode instructions
@@ -2802,454 +2194,166 @@ func execute() {
 		case 0x65:
 			/*
 				ADC - Add Memory to Accumulator with Carry
-				Operation: A + M + C → A, C
-
-				This instruction adds the value of memory and carry from the previous operation to the value of the
-				accumulator and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add
-				exceeds 99, otherwise carry is reset.
-				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
-				otherwise overflow is reset.
-				The negative flag is set if the accumulator result contains bit 7 on,
-				otherwise the negative flag is reset.
-				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
-
-				Note on the MOS 6502:
-
-				In decimal mode, the N, V and Z flags are not consistent with the decimal result.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ADC $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ADC $%02X", operand1())
+			disassembleOpcode()
 
 			ADC("zeropage")
 		case 0x25:
 			/*
 				AND - "AND" Memory with Accumulator
-				Operation: A ∧ M → A
-
-				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
-				AND operation and stores the result back in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("AND $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("AND $%02X", operand1())
+			disassembleOpcode()
 
 			AND("zeropage")
 		case 0x06:
 			/*
 				ASL - Arithmetic Shift Left
-				Operation: C ← /M7...M0/ ← 0
-
-				The shift left instruction shifts either the accumulator or the address memory location 1 bit to
-				the left, with the bit 0 always being set to 0 and the the input bit 7 being stored in the carry flag.
-
-				ASL either shifts the accumulator left 1 bit or is a read/modify/write instruction that affects only memory.
-
-				The instruction does not affect the overflow bit,
-				sets N equal to the result bit 7 (bit 6 in the input),
-				sets Z flag if the result is equal to 0, otherwise resets Z and stores the input bit 7 in the carry flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ASL $%02x\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ASL $%02X", operand1())
+			disassembleOpcode()
 
 			ASL("zeropage")
 		case 0x24:
 			/*
 				BIT - Test Bits in Memory with Accumulator
-				Operation: A ∧ M, M7 → N, M6 → V
-
-				This instruction performs an AND between a memory location and the accumulator but does not store
-				the result of the AND into the accumulator.
-
-				The bit instruction affects the N flag with N being set to the value of bit 7 of the memory being tested
-				the V flag with V being set equal to bit 6 of the memory being tested and
-				Z being set by the result of the AND operation between the accumulator and the memory if
-				the result is Zero, Z is reset otherwise.
-				It does not affect the accumulator.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("BIT $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("BIT $%02X", operand1())
+			disassembleOpcode()
 
 			BIT("zeropage")
 		case 0xC5:
 			/*
 				CMP - Compare Memory and Accumulator
-				Operation: A - M
-
-				This instruction subtracts the contents of memory from the contents of the accumulator.
-
-				The use of the CMP affects the following flags: Z flag is set on an equal comparison, reset otherwise;
-				the N flag is set or reset by the result bit 7,
-				the carry flag is set when the value in memory is less than or equal to the accumulator,
-				reset when it is greater than the accumulator.
-				The accumulator is not affected.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("CMP $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CMP $%02X", operand1())
+			disassembleOpcode()
 			CMP("zeropage")
 		case 0xE4:
 			/*
 				CPX - Compare Index Register X To Memory
-				Operation: X - M
-
-				This instruction subtracts the value of the addressed memory location from the content of
-				index register X using the adder but does not store the result;
-				therefore, its only use is to set the N, Z and C flags to allow for comparison between the
-				index register X and the value in memory.
-
-				The CPX instruction does not affect any register in the machine;
-				it also does not affect the overflow flag.
-				It causes the carry to be set on if the absolute value of the index register X is equal to
-				or greater than the data from memory.
-				If the value of the memory is greater than the content of the index register X, carry is reset.
-				If the results of the subtraction contain a bit 7, then the N flag is set, if not, it is reset.
-				If the value in memory is equal to the value in index register X, the Z flag is set,
-				otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("CPX $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CPX $%02X", operand1())
+			disassembleOpcode()
 
 			CPX("zeropage")
 		case 0xC4:
 			/*
 				CPY - Compare Index Register Y To Memory
-				Operation: Y - M
-
-				This instruction performs a two's complement subtraction between the index register Y and the
-				specified memory location.
-				The results of the subtraction are not stored anywhere.
-				The instruction is strictly used to set the flags.
-
-				CPY affects no registers in the microprocessor and also does not affect the overflow flag.
-				If the value in the index register Y is equal to or greater than the value in the memory,
-				the carry flag will be set, otherwise it will be cleared.
-				If the results of the subtraction contain bit 7 on the N bit will be set, otherwise it will be cleared.
-				If the value in the index register Y and the value in the memory are equal, the zero flag will be set,
-				otherwise it will be cleared.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("CPY $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CPY $%02X", operand1())
+			disassembleOpcode()
 			CPY("zeropage")
 		case 0xC6:
 			/*
 				DEC - Decrement Memory By One
-				Operation: M - 1 → M
-
-				This instruction subtracts 1, in two's complement, from the contents of the addressed memory location.
-
-				The decrement instruction does not affect any internal register in the microprocessor.
-
-				It does not affect the carry or overflow flags.
-				If bit 7 is on as a result of the decrement, then the N flag is set, otherwise it is reset.
-				If the result of the decrement is 0, the Z flag is set, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("DEC $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("DEC $%02X", operand1())
+			disassembleOpcode()
 
 			DEC("zeropage")
 		case 0x45:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
-				Operation: A ⊻ M → A
-
-				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
-				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("EOR $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("EOR $%02X", operand1())
+			disassembleOpcode()
 
 			EOR("zeropage")
 		case 0xE6:
 			/*
 				INC - Increment Memory By One
-				Operation: M + 1 → M
-
-				This instruction adds 1 to the contents of the addressed memory location.
-
-				The increment memory instruction does not affect any internal registers and does not affect the
-				carry or overflow flags.
-				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
-				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("INC $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("INC $%02X", operand1())
+			disassembleOpcode()
 
 			INC("zeropage")
 		case 0xA5:
 			/*
 				LDA - Load Accumulator with Memory
-				Operation: M → A
-
-				When instruction LDA is executed by the microprocessor, data is transferred from memory to the
-				accumulator and stored in the accumulator.
-
-				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
-				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
-				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDA $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDA $%02X", operand1())
+			disassembleOpcode()
 
 			LDA("zeropage")
 		case 0xA6:
 			/*
 				LDX - Load Index Register X From Memory
-				Operation: M → X
-
-				Load the index register X from memory.
-
-				LDX does not affect the C or V flags;
-				sets Z if the value loaded was zero, otherwise resets it;
-				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDX $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDX $%02X", operand1())
+			disassembleOpcode()
 			LDX("zeropage")
 		case 0xA4:
 			/*
 				LDY - Load Index Register Y From Memory
-				Operation: M → Y
-
-				Load the index register Y from memory.
-
-				LDY does not affect the C or V flags,
-				sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
-				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDY $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDY $%02X", operand1())
+			disassembleOpcode()
 
 			LDY("zeropage")
 		case 0x46:
 			/*
 				LSR - Logical Shift Right
-				Operation: 0 → /M7...M0/ → C
-
-				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the high bit which is shifted out of the
-				field being stored in the carry flag.
-
-				The shift right instruction either affects the accumulator by shifting it right 1 or is a
-				read/modify/write instruction which changes a specified memory location but does not affect any
-				internal registers.
-				The shift right does not affect the overflow flag.
-				The N flag is always reset.
-				The Z flag is set if the result of the shift is 0 and reset otherwise.
-				The carry is set equal to bit 0 of the input.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LSR $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LSR $%02X", operand1())
+			disassembleOpcode()
 
 			LSR("zeropage")
 		case 0x05:
 			/*
 				ORA - "OR" Memory with Accumulator
-				Operation: A ∨ M → A
-
-				The ORA instruction transfers the memory and the accumulator to the adder which performs a binary "OR"
-				on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on,
-				otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ORA $%02x\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ORA $%02X", operand1())
+			disassembleOpcode()
 
 			ORA("zeropage")
 		case 0x26:
 			/*
 				ROL - Rotate Left
-				Operation: C ← /M7...M0/ ← C
-
-				The rotate left instruction shifts either the accumulator or addressed memory left 1 bit,
-				with the input carry being stored in bit 0 and with the input bit 7 being stored in the carry flags.
-
-				The ROL instruction either shifts the accumulator left 1 bit and stores the carry in accumulator bit 0
-				or does not affect the internal registers at all.
-				The ROL instruction sets carry equal to the input bit 7,
-				sets N equal to the input bit 6 ,
-				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and does not affect
-				the overflow flag at all.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ROL $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ROL $%02X", operand1())
+			disassembleOpcode()
 
 			ROL("zeropage")
 		case 0x66:
 			/*
 				ROR - Rotate Right
-				Operation: C → /M7...M0/ → C
-
-				The rotate right instruction shifts either the accumulator or addressed memory right 1 bit with
-				bit 0 shifted into the carry and carry shifted into bit 7.
-
-				The ROR instruction either shifts the accumulator right 1 bit and stores the carry in accumulator bit 7
-				or does not affect the internal registers at all.
-				The ROR instruction sets carry equal to input bit 0,
-				sets N equal to the input carry and
-				sets the Z flag if the result of the rotate is 0; otherwise it resets Z and
-				does not affect the overflow flag at all.
-
-				(Available on Microprocessors after June, 1976)
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ROR $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ROR $%02X", operand1())
+			disassembleOpcode()
 
 			ROR("zeropage")
 		case 0xE5:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
-				Operation: A - M - ~C → A
-
-				This instruction subtracts the value of memory and borrow from the value of the accumulator,
-				using two's complement arithmetic, and stores the result in the accumulator.
-				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates that
-				a borrow has not occurred.
-
-				This instruction affects the accumulator.
-				The carry flag is set if the result is greater than or equal to 0.
-				The carry flag is reset when the result is less than 0, indicating a borrow.
-				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
-				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
-				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("SBC $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("SBC $%02X", operand1())
+			disassembleOpcode()
 
 			SBC("zeropage")
 		case 0x85:
 			/*
 				STA - Store Accumulator in Memory
-
-				Operation: A → M
-
-				This instruction transfers the contents of the accumulator to memory.
-
-				This instruction affects none of the flags in the processor status register and does not affect the accumulator.
 			*/
 
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("STA $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STA $%02X", operand1())
+			disassembleOpcode()
 
 			STA("zeropage")
 		case 0x86:
 			/*
 				STX - Store Index Register X In Memory
-				Operation: X → M
-
-				Transfers value of X register to addressed memory location.
-
-				No flags or registers in the microprocessor are affected by the store operation.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("STX $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STX $%02X", operand1())
+			disassembleOpcode()
 			STX("zeropage")
 		case 0x84:
 			/*
 				STY - Store Index Register Y In Memory
-				Operation: Y → M
-
-				Transfer the value of the Y register to the addressed memory location.
-
-				STY does not affect any flags or registers in the microprocessor.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page)\t\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("STY $%02X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STY $%02X", operand1())
+			disassembleOpcode()
 
 			STY("zeropage")
 
@@ -3264,294 +2368,109 @@ func execute() {
 		case 0x75:
 			/*
 				ADC - Add Memory to Accumulator with Carry
-				Operation: A + M + C → A, C
-
-				This instruction adds the value of memory and carry from the previous operation to the value of the
-				accumulator and stores the result in the accumulator.
-
-				This instruction affects the accumulator; sets the carry flag when the sum of a binary add exceeds
-				255 or when the sum of a decimal add exceeds 99, otherwise carry is reset.
-				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
-				otherwise overflow is reset.
-				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
-				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ADC $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ADC $%02X,X", operand1())
+			disassembleOpcode()
 
 			ADC("zeropagex")
 		case 0x35:
 			/*
 				AND - "AND" Memory with Accumulator
-				Operation: A ∧ M → A
-
-				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
-				AND operation and stores the result back in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("AND $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("AND $%02X,X", operand1())
+			disassembleOpcode()
 
 			AND("zeropagex")
 		case 0x16:
 			/*
 				ASL - Arithmetic Shift Left
-				Operation: C ← /M7...M0/ ← 0
-
-				The shift left instruction shifts either the accumulator or the address memory location 1 bit to the
-				left, with the bit 0 always being set to 0 and the the input bit 7 being stored in the carry flag.
-				ASL either shifts the accumulator left 1 bit or is a read/modify/write instruction that affects only memory.
-
-				The instruction does not affect the overflow bit,
-				sets N equal to the result bit 7 (bit 6 in the input),
-				sets Z flag if the result is equal to 0, otherwise resets Z and stores the input bit 7 in the carry flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(ASL - Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ASL $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ASL $%02X,X", operand1())
+			disassembleOpcode()
 
 			ASL("zeropagex")
 		case 0xD5:
 			/*
 				CMP - Compare Memory and Accumulator
-				Operation: A - M
-
-				This instruction subtracts the contents of memory from the contents of the accumulator.
-
-				The use of the CMP affects the following flags:
-				Z flag is set on an equal comparison, reset otherwise;
-				the N flag is set or reset by the result bit 7,
-				the carry flag is set when the value in memory is less than or equal to the accumulator, reset when it
-				is greater than the accumulator.
-				The accumulator is not affected.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("CMP $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CMP $%02X,X", operand1())
+			disassembleOpcode()
 
 			CMP("zeropagex")
 		case 0xD6:
 			/*
 				DEC - Decrement Memory By One
-				Operation: M - 1 → M
-
-				This instruction subtracts 1, in two's complement, from the contents of the addressed memory location.
-
-				The decrement instruction does not affect any internal register in the microprocessor.
-				It does not affect the carry or overflow flags.
-				If bit 7 is on as a result of the decrement, then the N flag is set, otherwise it is reset.
-				If the result of the decrement is 0, the Z flag is set, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("DEC $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("DEC $%02X,X", operand1())
+			disassembleOpcode()
 
 			DEC("zeropagex")
 		case 0xB5:
 			/*
 				LDA - Load Accumulator with Memory
-				Operation: M → A
-
-				When instruction LDA is executed by the microprocessor, data is transferred from memory to the accumulator
-				and stored in the accumulator.
-
-				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
-				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
-				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDA $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDA $%02X,X", operand1())
+			disassembleOpcode()
 
 			LDA("zeropagex")
 		case 0xB4:
 			/*
 				LDY - Load Index Register Y From Memory
-				Operation: M → Y
-
-				Load the index register Y from memory.
-
-				LDY does not affect the C or V flags, sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
-				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDY $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDY $%02X,X", operand1())
+			disassembleOpcode()
 
 			LDY("zeropagex")
 		case 0x56:
 			/*
 				LSR - Logical Shift Right
-				Operation: 0 → /M7...M0/ → C
-
-				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the high bit which is shifted out of the
-				field being stored in the carry flag.
-
-				The shift right instruction either affects the accumulator by shifting it right 1 or is a read/modify/write
-				instruction which changes a specified memory location but does not affect any internal registers.
-
-				The shift right does not affect the overflow flag.
-				The N flag is always reset.
-				The Z flag is set if the result of the shift is 0 and reset otherwise.
-				The carry is set equal to bit 0 of the input.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LSR $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LSR $%02X,X", operand1())
+			disassembleOpcode()
 
 			LSR("zeropagex")
 		case 0x15:
 			/*
 				ORA - "OR" Memory with Accumulator
-				Operation: A ∨ M → A
-
-				The ORA instruction transfers the memory and the accumulator to the adder which performs a binary "OR"
-				on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ORA $%02x,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ORA $%02X,X", operand1())
+			disassembleOpcode()
 
 			ORA("zeropagex")
 		case 0x36:
 			/*
 				ROL - Rotate Left
-				Operation: C ← /M7...M0/ ← C
-
-				The rotate left instruction shifts either the accumulator or addressed memory left 1 bit, with the
-				input carry being stored in bit 0 and with the input bit 7 being stored in the carry flags.
-
-				The ROL instruction either shifts the accumulator left 1 bit and stores the carry in accumulator bit 0
-				or does not affect the internal registers at all.
-				The ROL instruction sets carry equal to the input bit 7,
-				sets N equal to the input bit 6 ,
-				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and
-				does not affect the overflow flag at all.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ROL $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ROL $%02X,X", operand1())
+			disassembleOpcode()
 			ROL("zeropagex")
 		case 0x76:
 			/*
 				ROR - Rotate Right
-				Operation: C → /M7...M0/ → C
-
-				The rotate right instruction shifts either the accumulator or addressed memory right 1 bit with bit 0
-				shifted into the carry and carry shifted into bit 7.
-
-				The ROR instruction either shifts the accumulator right 1 bit and stores the carry in accumulator
-				bit 7 or does not affect the internal registers at all.
-				The ROR instruction sets carry equal to input bit 0,
-				sets N equal to the input carry and
-				sets the Z flag if the result of the rotate is 0; otherwise it resets Z and
-				does not affect the overflow flag at all.
-
-				(Available on Microprocessors after June, 1976)
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ROR $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ROR $%02X,X", operand1())
+			disassembleOpcode()
 			ROR("zeropagex")
 		case 0xF5:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
-				Operation: A - M - ~C → A
-
-				This instruction subtracts the value of memory and borrow from the value of the accumulator,
-				using two's complement arithmetic, and stores the result in the accumulator.
-				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates
-				that a borrow has not occurred.
-
-				This instruction affects the accumulator.
-				The carry flag is set if the result is greater than or equal to 0.
-				The carry flag is reset when the result is less than 0, indicating a borrow.
-				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
-				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
-				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("SBC $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("SBC $%02X,X", operand1())
+			disassembleOpcode()
 			SBC("zeropagex")
 		case 0x95:
 			/*
 				STA - Store Accumulator in Memory
-				Operation: A → M
-
-				This instruction transfers the contents of the accumulator to memory.
-
-				This instruction affects none of the flags in the processor status register and does not affect
-				the accumulator.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("STA $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STA $%02X,X", operand1())
+			disassembleOpcode()
 			STA("zeropagex")
 		case 0x94:
 			/*
 				STY - Store Index Register Y In Memory
-				Operation: Y → M
-
-				Transfer the value of the Y register to the addressed memory location.
-
-				STY does not affect any flags or registers in the microprocessor.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("STY $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STY $%02X,X", operand1())
+			disassembleOpcode()
 
 			STY("zeropagex")
 
@@ -3566,36 +2485,16 @@ func execute() {
 		case 0xB6:
 			/*
 				LDX - Load Index Register X From Memory
-				Operation: M → X
-
-				Load the index register X from memory.
-
-				LDX does not affect the C or V flags;
-				sets Z if the value loaded was zero, otherwise resets it;
-				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDX $%02X,Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDX $%02X,Y", operand1())
+			disassembleOpcode()
 			LDX("zeropagey")
 		case 0x96:
 			/*
 				STX - Store Index Register X In Memory
-				Operation: X → M
-
-				Transfers value of X register to addressed memory location.
-
-				No flags or registers in the microprocessor are affected by the store operation.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,Y)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("STX $%02X,Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STX $%02X,Y", operand1())
+			disassembleOpcode()
 
 			STX("zeropagey")
 
@@ -3610,170 +2509,64 @@ func execute() {
 		case 0x61:
 			/*
 				ADC - Add Memory to Accumulator with Carry
-				Operation: A + M + C → A, C
-
-				This instruction adds the value of memory and carry from the previous operation to the value of the
-				accumulator and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99
-				otherwise carry is reset.
-				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
-				otherwise overflow is reset.
-				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
-				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ADC ($%02X,X)\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ADC ($%02X,X)", operand1())
+			disassembleOpcode()
 			ADC("indirectx")
 		case 0x21:
 			/*
 				AND - "AND" Memory with Accumulator
-				Operation: A ∧ M → A
-
-				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
-				AND operation and stores the result back in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page Indirect))\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("AND ($%02X,X)\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("AND ($%02X,X)", operand1())
+			disassembleOpcode()
 
 			AND("indirectx")
 		case 0xC1:
 			/*
 				CMP - Compare Memory and Accumulator
-				Operation: A - M
-
-				This instruction subtracts the contents of memory from the contents of the accumulator.
-
-				The use of the CMP affects the following flags:
-				Z flag is set on an equal comparison, reset otherwise;
-				the N flag is set or reset by the result bit 7,
-				the carry flag is set when the value in memory is less than or equal to the accumulator,
-				reset when it is greater than the accumulator.
-				The accumulator is not affected.
-
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("CMP ($%02X,X)\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CMP ($%02X,X)", operand1())
+			disassembleOpcode()
 
 			CMP("indirectx")
 		case 0x41:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
-				Operation: A ⊻ M → A
-
-				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
-				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page, Indirect))\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("EOR ($%02X,X)\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("EOR ($%02X,X)", operand1())
+			disassembleOpcode()
 
 			EOR("indirectx")
 		case 0xA1:
 			/*
 				LDA - Load Accumulator with Memory
-				Operation: M → A
-
-				When instruction LDA is executed by the microprocessor, data is transferred from memory to the
-				accumulator and stored in the accumulator.
-
-				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
-				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
-				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDA ($%02X,X)\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDA ($%02X,X)", operand1())
+			disassembleOpcode()
 
 			LDA("indirectx")
 		case 0x01:
 			/*
 				ORA - "OR" Memory with Accumulator
-				Operation: A ∨ M → A
-
-				The ORA instruction transfers the memory and the accumulator to the adder which performs a binary
-				"OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((X Zero Page Indirect))\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ORA ($%02x,X)\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ORA ($%02X,X)", operand1())
+			disassembleOpcode()
 
 			ORA("indirectx")
 		case 0xE1:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
-				Operation: A - M - ~C → A
-
-				This instruction subtracts the value of memory and borrow from the value of the accumulator,
-				using two's complement arithmetic, and stores the result in the accumulator.
-				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates that
-				a borrow has not occurred.
-
-				This instruction affects the accumulator.
-				The carry flag is set if the result is greater than or equal to 0.
-				The carry flag is reset when the result is less than 0, indicating a borrow.
-				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
-				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
-				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("SBC ($%02X,X)\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("SBC ($%02X,X)", operand1())
+			disassembleOpcode()
 
 			SBC("indirectx")
 		case 0x81:
 			/*
 				STA - Store Accumulator in Memory
-				Operation: A → M
-
-				This instruction transfers the contents of the accumulator to memory.
-
-				This instruction affects none of the flags in the processor status register and does not
-				affect the accumulator.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page Indirect)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("STA ($%02X,X)\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STA ($%02X,X)", operand1())
+			disassembleOpcode()
 			STA("indirectx")
 
 		// Zero Page Indirect Y Indexed addressing mode instructions
@@ -3787,168 +2580,65 @@ func execute() {
 		case 0x71:
 			/*
 				ADC - Add Memory to Accumulator with Carry
-				Operation: A + M + C → A, C
-
-				This instruction adds the value of memory and carry from the previous operation to the value of the
-				accumulator and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99
-				otherwise carry is reset.
-				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
-				otherwise overflow is reset.
-				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
-				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ADC ($%02X),Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ADC ($%02X),Y", operand1())
+			disassembleOpcode()
 
 			ADC("indirecty")
 		case 0x31:
 			/*
 				AND - "AND" Memory with Accumulator
-				Operation: A ∧ M → A
-
-				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
-				AND operation and stores the result back in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("AND ($%02X),Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("AND ($%02X),Y", operand1())
+			disassembleOpcode()
 
 			AND("indirecty")
 		case 0xD1:
 			/*
 				CMP - Compare Memory and Accumulator
-				Operation: A - M
-
-				This instruction subtracts the contents of memory from the contents of the accumulator.
-
-				The use of the CMP affects the following flags: Z flag is set on an equal comparison, reset otherwise;
-				the N flag is set or reset by the result bit 7,
-				the carry flag is set when the value in memory is less than or equal to the accumulator,
-				reset when it is greater than the accumulator.
-				The accumulator is not affected.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("CMP ($%02X),Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CMP ($%02X),Y", operand1())
+			disassembleOpcode()
 
 			CMP("indirecty")
 		case 0x51:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
-				Operation: A ⊻ M → A
-
-				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
-				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("EOR ($%02X),Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("EOR ($%02X),Y", operand1())
+			disassembleOpcode()
 
 			EOR("indirecty")
 		case 0xB1:
 			/*
 				LDA - Load Accumulator with Memory
-				Operation: M → A
-
-				When instruction LDA is executed by the microprocessor, data is transferred from memory to the
-				accumulator and stored in the accumulator.
-
-				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
-				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
-				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("LDA ($%02X),Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDA ($%02X),Y", operand1())
+			disassembleOpcode()
 
 			LDA("indirecty")
 		case 0x11:
 			/*
 				ORA - "OR" Memory with Accumulator
-				Operation: A ∨ M → A
-
-				The ORA instruction transfers the memory and the accumulator to the adder which performs a binary
-				"OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page),Indirect Y)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("ORA ($%02x),Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ORA ($%02X),Y", operand1())
+			disassembleOpcode()
 			ORA("indirecty")
 
 		case 0xF1:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
-				Operation: A - M - ~C → A
-
-				This instruction subtracts the value of memory and borrow from the value of the accumulator,
-				using two's complement arithmetic, and stores the result in the accumulator.
-				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag
-				indicates that a borrow has not occurred.
-
-				This instruction affects the accumulator.
-				The carry flag is set if the result is greater than or equal to 0.
-				The carry flag is reset when the result is less than 0, indicating a borrow.
-				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
-				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
-				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("SBC ($%02X),Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("SBC ($%02X),Y", operand1())
+			disassembleOpcode()
 
 			SBC("indirecty")
 		case 0x91:
 			/*
 				STA - Store Accumulator in Memory
-				Operation: A → M
-
-				This instruction transfers the contents of the accumulator to memory.
-
-				This instruction affects none of the flags in the processor status register and does not affect the accumulator.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t((Zero Page Indirect),Y)\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("STA ($%02X),Y\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STA ($%02X),Y", operand1())
+			disassembleOpcode()
 
 			STA("indirecty")
 
@@ -3965,32 +2655,9 @@ func execute() {
 		case 0x10:
 			/*
 				BPL - Branch on Result Plus
-				Operation: Branch on N = 0
-
-				This instruction is the complementary branch to branch on result minus.
-
-				It is a conditional branch which takes the branch when the N bit is reset (0).
-
-				BPL is used to test if the previous result bit 7 was off (0) and branch on result minus is used to
-				determine if the previous result was minus or bit 7 was on (1).
-
-				The instruction affects no flags or other registers other than the P counter and only affects the
-				P counter when the N bit is reset.
-
-				Relative addressing is used only with branch instructions and establishes a destination for
-				the conditional branch.
-
-				The second byte of-the instruction becomes the operand which is an “Offset" added to the
-				contents of the lower eight bits of the program counter when the counter is set at the next
-				instruction.
-				The range of the offset is —128 to +127 bytes from the next instruction.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("BPL $%02X\n", (PC+2+int(operand1()))&0xFF)
-			}
+			disassembledInstruction = fmt.Sprintf("BPL $%02X", (PC+2+int(operand1()))&0xFF)
+			disassembleOpcode()
 
 			offset := operand1()
 			signedOffset := int8(offset)
@@ -4011,19 +2678,9 @@ func execute() {
 		case 0x30:
 			/*
 				BMI - Branch on Result Minus
-				Operation: Branch on N = 1
-
-				This instruction takes the conditional branch if the N bit is set.
-
-				BMI does not affect any of the flags or any other part of the machine other than the program counter
-				and then only if the N bit is on.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("BMI $%02X\n", (PC+2+int(operand1()))&0xFF)
-			}
+			disassembledInstruction = fmt.Sprintf("BMI $%02X", (PC+2+int(operand1()))&0xFF)
+			disassembleOpcode()
 
 			// Get offset from operand
 			offset := operand1()
@@ -4045,19 +2702,9 @@ func execute() {
 		case 0x50:
 			/*
 				BVC - Branch on Overflow Clear
-				Operation: Branch on V = 0
-
-				This instruction tests the status of the V flag and takes the conditional branch if the flag is not set.
-
-				BVC does not affect any of the flags and registers other than the program counter and only
-				when the overflow flag is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("BVC $%02X\n", PC+2+int(operand1()))
-			}
+			disassembledInstruction = fmt.Sprintf("BVC $%02X", PC+2+int(operand1()))
+			disassembleOpcode()
 
 			// Get offset from operand
 			offset := operand1()
@@ -4079,39 +2726,17 @@ func execute() {
 		case 0x55:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
-				Operation: A ⊻ M → A
-
-				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
-				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(X Zero Page)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("EOR $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("EOR $%02X,X", operand1())
+			disassembleOpcode()
 
 			EOR("zeropagex")
 		case 0x70:
 			/*
 				BVS - Branch on Overflow Set
-				Operation: Branch on V = 1
-
-				This instruction tests the V flag and takes the conditional branch if V is on.
-
-				BVS does not affect any flags or registers other than the program, counter and only
-				when the overflow flag is set.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("BVS $%04X\n", PC+2+int(operand1()))
-			}
+			disassembledInstruction = fmt.Sprintf("BVS $%02X", PC+2+int(operand1()))
+			disassembleOpcode()
 
 			// Get offset from operand
 			offset := operand1()
@@ -4133,19 +2758,10 @@ func execute() {
 		case 0x90:
 			/*
 				BCC - Branch on Carry Clear
-				Operation: Branch on C = 0
-
-				This instruction tests the state of the carry bit and takes a conditional branch if the carry bit is reset.
-
-				It affects no flags or registers other than the program counter and then only if the C flag is not on.
 			*/
 
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("BCC $%02X\n", (PC+2+int(operand1()))&0xFF)
-			}
+			disassembledInstruction = fmt.Sprintf("BCC $%02X", (PC+2+int(operand1()))&0xFF)
+			disassembleOpcode()
 
 			// Get offset from operand
 			offset := operand1()
@@ -4167,19 +2783,9 @@ func execute() {
 		case 0xB0:
 			/*
 				BCS - Branch on Carry Set
-				Operation: Branch on C = 1
-
-				This instruction takes the conditional branch if the carry flag is on.
-
-				BCS does not affect any of the flags or registers except for the program counter and only
-				then if the carry flag is on.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("BCS $%02X\n", (PC+2+int(operand1()))&0xFF)
-			}
+			disassembledInstruction = fmt.Sprintf("BCS $%02X", (PC+2+int(operand1()))&0xFF)
+			disassembleOpcode()
 			// Get offset from operand
 			offset := operand1()
 			// If carry flag is set, branch to address
@@ -4201,38 +2807,18 @@ func execute() {
 		case 0xD0:
 			/*
 				BNE - Branch on Result Not Zero
-				Operation: Branch on Z = 0
-
-				This instruction could also be called "Branch on Not Equal."
-				It tests the Z flag and takes the conditional branch if the Z flag is not on,
-				indicating that the previous result was not zero.
-
-				BNE does not affect any of the flags or registers other than the program counter
-				and only then if the Z flag is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("BNE $%04X\n", (PC+2+int(operand1()))&0xFF)
-			}
 
-			// Get offset from operand
+			disassembledInstruction = fmt.Sprintf("BNE $%02X", (PC+2+int(operand1()))&0xFF)
+			disassembleOpcode()
+
+			// Fetch offset from operand
 			offset := operand1()
 
-			// If Z flag is not set, branch to address
+			// Check Z flag to determine if branching is needed
 			if getSRBit(1) == 0 {
 				// Calculate the branch target address
 				targetAddr := PC + 2 + int(int8(offset))
-
-				// Update the program counter
-				PC = targetAddr
-
-				// Check if the branch target address overflows or underflows
-				if targetAddr < 0x0000 || targetAddr > 0xFFFF {
-					// Correct the overflow or underflow by wrapping the address
-					PC &= 0xFFFF
-				}
 
 				// Check if the branch crosses a page boundary
 				if (PC & 0xFF00) != (targetAddr & 0xFF00) {
@@ -4240,29 +2826,20 @@ func execute() {
 				} else {
 					incCount(1) // Account for the cycle used by the branch instruction
 				}
+
+				// Update the program counter
+				PC = targetAddr & 0xFFFF // Ensure the address wraps around correctly
 			} else {
-				// Don't branch
+				// If Z flag is set, don't branch
 				incCount(2)
 			}
 
 		case 0xF0:
 			/*
 				BEQ - Branch on Result Zero
-				Operation: Branch on Z = 1
-
-				This instruction could also be called "Branch on Equal."
-
-				It takes a conditional branch whenever the Z flag is on or the previous result is equal to 0.
-
-				BEQ does not affect any of the flags or registers other than the program counter and only then
-				when the Z flag is set.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Relative)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("BEQ $%04X\n", PC+2+int(operand1()))
-			}
+			disassembledInstruction = fmt.Sprintf("BEQ $%02X", (PC+2+int(operand1()))&0xFF)
+			disassembleOpcode()
 
 			// Get offset from address in operand
 			offset := operand1()
@@ -4278,21 +2855,9 @@ func execute() {
 		case 0xF6:
 			/*
 				INC - Increment Memory By One
-				Operation: M + 1 → M
-
-				This instruction adds 1 to the contents of the addressed memory location.
-
-				The increment memory instruction does not affect any internal registers and does not affect the
-				carry or overflow flags.
-				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
-				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x\t\t(Zero Page,X)\t\n", PC, opcode(), operand1())
-				}
-				fmt.Printf("INC $%02X,X\n", operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("INC $%02X,X", operand1())
+			disassembleOpcode()
 
 			INC("zeropagex")
 		}
@@ -4310,494 +2875,180 @@ func execute() {
 		case 0x6D:
 			/*
 				ADC - Add Memory to Accumulator with Carry
-				Operation: A + M + C → A, C
-
-				This instruction adds the value of memory and carry from the previous operation to the value of the
-				accumulator and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99
-				otherwise carry is reset.
-
-				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
-				otherwise overflow is reset.
-
-				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
-				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ADC $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ADC $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			ADC("absolute")
 		case 0x2D:
 			/*
 				AND - "AND" Memory with Accumulator
-				Operation: A ∧ M → A
-
-				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
-				AND operation and stores the result back in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("AND $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("AND $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 
 			AND("absolute")
 		case 0x0E:
 			/*
 				ASL - Arithmetic Shift Left
-				Operation: C ← /M7...M0/ ← 0
-
-				The shift left instruction shifts either the accumulator or the address memory location
-				1 bit to the left, with the bit 0 always being set to 0 and the the input bit 7 being stored in
-				the carry flag.
-
-				ASL either shifts the accumulator left 1 bit or is a read/modify/write instruction that affects only memory.
-
-				The instruction does not affect the overflow bit,
-				sets N equal to the result bit 7 (bit 6 in the input),
-				sets Z flag if the result is equal to 0, otherwise resets Z
-				and stores the input bit 7 in the carry flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ASL $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ASL $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			ASL("absolute")
 		case 0x2C:
 			/*
 				BIT - Test Bits in Memory with Accumulator
-				Operation: A ∧ M, M7 → N, M6 → V
-
-				This instruction performs an AND between a memory location and the accumulator but does not store the
-				result of the AND into the accumulator.
-
-				The bit instruction affects the N flag with
-				N being set to the value of bit 7 of the memory being tested, the V flag with
-				V being set equal to bit 6 of the memory being tested and
-				Z being set by the result of the AND operation between the accumulator and the memory if the
-				result is Zero, Z is reset otherwise.
-
-				It does not affect the accumulator.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("BIT $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("BIT $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			BIT("absolute")
 		case 0xCD:
 			/*
 				CMP - Compare Memory and Accumulator
-				Operation: A - M
-
-				This instruction subtracts the contents of memory from the contents of the accumulator.
-
-				The use of the CMP affects the following flags:
-				Z flag is set on an equal comparison, reset otherwise;
-				the N flag is set or reset by the result bit 7,
-				the carry flag is set when the value in memory is less than or equal to the accumulator,
-				reset when it is greater than the accumulator.
-				The accumulator is not affected.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("CMP $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CMP $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			CMP("absolute")
 		case 0xEC:
 			/*
 				CPX - Compare Index Register X To Memory
-				Operation: X - M
-
-				This instruction subtracts the value of the addressed memory location from the content of
-				index register X using the adder but does not store the result;
-				therefore, its only use is to set the N, Z and C flags to allow for comparison between the
-				index register X and the value in memory.
-
-				The CPX instruction does not affect any register in the machine;
-				it also does not affect the overflow flag.
-				It causes the carry to be set on if the absolute value of the index register X is equal to
-				or greater than the data from memory.
-				If the value of the memory is greater than the content of the index register X, carry is reset.
-				If the results of the subtraction contain a bit 7, then the N flag is set, if not, it is reset.
-				If the value in memory is equal to the value in index register X, the Z flag is set,
-				otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("CPX $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CPX $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			CPX("absolute")
 		case 0xCC:
 			/*
 				CPY - Compare Index Register Y To Memory
-				Operation: Y - M
-
-				This instruction performs a two's complement subtraction between the index register Y and the specified
-				memory location. The results of the subtraction are not stored anywhere. The instruction is strictly
-				used to set the flags.
-
-				CPY affects no registers in the microprocessor and also does not affect the overflow flag.
-				If the value in the index register Y is equal to or greater than the value in the memory,
-				the carry flag will be set, otherwise it will be cleared.
-				If the results of the subtracttion contain bit 7 on the N bit will be set, otherwise it will be cleared.
-				If the value in the index register Y and the value in the memory are equal, the zero flag will be set,
-				otherwise it will be cleared.
-
-
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("CPY $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CPY $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			CPY("absolute")
 		case 0xCE:
 			/*
 				DEC - Decrement Memory By One
-				Operation: M - 1 → M
-
-				This instruction subtracts 1, in two's complement, from the contents of the addressed memory location.
-
-				The decrement instruction does not affect any internal register in the microprocessor.
-				It does not affect the carry or overflow flags.
-				If bit 7 is on as a result of the decrement, then the N flag is set, otherwise it is reset.
-				If the result of the decrement is 0, the Z flag is set, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("DEC $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("DEC $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			DEC("absolute")
 		case 0x4D:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
-				Operation: A ⊻ M → A
-
-				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
-				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("EOR $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("EOR $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			EOR("absolute")
 		case 0xEE:
 			/*
 				INC - Increment Memory By One
-				Operation: M + 1 → M
-
-				This instruction adds 1 to the contents of the addressed memory location.
-
-				The increment memory instruction does not affect any internal registers and does not affect the carry
-				or overflow flags.
-				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
-				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("INC $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("INC $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			INC("absolute")
 		case 0x4C:
 			/*
 				JMP - JMP Absolute
-				Operation: [PC + 1] → PCL, [PC + 2] → PCH
-
-				This instruction establishes a new value for the program counter.
-
-				It affects only the program counter in the microprocessor and affects no flags in the status register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("JMP $%04X\n", int(operand2())<<8|int(operand1()))
+			disassembledInstruction = fmt.Sprintf("JMP $%04X", int(operand2())<<8|int(operand1()))
+			disassembleOpcode()
+			// For AllSuiteA.bin 6502 opcode test suite
+			if memory[0x210] == 0xFF {
+				fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", memory[0x210])
+				os.Exit(0)
 			}
-
 			JMP("absolute")
 		case 0x20:
 			/*
 				JSR - Jump To Subroutine
-				Operation: PC + 2↓, [PC + 1] → PCL, [PC + 2] → PCH
-
-				This instruction transfers control of the program counter to a subroutine location but leaves a
-				return pointer on the stack to allow the user to return to perform the next instruction in the
-				main program after the subroutine is complete.
-
-				To accomplish this, JSR instruction stores the program counter address which points to the last byte
-				of the jump instruction onto the stack using the stack pointer. The stack byte contains the
-				program count low first, followed by program count high. The JSR then transfers the addresses following
-				the jump instruction to the	program counter high and the program counter low, thereby directing the
-				program to begin at that new address.
-
-				The JSR instruction affects no flags, causes the stack pointer to be decremented by 2 and substitutes
-				new values into the program counter high and the program counter low.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("JSR $%04X\n", int(operand2())<<8|int(operand1()))
-			}
+			disassembledInstruction = fmt.Sprintf("JSR $%04X", int(operand2())<<8|int(operand1()))
+			disassembleOpcode()
 
-			// Push high byte of PC onto stack
-			memory[SP] = byte((PC >> 8) & 0xFF)
+			// First, push the high byte
 			decSP()
+			memory[SP] = byte((PC + 1) >> 8)
 
-			// Push low byte of PC onto stack
-			memory[SP] = byte(PC & 0xFF)
+			// Then, push the low byte
 			decSP()
+			memory[SP] = byte((PC + 1) & 0xFF)
 
-			// Set the program counter to the absolute address from the operands
+			// Now, jump to the subroutine address specified by the operands
 			PC = int(operand2())<<8 | int(operand1())
-
 			incCount(0)
 		case 0xAD:
 			/*
 				LDA - Load Accumulator with Memory
-				Operation: M → A
-
-				When instruction LDA is executed by the microprocessor, data is transferred from memory to
-				the accumulator and stored in the accumulator.
-
-				 LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
-				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
-				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("LDA $%04X\n", uint16(operand2())<<8|uint16(operand1()))
-			}
+			disassembledInstruction = fmt.Sprintf("LDA $%04X", uint16(operand2())<<8|uint16(operand1()))
+			disassembleOpcode()
 			LDA("absolute")
 		case 0xAE:
 			/*
 				LDX - Load Index Register X From Memory
-				Operation: M → X
-
-				Load the index register X from memory.
-
-				LDX does not affect the C or V flags;
-				sets Z if the value loaded was zero, otherwise resets it;
-				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("LDX $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDX $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			LDX("absolute")
 		case 0xAC:
 			/*
 				LDY - Load Index Register Y From Memory
-				Operation: M → Y
-
-				Load the index register Y from memory.
-
-				LDY does not affect the C or V flags,
-				sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
-				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("LDY $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDY $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			LDY("absolute")
 		case 0x4E:
 			/*
 				LSR - Logical Shift Right
-				Operation: 0 → /M7...M0/ → C
-
-				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the high bit which is shifted out of the
-				field being stored in the carry flag.
-
-				The shift right instruction either affects the accumulator by shifting it right 1 or is a
-				read/modify/write instruction which changes a specified memory location but does not affect any
-				internal registers.
-				The shift right does not affect the overflow flag.
-				The N flag is always reset.
-				The Z flag is set if the result of the shift is 0 and reset otherwise.
-				The carry is set equal to bit 0 of the input.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("LSR $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LSR $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			LSR("absolute")
 		case 0x0D:
 			/*
 				ORA - "OR" Memory with Accumulator
-				Operation: A ∨ M → A
-
-				The ORA instruction transfers the memory and the accumulator to the adder which performs a binary
-				"OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ORA $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ORA $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			ORA("absolute")
 		case 0x2E:
 			/*
 				ROL - Rotate Left
-				Operation: C ← /M7...M0/ ← C
-
-				The rotate left instruction shifts either the accumulator or addressed memory left 1 bit,
-				with the input carry being stored in bit 0 and with the input bit 7 being stored in the carry flags.
-
-				The ROL instruction either shifts the accumulator left 1 bit and stores the carry in accumulator bit 0
-				or does not affect the internal registers at all.
-				The ROL instruction sets carry equal to the input bit 7,
-				sets N equal to the input bit 6,
-				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and
-				does not affect the overflow flag at all.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ROL $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ROL $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			ROL("absolute")
 		case 0x6E:
 			/*
 				ROR - Rotate Right
-				Operation: C → /M7...M0/ → C
-
-				The rotate right instruction shifts either the accumulator or addressed memory right 1 bit with bit 0
-				shifted into the carry and carry shifted into bit 7.
-
-				The ROR instruction either shifts the accumulator right 1 bit and stores the carry in accumulator bit 7
-				or does not affect the internal registers at all.
-				The ROR instruction sets carry equal to input bit 0,
-				sets N equal to the input carry and
-				sets the Z flag if the result of the rotate is 0; otherwise it resets Z
-				and does not affect the overflow flag at all.
-
-				(Available on Microprocessors after June, 1976)
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ROR $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ROR $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			ROR("absolute")
 		case 0xED:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
-				Operation: A - M - ~C → A
-
-				This instruction subtracts the value of memory and borrow from the value of the accumulator,
-				using two's complement arithmetic, and stores the result in the accumulator.
-
-				Borrow is defined as the carry flag complemented;
-				therefore, a resultant carry flag indicates that a borrow has not occurred.
-
-				This instruction affects the accumulator.
-				The carry flag is set if the result is greater than or equal to 0.
-				The carry flag is reset when the result is less than 0, indicating a borrow.
-				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
-				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
-				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("SBC $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("SBC $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			SBC("absolute")
 		case 0x8D:
 			/*
 				STA - Store Accumulator in Memory
-				Operation: A → M
-
-				This instruction transfers the contents of the accumulator to memory.
-
-				This instruction affects none of the flags in the processor status register and
-				does not affect the accumulator.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("STA $%04X\n", uint16(operand2())<<8|uint16(operand1()))
-			}
+			disassembledInstruction = fmt.Sprintf("STA $%04X", uint16(operand2())<<8|uint16(operand1()))
+			disassembleOpcode()
 			STA("absolute")
 		case 0x8E:
 			/*
 				STX - Store Index Register X In Memory
-				Operation: X → M
-
-				Transfers value of X register to addressed memory location.
-
-				No flags or registers in the microprocessor are affected by the store operation.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("STX $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STX $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			STX("absolute")
 		case 0x8C:
 			/*
 				STY - Store Index Register Y In Memory
-				Operation: Y → M
-
-				Transfer the value of the Y register to the addressed memory location.
-
-				STY does not affect any flags or registers in the microprocessor.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("STY $%02X%02X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STY $%02X%02X", operand2(), operand1())
+			disassembleOpcode()
 			STY("absolute")
 
 		// X Indexed Absolute addressing mode instructions
@@ -4816,313 +3067,107 @@ func execute() {
 		case 0x7D:
 			/*
 				ADC - Add Memory to Accumulator with Carry
-				Operation: A + M + C → A, C
-
-				This instruction adds the value of memory and carry from the previous operation to the value of the
-				accumulator and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99
-				otherwise carry is reset.
-				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128,
-				otherwise overflow is reset.
-				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset
-				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
-
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ADC $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ADC $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			ADC("absolutex")
 		case 0x3D:
 			/*
 				AND - "AND" Memory with Accumulator
-				Operation: A ∧ M → A
-
-				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
-				AND operation and stores the result back in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("AND $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("AND $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			AND("absolutex")
 		case 0x1E:
 			/*
 				ASL - Arithmetic Shift Left
-				Operation: C ← /M7...M0/ ← 0
-
-				The shift left instruction shifts either the accumulator or the address memory location
-				1 bit to the left, with the bit 0 always being set to 0 and the the input bit 7 being stored
-				in the carry flag.
-				ASL either shifts the accumulator left 1 bit or is a read/modify/write instruction that
-				affects only memory.
-
-				The instruction does not affect the overflow bit,
-				sets N equal to the result bit 7 (bit 6 in the input),
-				sets Z flag if the result is equal to 0, otherwise resets Z and
-				stores the input bit 7 in the carry flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ASL $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ASL $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			ASL("absolutex")
 		case 0xDD:
 			/*
 				CMP - Compare Memory and Accumulator
-				Operation: A - M
-
-				This instruction subtracts the contents of memory from the contents of the accumulator.
-
-				The use of the CMP affects the following flags:
-				Z flag is set on an equal comparison, reset otherwise;
-				the N flag is set or reset by the result bit 7,
-				the carry flag is set when the value in memory is less than or equal to the accumulator,
-				reset when it is greater than the accumulator.
-				The accumulator is not affected.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("CMP $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CMP $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			CMP("absolutex")
 		case 0xDE:
 			/*
 				DEC - Decrement Memory By One
-				Operation: M - 1 → M
-
-				This instruction subtracts 1, in two's complement, from the contents of the addressed memory location.
-
-				The decrement instruction does not affect any internal register in the microprocessor.
-				It does not affect the carry or overflow flags.
-				If bit 7 is on as a result of the decrement, then the N flag is set, otherwise it is reset.
-				If the result of the decrement is 0, the Z flag is set, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("DEC $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("DEC $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 
 			DEC("absolutex")
 		case 0x5D:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
-				Operation: A ⊻ M → A
-
-				The EOR instruction transfers the memory and the accumulator to the adder which performs a binary
-				"EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("EOR $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("EOR $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			EOR("absolutex")
 		case 0xFE:
 			/*
 				INC - Increment Memory By One
-				Operation: M + 1 → M
-
-				This instruction adds 1 to the contents of the addressed memory location.
-
-				The increment memory instruction does not affect any internal registers and does not affect the
-				carry or overflow flags.
-				If bit 7 is on as the result of the increment,N is set, otherwise it is reset;
-				if the increment causes the result to become 0, the Z flag is set on, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("INC $%04X,X\n", int(operand2())<<8|int(operand1()))
-			}
+			disassembledInstruction = fmt.Sprintf("INC $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			INC("absolutex")
 		case 0xBD:
 			/*
 				LDA - Load Accumulator with Memory
-				Operation: M → A
-
-				When instruction LDA is executed by the microprocessor, data is transferred from memory to the
-				accumulator and stored in the accumulator.
-
-				LDA affects the contents of the accumulator,
-				does not affect the carry or overflow flags;
-				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
-				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("LDA $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDA $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			LDA("absolutex")
 		case 0xBC:
 			/*
 				LDY - Load Index Register Y From Memory
-				Operation: M → Y
-
-				Load the index register Y from memory.
-
-				LDY does not affect the C or V flags, sets the N flag if the value loaded in bit 7 is a 1, otherwise resets N,
-				sets Z flag if the loaded value is zero otherwise resets Z and only affects the Y register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("LDY $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDY $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			LDY("absolutex")
 		case 0x5E:
 			/*
 				LSR - Logical Shift Right
-				Operation: 0 → /M7...M0/ → C
-
-				This instruction shifts either the accumulator or a specified memory location 1 bit to the right,
-				with the higher bit of the result always being set to 0, and the high bit which is shifted out of
-				the field being stored in the carry flag.
-
-				The shift right instruction either affects the accumulator by shifting it right 1 or is a
-				read/modify/write instruction which changes a specified memory location but does not affect any
-				internal registers.
-
-				The shift right does not affect the overflow flag.
-				The N flag is always reset.
-				The Z flag is set if the result of the shift is 0 and reset otherwise.
-				The carry is set equal to bit 0 of the input.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("LSR $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LSR $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			LSR("absolutex")
 		case 0x1D:
 			/*
 				ORA - "OR" Memory with Accumulator
-				Operation: A ∨ M → A
-
-				The ORA instruction transfers the memory and the accumulator to the adder which performs a binary
-				"OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ORA $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ORA $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			ORA("absolutex")
 		case 0x3E:
 			/*
-				ROL - Rotate Left
-				Operation: C ← /M7...M0/ ← C
-
-				The rotate left instruction shifts either the accumulator or addressed memory left 1 bit,
-				with the input carry being stored in bit 0 and with the input bit 7 being stored in the carry flags.
-
-				The ROL instruction either shifts the accumulator left 1 bit and stores the carry in accumulator bit 0
-				or does not affect the internal registers at all.
-				The ROL instruction sets carry equal to the input bit 7,
-				sets N equal to the input bit 6,
-				sets the Z flag if the result of the rotate is 0, otherwise it resets Z and
-				does not affect the overflow flag at all.
-			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ROL $%02X%02X,X\n", operand2(), operand1())
-			}
+			 */
+			disassembledInstruction = fmt.Sprintf("ROL $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			ROL("absolutex")
 		case 0x7E:
 			/*
 				ROR - Rotate Right
-				Operation: C → /M7...M0/ → C
-
-				The rotate right instruction shifts either the accumulator or addressed memory right 1 bit with bit 0
-				shifted into the carry and carry shifted into bit 7.
-
-				The ROR instruction either shifts the accumulator right 1 bit and stores the carry in accumulator bit 7
-				or does not affect the internal registers at all.
-				The ROR instruction sets carry equal to input bit 0,
-				sets N equal to the input carry and sets the Z flag if the result of the rotate is 0;
-				otherwise it resets Z and does not affect the overflow flag at all.
-
-				(Available on Microprocessors after June, 1976)
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ROR $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ROR $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			ROR("absolutex")
 		case 0xFD:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
-				Operation: A - M - ~C → A
-
-				This instruction subtracts the value of memory and borrow from the value of the accumulator,
-				using two's complement arithmetic, and stores the result in the accumulator.
-				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates
-				that a borrow has not occurred.
-
-				This instruction affects the accumulator.
-				The carry flag is set if the result is greater than or equal to 0.
-				The carry flag is reset when the result is less than 0, indicating a borrow.
-				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
-				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
-				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("SBC $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("SBC $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			SBC("absolutex")
 		case 0x9D:
 			/*
 				STA - Store Accumulator in Memory
-				Operation: A → M
-
-				This instruction transfers the contents of the accumulator to memory.
-
-				This instruction affects none of the flags in the processor status register and does not affect the accumulator.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,X)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("STA $%02X%02X,X\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STA $%02X%02X,X", operand2(), operand1())
+			disassembleOpcode()
 			STA("absolutex")
 
 		// Y Indexed Absolute addressing mode instructions
@@ -5140,207 +3185,76 @@ func execute() {
 		case 0x79:
 			/*
 				ADC - Add Memory to Accumulator with Carry
-				Operation: A + M + C → A, C
-
-				This instruction adds the value of memory and carry from the previous operation to the value of the
-				accumulator and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the carry flag when the sum of a binary add exceeds 255 or when the sum of a decimal add exceeds 99
-				otherwise carry is reset.
-				The overflow flag is set when the sign or bit 7 is changed due to the result exceeding +127 or -128
-				otherwise overflow is reset.
-				The negative flag is set if the accumulator result contains bit 7 on, otherwise the negative flag is reset.
-				The zero flag is set if the accumulator result is 0, otherwise the zero flag is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ADC $%04X,Y\n", int(operand2())<<8|int(operand1()))
-			}
+			disassembledInstruction = fmt.Sprintf("ADC $%04X,Y", int(operand2())<<8|int(operand1()))
+			disassembleOpcode()
 			ADC("absolutey")
 		case 0x39:
 			/*
 				AND - "AND" Memory with Accumulator
-				Operation: A ∧ M → A
-
-				The AND instruction transfer the accumulator and memory to the adder which performs a bit-by-bit
-				AND operation and stores the result back in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("AND $%02X%02X,Y\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("AND $%02X%02X,Y", operand2(), operand1())
+			disassembleOpcode()
 			AND("absolutey")
 		case 0xD9:
 			/*
 				CMP - Compare Memory and Accumulator
-				Operation: A - M
-
-				This instruction subtracts the contents of memory from the contents of the accumulator.
-
-				The use of the CMP affects the following flags:
-				Z flag is set on an equal comparison, reset otherwise;
-				the N flag is set or reset by the result bit 7,
-				the carry flag is set when the value in memory is less than or equal to the accumulator, reset when
-				it is greater than the accumulator.
-				The accumulator is not affected.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("CMP $%02X%02X,Y\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("CMP $%02X%02X,Y", operand2(), operand1())
+			disassembleOpcode()
 			CMP("absolutey")
 		case 0x59:
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
-				Operation: A ⊻ M → A
-
-				The EOR instruction transfers the memory and the accumulator to the adder which performs a
-				binary "EXCLUSIVE OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("EOR $%02X%02X,Y\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("EOR $%02X%02X,Y", operand2(), operand1())
+			disassembleOpcode()
 			EOR("absolutey")
 		case 0xB9:
 			/*
 				LDA - Load Accumulator with Memory
-				Operation: M → A
-
-				When instruction LDA is executed by the microprocessor, data is transferred from memory to the
-				accumulator and stored in the accumulator.
-
-				LDA affects the contents of the accumulator, does not affect the carry or overflow flags;
-				sets the zero flag if the accumulator is zero as a result of the LDA, otherwise resets the zero flag;
-				sets the negative flag if bit 7 of the accumulator is a 1, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("LDA $%02X%02X,Y\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDA $%02X%02X,Y", operand2(), operand1())
+			disassembleOpcode()
 			LDA("absolutey")
 		case 0xBE:
 			/*
 				LDX - Load Index Register X From Memory
-				Operation: M → X
-
-				Load the index register X from memory.
-
-				LDX does not affect the C or V flags;
-				sets Z if the value loaded was zero, otherwise resets it;
-				sets N if the value loaded in bit 7 is a 1; otherwise N is reset, and affects only the X register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("LDX $%02X%02X,Y\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("LDX $%02X%02X,Y", operand2(), operand1())
+			disassembleOpcode()
 			LDX("absolutey")
 		case 0x19:
 			/*
 				ORA - "OR" Memory with Accumulator
-				Operation: A ∨ M → A
-
-				The ORA instruction transfers the memory and the accumulator to the adder which performs a binary
-				"OR" on a bit-by-bit basis and stores the result in the accumulator.
-
-				This instruction affects the accumulator;
-				sets the zero flag if the result in the accumulator is 0, otherwise resets the zero flag;
-				sets the negative flag if the result in the accumulator has bit 7 on, otherwise resets the negative flag.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("ORA $%02X%02X,Y\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("ORA $%02X%02X,Y", operand2(), operand1())
+			disassembleOpcode()
 			ORA("absolutey")
 		case 0xF9:
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
-				Operation: A - M - ~C → A
-
-				This instruction subtracts the value of memory and borrow from the value of the accumulator,
-				using two's complement arithmetic, and stores the result in the accumulator.
-				Borrow is defined as the carry flag complemented; therefore, a resultant carry flag indicates
-				that a borrow has not occurred.
-
-				This instruction affects the accumulator.
-				The carry flag is set if the result is greater than or equal to 0.
-				The carry flag is reset when the result is less than 0, indicating a borrow.
-				The overflow flag is set when the result exceeds +127 or -127, otherwise it is reset.
-				The negative flag is set if the result in the accumulator has bit 7 on, otherwise it is reset.
-				The Z flag is set if the result in the accumulator is 0, otherwise it is reset.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("SBC $%02X%02X,Y\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("SBC $%02X%02X,Y", operand2(), operand1())
+			disassembleOpcode()
 			SBC("absolutey")
 		case 0x99:
 			/*
 				STA - Store Accumulator in Memory
-				Operation: A → M
-
-				This instruction transfers the contents of the accumulator to memory.
-
-				This instruction affects none of the flags in the processor status register
-				and does not affect the accumulator.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute,Y)\t\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("STA $%02X%02X,Y\n", operand2(), operand1())
-			}
+			disassembledInstruction = fmt.Sprintf("STA $%02X%02X,Y", operand2(), operand1())
+			disassembleOpcode()
 			STA("absolutey")
 		// Absolute Indirect addressing mode instructions
 		case 0x6C:
 			/*
 				JMP - JMP Indirect
-				Operation: [PC + 1] → PCL, [PC + 2] → PCH
-
-				This instruction establishes a new value for the program counter.
-
-				It affects only the program counter in the microprocessor and affects no flags in the status register.
 			*/
-			if *disassemble {
-				if *printHex {
-					fmt.Printf(";; $%04x\t$%02x $%02x $%02x\t(Absolute Indirect)\n", PC, opcode(), operand1(), operand2())
-				}
-				fmt.Printf("JMP ($%04X)\n", int(operand2())<<8|int(operand1()))
-			}
+			disassembledInstruction = fmt.Sprintf("JMP ($%02X%02X)", operand2(), operand1())
+			disassembleOpcode()
 			JMP("indirect")
-		}
-		kernalRoutines()
+			kernalRoutines()
 
-		if *stateMonitor { // Move cursor up two lines from current position
-			//fmt.Printf("\033[2A")
-			printMachineState()
-			//wait for keypress
-			//fmt.Scanln()
 		}
 	}
 }
