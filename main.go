@@ -107,6 +107,14 @@ func main() {
 	execute()
 }
 
+func printMemoryAroundSP() {
+	fmt.Printf("Memory around SP:\n")
+	startAddress := uint16(SPBaseAddress) + uint16(SP) - 5
+	for i := 0; i < 11; i++ {
+		fmt.Printf("0x%04X: 0x%02X\n", startAddress+uint16(i), memory[startAddress+uint16(i)])
+	}
+}
+
 func disassembleOpcode() {
 	if *disassemble {
 		fmt.Printf("%s\n", disassembledInstruction)
@@ -289,9 +297,9 @@ func readBit(bit byte, value byte) int {
 	return int((value >> bit) & 1)
 }
 func decSP() {
-	if SP == 0x0100 {
-		// Wrap around to top of stack at 0x01FF
-		SP = 0x01FF
+	if SP == 0x00 {
+		// Wrap around to top of stack at 0xFF
+		SP = 0xFF
 	} else {
 		// Decrement SP normally
 		SP--
@@ -299,7 +307,13 @@ func decSP() {
 }
 
 func incSP() {
-	SP++
+	if SP == 0xFF {
+		// Wrap around to bottom of stack at 0x00
+		SP = 0x00
+	} else {
+		// Increment SP normally
+		SP++
+	}
 }
 
 // 6502 mnemonics with multiple addressing modes
@@ -1154,6 +1168,8 @@ func ADC(addressingMode string) {
 		// If the result is 0, set the zero flag
 		if result == 0 {
 			setZeroFlag()
+		} else {
+			unsetZeroFlag()
 		}
 		// Set the accumulator to the result
 		A = byte(result)
@@ -1753,10 +1769,10 @@ func CPY(addressingMode string) {
 func execute() {
 	for PC < len(memory) {
 		//debug option to break out from borked opcode infinite loop
-		if PC == 0x45C0 {
+		/*if PC == 0x45C0 {
 			// exit to OS
 			os.Exit(0)
-		}
+		}*/
 
 		//  1 byte instructions with no operands
 		switch opcode() {
@@ -1802,6 +1818,7 @@ func execute() {
 			/*
 				CLC - Clear Carry Flag
 			*/
+			// print the SR as binary digits
 			disassembledInstruction = fmt.Sprintf("CLC")
 			disassembleOpcode()
 			// Set SR carry flag bit 0 to 0
@@ -1941,18 +1958,21 @@ func execute() {
 			incCount(1)
 		case 0x08:
 			/*
-				PHP - Push Processor Status On Stack
+			   PHP - Push Processor Status On Stack
 			*/
 			disassembledInstruction = fmt.Sprintf("PHP")
 			disassembleOpcode()
 
-			// Set SR break flag
-			setBreakFlag()
+			// Set the break flag and the unused bit before pushing
+			SR |= (1 << 4) // Set break flag
+			SR |= (1 << 5) // Set unused bit
 
-			// Decrement the stack pointer by 1 byte
-			decSP()
-			// Push SR to stack
+			// Push the SR onto the stack
 			memory[SPBaseAddress+SP] = SR
+
+			// Decrement the stack pointer
+			decSP()
+
 			incCount(1)
 		case 0x68:
 			/*
@@ -1964,8 +1984,11 @@ func execute() {
 			// Increment the stack pointer first
 			incSP()
 
+			// Ensure all arithmetic is done in uint16
+			expectedAddress := uint16(SPBaseAddress) + uint16(SP)
+
 			// Now, update accumulator with value stored in memory address pointed to by SP
-			A = memory[SPBaseAddress+SP]
+			A = memory[expectedAddress]
 
 			// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 			if getABit(7) == 1 {
@@ -1980,6 +2003,7 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
+
 			incCount(1)
 		case 0x28:
 			/*
@@ -1996,22 +2020,22 @@ func execute() {
 			/*
 			   RTI - Return From Interrupt
 			*/
+
 			disassembledInstruction = fmt.Sprintf("RTI")
 			disassembleOpcode()
 
-			// Increment the stack pointer to get SR
+			SR = memory[SPBaseAddress+SP] & 0xCF
 			incSP()
-			// Update SR with the value stored in memory at the address pointed to by SP
-			fmt.Printf("SPBaseAddress: %02X, SP: %02X\n", SPBaseAddress, SP)
-			SR = memory[SPBaseAddress+SP]
 
 			// Increment the stack pointer to get low byte of PC
 			incSP()
+
 			// Get low byte of PC
 			low := uint16(memory[SPBaseAddress+SP])
 
 			// Increment the stack pointer to get high byte of PC
 			incSP()
+
 			// Get high byte of PC
 			high := uint16(memory[SPBaseAddress+SP])
 
@@ -2826,6 +2850,7 @@ func execute() {
 			offset := operand1()
 			// If N flag is set, branch to address
 			if getSRBit(7) == 1 {
+				incCount(0)
 				// Branch
 				// Add offset to lower 8bits of PC
 				PC = PC + 3 + int(offset)&0xFF
@@ -2834,7 +2859,6 @@ func execute() {
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				incCount(0)
 			} else {
 				// Don't branch
 				incCount(2)
@@ -2850,6 +2874,7 @@ func execute() {
 			offset := operand1()
 			// If overflow flag is not set, branch to address
 			if getSRBit(6) == 0 {
+				incCount(0)
 				// Branch
 				// Add offset to lower 8bits of PC
 				PC = PC + 3 + int(offset)&0xFF
@@ -2858,7 +2883,6 @@ func execute() {
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				incCount(0)
 			} else {
 				// Don't branch
 				incCount(2)
@@ -2882,6 +2906,7 @@ func execute() {
 			offset := operand1()
 			// If overflow flag is set, branch to address
 			if getSRBit(6) == 1 {
+				incCount(0)
 				// Branch
 				// Add offset to lower 8bits of PC
 				PC = PC + 3 + int(offset)&0xFF
@@ -2890,7 +2915,6 @@ func execute() {
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				incCount(0)
 			} else {
 				// Don't branch
 				incCount(2)
@@ -2899,14 +2923,14 @@ func execute() {
 			/*
 				BCC - Branch on Carry Clear
 			*/
-
-			disassembledInstruction = fmt.Sprintf("BCC $%02X", (PC+2+int(operand1()))&0xFF)
+			disassembledInstruction = fmt.Sprintf("BCC $%02X", (PC + 2 + int(operand1())))
 			disassembleOpcode()
 
 			// Get offset from operand
 			offset := operand1()
 			// If carry flag is unset, branch to address
 			if getSRBit(0) == 0 {
+				incCount(0)
 				// Branch
 				// Add offset to lower 8bits of PC
 				PC = PC + 3 + int(offset)&0xFF
@@ -2915,7 +2939,6 @@ func execute() {
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				incCount(0)
 			} else {
 				// Don't branch
 				incCount(2)
@@ -2930,6 +2953,7 @@ func execute() {
 			offset := operand1()
 			// If carry flag is set, branch to address
 			if getSRBit(0) == 1 {
+				incCount(0)
 				// Branch
 				// Add offset to lower 8bits of PC
 				PC = PC + 3 + int(offset)&0xFF
@@ -2938,7 +2962,6 @@ func execute() {
 				if readBit(7, offset) == 0 {
 					PC--
 				}
-				incCount(0)
 			} else {
 				// Don't branch
 				incCount(2)
@@ -2982,16 +3005,18 @@ func execute() {
 			disassembleOpcode()
 
 			// Get offset from address in operand
-			offset := operand1()
+			offset := int8(operand1()) // Cast to signed 8-bit integer to handle negative offsets
 			// Get relative address from offset
 			relativeAddress := PC + 2 + int(offset)
+
 			// If Z flag is set, branch to address
 			if getSRBit(1) == 1 {
-				PC = relativeAddress
 				incCount(0)
+				PC = relativeAddress
 			} else {
 				incCount(2)
 			}
+
 		case 0xF6:
 			/*
 				INC - Increment Memory By One
