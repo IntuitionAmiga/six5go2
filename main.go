@@ -1166,13 +1166,36 @@ func ADC(addressingMode string) {
 		if getSRBit(0) == 1 {
 			result++
 		}
-		// If the result is greater than 255, set the carry flag
-		if result > 255 {
-			setCarryFlag()
-		} else if getSRBit(3) == 1 && result > 99 {
-			setCarryFlag()
+
+		// Check for BCD mode (Decimal flag set)
+		if getSRBit(3) == 1 {
+			// Handle BCD addition
+			lowerNibble := (A & 0x0F) + (value & 0x0F)
+			if getSRBit(0) == 1 {
+				lowerNibble++
+			}
+			if lowerNibble > 9 {
+				lowerNibble += 6
+			}
+			upperNibble := (A >> 4) + (value >> 4)
+			if lowerNibble > 0x0F {
+				upperNibble++
+			}
+			if upperNibble > 9 {
+				upperNibble += 6
+				setCarryFlag()
+			} else {
+				unsetCarryFlag()
+			}
+			result = int((upperNibble << 4) | (lowerNibble & 0x0F))
 		} else {
-			unsetCarryFlag()
+			// Binary mode
+			// If the result is greater than 255, set the carry flag
+			if result > 255 {
+				setCarryFlag()
+			} else {
+				unsetCarryFlag()
+			}
 		}
 
 		// If result is positive and value is negative, or result is negative and value is positive set the overflow flag
@@ -1181,20 +1204,18 @@ func ADC(addressingMode string) {
 		} else {
 			unsetOverflowFlag()
 		}
-		// If bit 7 of the result is set, set the negative flag
 		if readBit(7, byte(result)) == 1 {
 			setNegativeFlag()
 		} else {
 			unsetNegativeFlag()
 		}
-		// If the result is 0, set the zero flag
 		if result == 0 {
 			setZeroFlag()
 		} else {
 			unsetZeroFlag()
 		}
-		// Set the accumulator to the result
 		A = byte(result)
+
 		if addressingMode == IMMEDIATE {
 			incCount(2)
 		}
