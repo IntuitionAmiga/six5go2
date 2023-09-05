@@ -156,7 +156,8 @@ func petsciiToAscii(petscii uint8) uint8 {
 
 func kernalRoutines() {
 	// CHROUT routine is at $FFD2
-	if PC == 0xFFD2 {
+	switch PC {
+	case 0xFFD2:
 		// This is a CHROUT call
 		ch := petsciiToAscii(A) // Convert PETSCII to ASCII
 
@@ -177,10 +178,12 @@ func kernalRoutines() {
 				fmt.Printf("Invalid ASCII value: %d\n", ch)
 			}
 		}
-
-		// Advance PC past the JSR instruction
-		incCount(3)
+	case 0xFFF6:
+		// This is a RESET call
+		reset()
 	}
+	// print "kernal rom call address"
+	//fmt.Printf("\n\u001B[32;5mKernal ROM call address: $%04X\u001B[0m\n", PC)
 }
 
 func opcode() byte {
@@ -688,6 +691,7 @@ func CMP(addressingMode string) {
 }
 
 func JMP(addressingMode string) {
+	incCount(0)
 	switch addressingMode {
 	case ABSOLUTE:
 		// Get the 16 bit address from operands
@@ -704,7 +708,6 @@ func JMP(addressingMode string) {
 		// Set the program counter to the indirect address
 		PC = int(indirectAddress)
 	}
-	incCount(0)
 }
 
 func AND(addressingMode string) {
@@ -3485,8 +3488,9 @@ func execute() {
 			disassembledInstruction = fmt.Sprintf("JMP ($%02X%02X)", operand2(), operand1())
 			disassembleOpcode()
 			JMP("indirect")
+		}
+		if *plus4 {
 			kernalRoutines()
-
 		}
 	}
 }
