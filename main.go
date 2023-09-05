@@ -1415,7 +1415,7 @@ func ROR(addressingMode string) {
 		} else {
 			unsetCarryFlag()
 		}
-		if result == 0 {
+		if A == 0 {
 			setZeroFlag()
 		} else {
 			unsetZeroFlag()
