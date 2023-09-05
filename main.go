@@ -1190,6 +1190,11 @@ func ADC(addressingMode string) {
 			} else {
 				unsetCarryFlag()
 			}
+			if (A^byte(result))&0x80 != 0 && (A^value)&0x80 == 0 {
+				setOverflowFlag()
+			} else {
+				unsetOverflowFlag()
+			}
 			result = int((upperNibble << 4) | (lowerNibble & 0x0F))
 		} else {
 			// Binary mode
