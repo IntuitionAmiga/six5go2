@@ -1488,17 +1488,19 @@ func ROL(addressingMode string) {
 		} else {
 			unsetCarryFlag()
 		}
-		// Set SR negative flag to bit 6 of value (bit 7 of result)
-		if readBit(6, value) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-		// If result is 0 then set zero flag else reset it
-		if result == 0 {
+
+		// Update the zero flag
+		if A == 0 {
 			setZeroFlag()
 		} else {
 			unsetZeroFlag()
+		}
+
+		// Update the negative flag
+		if readBit(7, A) == 1 {
+			setNegativeFlag()
+		} else {
+			unsetNegativeFlag()
 		}
 		if addressingMode == ACCUMULATOR {
 			// Store the result in the accumulator
