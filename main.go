@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"os"
 )
 
@@ -58,7 +57,7 @@ func reset() {
 	// Set SR to 0b00110100
 	SR = 0b00110110
 	// Set PC to value stored at reset vector address
-	PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
+	//PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
 }
 
 func loadROMs() {
@@ -74,19 +73,26 @@ func loadROMs() {
 		_, _ = io.ReadFull(file, KERNALROM)
 		fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
 		copy(memory[kernalROMAddress:], KERNALROM)
-
 	*/
-	// Copy AllSuiteA ROM into memory
-	file, _ := os.Open("roms/AllSuiteA.bin")
-	_, _ = io.ReadFull(file, AllSuiteAROM)
-	fmt.Printf("Copying AllSuiteA ROM into memory at $%04X to $%04X\n\n", AllSuiteAROMAddress, AllSuiteAROMAddress+len(AllSuiteAROM))
-	copy(memory[AllSuiteAROMAddress:], AllSuiteAROM)
-	// Set the interrupt vector addresses manually
-	memory[0xFFFE] = AllSuiteAROM[len(AllSuiteAROM)-2]
-	memory[0xFFFF] = AllSuiteAROM[len(AllSuiteAROM)-1]
-	memory[0xFFFE] = 0x00 // Low byte of 0x4000
-	memory[0xFFFF] = 0x40 // High byte of 0x4000
+	/*
+		// Copy AllSuiteA ROM into memory
+		file, _ := os.Open("roms/AllSuiteA.bin")
+		_, _ = io.ReadFull(file, AllSuiteAROM)
+		fmt.Printf("Copying AllSuiteA ROM into memory at $%04X to $%04X\n\n", AllSuiteAROMAddress, AllSuiteAROMAddress+len(AllSuiteAROM))
+		copy(memory[AllSuiteAROMAddress:], AllSuiteAROM)
+		// Set the interrupt vector addresses manually
+		memory[0xFFFE] = AllSuiteAROM[len(AllSuiteAROM)-2]
+		memory[0xFFFF] = AllSuiteAROM[len(AllSuiteAROM)-1]
+		memory[0xFFFE] = 0x00 // Low byte of 0x4000
+		memory[0xFFFF] = 0x40 // High byte of 0x4000
+	*/
 
+	//Copy roms/6502_functional_test.bin into memory
+	file, _ := os.Open("roms/6502_functional_test.bin")
+	_, _ = file.Read(memory[0x0000:])
+	fmt.Printf("Copying 6502_functional_test.bin into memory at $%04X to $%04X\n\n", 0x0000, 0x0000+len(memory[0x0000:]))
+	// Set the PC to $0400
+	PC = 0x0400
 }
 
 func main() {
@@ -1887,6 +1893,12 @@ func execute() {
 				setNegativeFlag()
 			} else {
 				unsetNegativeFlag()
+			}
+			// If Y==0 then set the Zero flag
+			if Y == 0 {
+				setZeroFlag()
+			} else {
+				unsetZeroFlag()
 			}
 			incCount(1)
 		case 0xE8:
