@@ -1309,10 +1309,10 @@ func SBC(addressingMode string) {
 			if getSRBit(0) == 0 {
 				result--
 			}
-			if result < 0 {
-				unsetCarryFlag()
-			} else {
+			if int(A) >= int(value) {
 				setCarryFlag()
+			} else {
+				unsetCarryFlag()
 			}
 		}
 
