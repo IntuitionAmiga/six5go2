@@ -1573,8 +1573,9 @@ func LSR(addressingMode string) {
 	setFlags := func() {
 		// Reset the SR negative flag
 		unsetNegativeFlag()
-		// If result is 0 then set SR zero flag else reset it
-		if result == 0 {
+		// If A is 0 then set SR zero flag else reset it
+		// Update the zero flag
+		if A == 0 {
 			setZeroFlag()
 		} else {
 			unsetZeroFlag()
