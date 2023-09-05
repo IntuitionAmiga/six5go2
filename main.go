@@ -1649,18 +1649,18 @@ func ASL(addressingMode string) {
 	var value, result byte
 
 	setFlags := func() {
-		// Set the SR Negative flag to the bit 7 of the result
-		if readBit(7, result) == 1 {
-			setNegativeFlag()
-		} else {
-			unsetNegativeFlag()
-		}
-
-		// If the result is 0, set the Zero flag to 1 else unset zero flag
-		if result == 0 {
+		// Update the zero flag
+		if A == 0 {
 			setZeroFlag()
 		} else {
 			unsetZeroFlag()
+		}
+
+		// Update the negative flag
+		if readBit(7, A) == 1 {
+			setNegativeFlag()
+		} else {
+			unsetNegativeFlag()
 		}
 
 		// Set the Carry flag based on the original value's bit 7 before the shift operation
