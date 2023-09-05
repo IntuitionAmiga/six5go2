@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -22,8 +23,12 @@ const (
 )
 
 var (
-	disassemble             = flag.Bool("dis", false, "Disassembler mode")
-	stateMonitor            = flag.Bool("state", false, "State monitor mode")
+	allsuitea    = flag.Bool("allsuitea", false, "AllSuiteA ROM")
+	klausd       = flag.Bool("klausd", false, "Klaus Dormann's 6502 functional test ROM")
+	plus4        = flag.Bool("plus4", false, "Plus/4 ROMs")
+	disassemble  = flag.Bool("dis", false, "Disassembler mode")
+	stateMonitor = flag.Bool("state", false, "State monitor mode")
+
 	disassembledInstruction string
 
 	instructionCounter = 0
@@ -33,6 +38,7 @@ var (
 	KERNALROM     = make([]byte, 16384)
 	THREEPLUS1ROM = make([]byte, 16384)
 	AllSuiteAROM  = make([]byte, 16384)
+	KlausDTestROM = make([]byte, 65536)
 
 	basicROMAddress      = 0x8000
 	kernalROMAddress     = 0xC000
@@ -56,12 +62,17 @@ func reset() {
 	SP = SPBaseAddress
 	// Set SR to 0b00110100
 	SR = 0b00110110
-	// Set PC to value stored at reset vector address
-	//PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
+	if *klausd {
+		// Set PC to $0400
+		PC = 0x0400
+	} else {
+		// Set PC to value stored at reset vector address
+		PC = int(memory[resetVectorAddress]) + int(memory[resetVectorAddress+1])*256
+	}
 }
 
 func loadROMs() {
-	/*
+	if *plus4 {
 		// Copy the BASIC ROM into memory
 		file, _ := os.Open("roms/plus4/basic-318006-01.bin")
 		_, _ = io.ReadFull(file, BASICROM)
@@ -73,26 +84,31 @@ func loadROMs() {
 		_, _ = io.ReadFull(file, KERNALROM)
 		fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
 		copy(memory[kernalROMAddress:], KERNALROM)
-	*/
-	/*
+	}
+
+	if *allsuitea {
 		// Copy AllSuiteA ROM into memory
 		file, _ := os.Open("roms/AllSuiteA.bin")
 		_, _ = io.ReadFull(file, AllSuiteAROM)
 		fmt.Printf("Copying AllSuiteA ROM into memory at $%04X to $%04X\n\n", AllSuiteAROMAddress, AllSuiteAROMAddress+len(AllSuiteAROM))
 		copy(memory[AllSuiteAROMAddress:], AllSuiteAROM)
 		// Set the interrupt vector addresses manually
-		memory[0xFFFE] = AllSuiteAROM[len(AllSuiteAROM)-2]
-		memory[0xFFFF] = AllSuiteAROM[len(AllSuiteAROM)-1]
+		//memory[0xFFFE] = AllSuiteAROM[len(AllSuiteAROM)-2]
+		//memory[0xFFFF] = AllSuiteAROM[len(AllSuiteAROM)-1]
 		memory[0xFFFE] = 0x00 // Low byte of 0x4000
 		memory[0xFFFF] = 0x40 // High byte of 0x4000
-	*/
+	}
 
-	//Copy roms/6502_functional_test.bin into memory
-	file, _ := os.Open("roms/6502_functional_test.bin")
-	_, _ = file.Read(memory[0x0000:])
-	fmt.Printf("Copying 6502_functional_test.bin into memory at $%04X to $%04X\n\n", 0x0000, 0x0000+len(memory[0x0000:]))
-	// Set the PC to $0400
-	PC = 0x0400
+	if *klausd {
+		//Copy roms/6502_functional_test.bin into memory at $0000
+		file, _ := os.Open("roms/6502_functional_test.bin")
+		_, _ = io.ReadFull(file, KlausDTestROM)
+		copy(memory[0x0000:], KlausDTestROM)
+		fmt.Printf("Copying Klaus Dormann's 6502 functional test ROM into memory at $%04X to $%04X\n\n", 0x0000, 0x0000+len(memory))
+		// Set the interrupt vector addresses manually
+		memory[0xFFFE] = 0x00 // Low byte of 0x4000
+		memory[0xFFFF] = 0x40 // High byte of 0x4000
+	}
 }
 
 func main() {
@@ -1259,12 +1275,13 @@ func SBC(addressingMode string) {
 		} else {
 			setCarryFlag()
 		}
-		// If result is positive and value is negative, or result is negative and value is positive set the overflow flag
-		if (readBit(7, byte(result)) != readBit(7, value)) && (readBit(7, byte(result)) != readBit(7, A)) {
+		// Check overflow flag
+		if readBit(7, A) != readBit(7, value) && readBit(7, A) != readBit(7, byte(result)) {
 			setOverflowFlag()
 		} else {
 			unsetOverflowFlag()
 		}
+
 		// If bit 7 of the result is set, set the negative flag
 		if readBit(7, byte(result)) == 1 {
 			setNegativeFlag()
@@ -3127,7 +3144,7 @@ func execute() {
 			disassembledInstruction = fmt.Sprintf("JMP $%04X", int(operand2())<<8|int(operand1()))
 			disassembleOpcode()
 			// For AllSuiteA.bin 6502 opcode test suite
-			if memory[0x210] == 0xFF {
+			if *allsuitea && memory[0x210] == 0xFF {
 				fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", memory[0x210])
 				os.Exit(0)
 			}
