@@ -1284,38 +1284,55 @@ func SBC(addressingMode string) {
 	var result int
 
 	setFlags := func() {
-		// Subtract the value from the accumulator with borrow
-		result = int(A) - int(value)
-		// if carry flag is unset, subtract 1 from the result
-		if getSRBit(0) == 0 {
-			result--
-		}
-		// If the result is less than 0, unset the carry flag
-		if result < 0 {
-			unsetCarryFlag()
+		// Check for BCD mode (Decimal flag set)
+		if getSRBit(3) == 1 {
+			// Handle BCD subtraction
+			lowerNibble := (A & 0x0F) - (value & 0x0F)
+			if getSRBit(0) == 0 {
+				lowerNibble--
+			}
+			upperNibble := (A >> 4) - (value >> 4)
+			if lowerNibble&0x10 != 0 {
+				upperNibble--
+				lowerNibble -= 6
+			}
+			if upperNibble&0x10 != 0 {
+				unsetCarryFlag()
+				upperNibble -= 6
+			} else {
+				setCarryFlag()
+			}
+			result = int((upperNibble << 4) | (lowerNibble & 0x0F))
 		} else {
-			setCarryFlag()
+			// Binary mode
+			result = int(A) - int(value)
+			if getSRBit(0) == 0 {
+				result--
+			}
+			if result < 0 {
+				unsetCarryFlag()
+			} else {
+				setCarryFlag()
+			}
 		}
-		// Check overflow flag
+
+		// Overflow, Negative, and Zero flag checks remain the same
 		if readBit(7, A) != readBit(7, value) && readBit(7, A) != readBit(7, byte(result)) {
 			setOverflowFlag()
 		} else {
 			unsetOverflowFlag()
 		}
-
-		// If bit 7 of the result is set, set the negative flag
 		if readBit(7, byte(result)) == 1 {
 			setNegativeFlag()
 		} else {
 			unsetNegativeFlag()
 		}
-		// If result is 0, set the zero flag
 		if result == 0 {
 			setZeroFlag()
 		}
-		// Set the accumulator to the result
 		A = byte(result)
 
+		// Your addressing mode cycle counts remain the same
 		if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
 			incCount(2)
 		}
