@@ -1163,76 +1163,56 @@ func ADC(addressingMode string) {
 	var result int
 
 	setFlags := func() {
-		// Add the value to the accumulator
-		result = int(A) + int(value)
-		// If the carry flag is set, add 1 to the result
+		// Binary mode is the default
+		tmpResult := int(A) + int(value)
 		if getSRBit(0) == 1 {
-			result++
+			tmpResult++
 		}
 
-		// Check for BCD mode (Decimal flag set)
-		if getSRBit(3) == 1 {
-			// Handle BCD addition
-			tmpResult := int(A) + int(value)
-			if getSRBit(0) == 1 { // If the carry flag is set
-				tmpResult++
-			}
-
-			// Check for overflow for setting V flag
-			if (A^value)&0x80 == 0 && (A^byte(tmpResult))&0x80 != 0 {
-				setOverflowFlag()
-			} else {
-				unsetOverflowFlag()
-			}
-
+		if getSRBit(3) == 1 { // BCD mode
 			// Adjust for BCD
-			if (A&0x0F)+(value&0x0F)+(getSRBit(0)) > 9 {
+			if (A&0x0F)+(value&0x0F)+getSRBit(0) > 9 {
 				tmpResult += 6
 			}
+
 			if tmpResult > 0x99 {
 				tmpResult += 0x60
 			}
-
-			// Set or unset the C flag
-			if tmpResult > 0xFF {
-				setCarryFlag()
-			} else {
-				unsetCarryFlag()
-			}
-
-			result = tmpResult & 0xFF // Store the result in 8 bits
-		} else {
-			// Binary mode
-			// If the result is greater than 255, set the carry flag
-			if result > 255 {
-				setCarryFlag()
-			} else {
-				unsetCarryFlag()
-			}
 		}
 
-		// If result is positive and value is negative, or result is negative and value is positive set the overflow flag
-		if (readBit(7, byte(result)) != readBit(7, value)) && (readBit(7, byte(result)) != readBit(7, A)) {
+		// Set or unset the C flag
+		if tmpResult > 0xFF {
+			setCarryFlag()
+		} else {
+			unsetCarryFlag()
+		}
+
+		// Handle V (overflow) flag
+		if (int(A)^int(value))&0x80 == 0 && (int(A)^tmpResult)&0x80 != 0 {
 			setOverflowFlag()
 		} else {
 			unsetOverflowFlag()
 		}
-		if readBit(7, byte(result)) == 1 {
+
+		result = tmpResult & 0xFF // Store the result in 8 bits
+
+		// Handle N (negative) and Z (zero) flags
+		if result&0x80 != 0 {
 			setNegativeFlag()
 		} else {
 			unsetNegativeFlag()
 		}
+
 		if result == 0 {
 			setZeroFlag()
 		} else {
 			unsetZeroFlag()
 		}
+
 		A = byte(result)
 
-		if addressingMode == IMMEDIATE {
-			incCount(2)
-		}
-		if addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
+		// Your addressing mode cycle counts remain the same
+		if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
 			incCount(2)
 		}
 		if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
