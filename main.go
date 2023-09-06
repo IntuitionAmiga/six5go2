@@ -1297,30 +1297,40 @@ func SBC(addressingMode string) {
 	var result int
 
 	setFlags := func() {
+
 		// Check for BCD mode (Decimal flag set)
 		if getSRBit(3) == 1 {
 			// Handle BCD subtraction
-			lowerNibble := (A & 0x0F) - (value & 0x0F)
-			if getSRBit(0) == 0 {
-				lowerNibble--
+			tmpResult := int(A) - int(value)
+			if getSRBit(0) == 0 { // If the carry flag is clear, we need to subtract an extra 1
+				tmpResult--
 			}
-			upperNibble := (A >> 4) - (value >> 4)
-			if lowerNibble&0x10 != 0 {
-				upperNibble--
-				lowerNibble -= 6
-			}
-			if upperNibble&0x10 != 0 {
-				unsetCarryFlag()
-				upperNibble -= 6
-			} else {
-				setCarryFlag()
-			}
-			if (A^byte(result))&0x80 == 0 && (A^value)&0x80 != 0 {
+
+			// Check for overflow for setting V flag
+			if (A^value)&0x80 != 0 && (A^byte(tmpResult))&0x80 != 0 {
 				setOverflowFlag()
 			} else {
 				unsetOverflowFlag()
 			}
-			result = int((upperNibble << 4) | (lowerNibble & 0x0F))
+
+			// Adjust for BCD
+			if (A&0x0F)-(value&0x0F)-(getSRBit(0)^1) < 0 {
+				tmpResult -= 6
+			}
+			if tmpResult < 0 || tmpResult > 0x99 {
+				tmpResult -= 0x60
+			}
+
+			// Set or unset the C flag
+			if tmpResult >= 0 {
+				setCarryFlag()
+			} else {
+				unsetCarryFlag()
+				tmpResult += 0x100 // Wrap around to positive
+			}
+
+			result = tmpResult & 0xFF // Store the result in 8 bits
+
 		} else {
 			// Binary mode
 			result = int(A) - int(value)
@@ -1334,12 +1344,7 @@ func SBC(addressingMode string) {
 			}
 		}
 
-		// Overflow, Negative, and Zero flag checks remain the same
-		if readBit(7, A) != readBit(7, value) && readBit(7, A) != readBit(7, byte(result)) {
-			setOverflowFlag()
-		} else {
-			unsetOverflowFlag()
-		}
+		// Negative, and Zero flag checks remain the same
 		if readBit(7, byte(result)) == 1 {
 			setNegativeFlag()
 		} else {
