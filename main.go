@@ -1173,29 +1173,34 @@ func ADC(addressingMode string) {
 		// Check for BCD mode (Decimal flag set)
 		if getSRBit(3) == 1 {
 			// Handle BCD addition
-			lowerNibble := (A & 0x0F) + (value & 0x0F)
-			if getSRBit(0) == 1 {
-				lowerNibble++
+			tmpResult := int(A) + int(value)
+			if getSRBit(0) == 1 { // If the carry flag is set
+				tmpResult++
 			}
-			if lowerNibble > 9 {
-				lowerNibble += 6
-			}
-			upperNibble := (A >> 4) + (value >> 4)
-			if lowerNibble > 0x0F {
-				upperNibble++
-			}
-			if upperNibble > 9 {
-				upperNibble += 6
-				setCarryFlag()
-			} else {
-				unsetCarryFlag()
-			}
-			if (A^byte(result))&0x80 != 0 && (A^value)&0x80 == 0 {
+
+			// Check for overflow for setting V flag
+			if (A^value)&0x80 == 0 && (A^byte(tmpResult))&0x80 != 0 {
 				setOverflowFlag()
 			} else {
 				unsetOverflowFlag()
 			}
-			result = int((upperNibble << 4) | (lowerNibble & 0x0F))
+
+			// Adjust for BCD
+			if (A&0x0F)+(value&0x0F)+(getSRBit(0)) > 9 {
+				tmpResult += 6
+			}
+			if tmpResult > 0x99 {
+				tmpResult += 0x60
+			}
+
+			// Set or unset the C flag
+			if tmpResult > 0xFF {
+				setCarryFlag()
+			} else {
+				unsetCarryFlag()
+			}
+
+			result = tmpResult & 0xFF // Store the result in 8 bits
 		} else {
 			// Binary mode
 			// If the result is greater than 255, set the carry flag
