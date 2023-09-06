@@ -1886,8 +1886,11 @@ func execute() {
 			decSP()
 			memory[SP] = byte((PC + 1) & 0xFF) // Low byte
 
-			// Set SR break flag
-			setBreakFlag()
+			// Set a modified SR with the B flag for the pushed value
+			modifiedSR := SR | 0x10
+			// Decrement SP and Store modified SR on stack
+			decSP()
+			memory[SP] = modifiedSR
 
 			// Decrement SP and Store SR on stack
 			decSP()
