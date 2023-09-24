@@ -8,24 +8,37 @@ import (
 )
 
 const (
-	ACCUMULATOR        = "accumulator"
-	IMMEDIATE          = "immediate"
-	ZEROPAGE           = "zeropage"
-	ZEROPAGEX          = "zeropagex"
-	ZEROPAGEY          = "zeropagey"
-	ABSOLUTE           = "absolute"
-	ABSOLUTEX          = "absolutex"
-	ABSOLUTEY          = "absolutey"
-	INDIRECT           = "indirect"
-	INDIRECTX          = "indirectx"
-	INDIRECTY          = "indirecty"
-	SPBaseAddress uint = 0x0100
+	ACCUMULATOR                      = "accumulator"
+	IMMEDIATE                        = "immediate"
+	ZEROPAGE                         = "zeropage"
+	ZEROPAGEX                        = "zeropagex"
+	ZEROPAGEY                        = "zeropagey"
+	ABSOLUTE                         = "absolute"
+	ABSOLUTEX                        = "absolutex"
+	ABSOLUTEY                        = "absolutey"
+	INDIRECT                         = "indirect"
+	INDIRECTX                        = "indirectx"
+	INDIRECTY                        = "indirecty"
+	SPBaseAddress             uint16 = 0x0100
+	basicROMAddress                  = 0xA000
+	kernalROMAddress                 = 0xE000
+	threePlus1ROMAddress             = 0xD000
+	charROMAddress                   = 0xD000
+	AllSuiteAROMAddress              = 0x4000
+	KlausDTestROMAddress             = 0x0000
+	KlausDInfiniteLoopAddress        = 0x062B
+	RuudBTestROMAddress              = 0x0000
+
+	resetVectorAddress     = 0xFFFC
+	interruptVectorAddress = 0xFFFE
 )
 
 var (
 	allsuitea    = flag.Bool("allsuitea", false, "AllSuiteA ROM")
 	klausd       = flag.Bool("klausd", false, "Klaus Dormann's 6502 functional test ROM")
 	plus4        = flag.Bool("plus4", false, "Plus/4 ROMs")
+	ruudb        = flag.Bool("ruudb", false, "RuudB's 8K Test ROM")
+	c64          = flag.Bool("c64", false, "C64 ROMs")
 	disassemble  = flag.Bool("dis", false, "Disassembler mode")
 	stateMonitor = flag.Bool("state", false, "State monitor mode")
 
@@ -33,29 +46,24 @@ var (
 
 	instructionCounter = 0
 
-	// Fixed Addresses
 	BASICROM      = make([]byte, 16384)
-	KERNALROM     = make([]byte, 16384)
+	KERNALROM     = make([]byte, 8192)
 	THREEPLUS1ROM = make([]byte, 16384)
+	CHARROM       = make([]byte, 4096)
 	AllSuiteAROM  = make([]byte, 16384)
 	KlausDTestROM = make([]byte, 65536)
-
-	basicROMAddress      = 0x8000
-	kernalROMAddress     = 0xC000
-	threePlus1ROMAddress = 0xD000
-	AllSuiteAROMAddress  = 0x4000
-
-	resetVectorAddress     = 0xFFFC
-	interruptVectorAddress = 0xFFFE
+	RuudBTestROM  = make([]byte, 8192)
 
 	// CPURegisters and RAM
-	A      byte        = 0x0    // Accumulator
-	X      byte        = 0x0    // X register
-	Y      byte        = 0x0    // Y register		(76543210) SR Bit 5 is always set
-	SR     byte                 // Status Register	(NVEBDIZC)
-	SP     uint        = 0x01FF // Stack Pointer
-	PC     int                  // Program Counter
-	memory [65536]byte          // Memory
+	A              byte        = 0x0  // Accumulator
+	X              byte        = 0x0  // X register
+	Y              byte        = 0x0  // Y register		(76543210) SR Bit 5 is always set
+	SR             byte               // Status Register	(NVEBDIZC)
+	SP             uint16      = 0xFF // Stack Pointer
+	PC             int                // Program Counter
+	memory         [65536]byte        // Memory
+	previousPC     int
+	previousOpcode byte
 )
 
 func reset() {
@@ -71,19 +79,58 @@ func reset() {
 	}
 }
 
+func dumpMemoryToFile(memory [65536]byte) {
+	file, err := os.Create("memorydump.txt")
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+	defer file.Close()
+
+	for _, byteValue := range memory {
+		fmt.Fprintf(file, "%02X ", byteValue)
+	}
+	fmt.Println("Memory dump completed!")
+}
+
 func loadROMs() {
 	if *plus4 {
-		// Copy the BASIC ROM into memory
-		file, _ := os.Open("roms/plus4/basic-318006-01.bin")
+		// Open the BASIC ROM file
+		file, _ := os.Open("roms/plus4/basic")
+
+		// Copy the first 8KB of the BASIC ROM into memory
+		_, _ = io.ReadFull(file, BASICROM[:8192])
+		fmt.Printf("Copying first half of BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+8192)
+		copy(memory[basicROMAddress:basicROMAddress+8192], BASICROM[:8192])
+
+		// Copy the second 8KB (KERNAL portion) of the BASIC ROM into memory
+		_, _ = io.ReadFull(file, KERNALROM)
+		fmt.Printf("Copying second half of BASIC ROM (KERNAL portion) into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+8192)
+		copy(memory[kernalROMAddress:], KERNALROM)
+
+		file.Close() // Remember to close the file after reading
+	}
+	if *c64 {
+		// Load the BASIC ROM
+		file, _ := os.Open("roms/c64/basic")
 		_, _ = io.ReadFull(file, BASICROM)
 		fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
-		copy(memory[basicROMAddress:], BASICROM)
+		copy(memory[basicROMAddress:basicROMAddress+len(BASICROM)], BASICROM)
+		file.Close()
 
-		// Copy the Kernal ROM into memory
-		file, _ = os.Open("roms/plus4/kernal-318005-05.bin")
+		// Load the KERNAL ROM
+		file, _ = os.Open("roms/c64/kernal")
 		_, _ = io.ReadFull(file, KERNALROM)
-		fmt.Printf("Copying KERNALROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
-		copy(memory[kernalROMAddress:], KERNALROM)
+		fmt.Printf("Copying KERNAL ROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
+		copy(memory[kernalROMAddress:kernalROMAddress+len(KERNALROM)], KERNALROM)
+		file.Close()
+
+		// Load the CHARACTER ROM
+		file, _ = os.Open("roms/c64/chargen")
+		_, _ = io.ReadFull(file, CHARROM)
+		fmt.Printf("Copying CHARACTER ROM into memory at $%04X to $%04X\n\n", charROMAddress, charROMAddress+len(CHARROM))
+		copy(memory[charROMAddress:charROMAddress+len(CHARROM)], CHARROM)
+		file.Close()
 	}
 
 	if *allsuitea {
@@ -100,14 +147,22 @@ func loadROMs() {
 	}
 
 	if *klausd {
-		//Copy roms/6502_functional_test.bin into memory at $0000
+		//Copy roms/6502_functional_test.bin into memory
 		file, _ := os.Open("roms/6502_functional_test.bin")
 		_, _ = io.ReadFull(file, KlausDTestROM)
-		copy(memory[0x0000:], KlausDTestROM)
-		fmt.Printf("Copying Klaus Dormann's 6502 functional test ROM into memory at $%04X to $%04X\n\n", 0x0000, 0x0000+len(memory))
+		copy(memory[KlausDTestROMAddress:], KlausDTestROM)
+		fmt.Printf("Copying Klaus Dormann's 6502 functional test ROM into memory at $%04X to $%04X\n\n", KlausDTestROMAddress, KlausDTestROMAddress+len(KlausDTestROM))
 		// Set the interrupt vector addresses manually
 		memory[0xFFFE] = 0x00 // Low byte of 0x4000
 		memory[0xFFFF] = 0x40 // High byte of 0x4000
+	}
+
+	if *ruudb {
+		//Copy roms/TTL6502.BIN into memory
+		file, _ := os.Open("roms/TTL6502.BIN")
+		_, _ = io.ReadFull(file, RuudBTestROM)
+		copy(memory[RuudBTestROMAddress:], RuudBTestROM)
+		fmt.Printf("Copying Ruud B's 8K Test ROM into memory at $%04X to $%04X\n\n", RuudBTestROMAddress, RuudBTestROMAddress+len(RuudBTestROM))
 	}
 }
 
@@ -124,7 +179,9 @@ func main() {
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
 
 	// Start emulation
+	// Print reset vector address and contents
 	loadROMs()
+	//dumpMemoryToFile(memory)
 	reset()
 	execute()
 }
@@ -159,6 +216,7 @@ func kernalRoutines() {
 	switch PC {
 	case 0xFFD2:
 		// This is a CHROUT call
+		fmt.Printf("Call to CHROUT!!!!\n")
 		ch := petsciiToAscii(A) // Convert PETSCII to ASCII
 
 		// Handle control characters
@@ -214,24 +272,32 @@ func incCount(amount int) {
 
 func printMachineState() {
 	// Imitate Virtual 6502 and print PC, opcode, operand1 if two byte instruction, operand2 if three byte instruction, disassembled instruction and any operands with correct addressing mode, "|",accumulator hex value, X register hex value, Y register hex value, SP as hex value,"|", SP as binary digits
-	fmt.Printf("%04X ", PC)
+	//print opcode
+	//fmt.Printf("opcode in machine state is %04X ", opcode())
+	if previousOpcode != 0x20 && previousOpcode != 0x4C && previousOpcode != 0x6C && previousOpcode != 0x60 && previousOpcode != 0x40 {
+		fmt.Printf("%04X ", PC)
+		// If opcode() is a 1 byte instruction, print opcode
+		if opcode() == 0x00 || opcode() == 0x08 || opcode() == 0x10 || opcode() == 0x18 || opcode() == 0x20 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x40 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A || opcode() == 0x60 {
+			fmt.Printf("%02X ", opcode())
+		}
 
-	// If opcode() is a 1 byte instruction, print opcode
-	if opcode() == 0x00 || opcode() == 0x08 || opcode() == 0x10 || opcode() == 0x18 || opcode() == 0x20 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x40 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A || opcode() == 0x60 {
-		fmt.Printf("%02X ", opcode())
-	}
+		// If opcode() is a 2 byte instruction, print opcode and operand1
+		// 		fmt.Printf("%02X %02X ", opcode(), operand1())
+		// The 0x hex opcodes for the 2 byte instructions on the 6502 are
+		if opcode() == 0x69 || opcode() == 0x29 || opcode() == 0xC9 || opcode() == 0xE0 || opcode() == 0xC0 || opcode() == 0x49 || opcode() == 0xA9 || opcode() == 0xA2 || opcode() == 0xA0 || opcode() == 0x09 || opcode() == 0xE9 || opcode() == 0x65 || opcode() == 0x25 || opcode() == 0x06 || opcode() == 0x24 || opcode() == 0xC5 || opcode() == 0xE4 || opcode() == 0xC4 || opcode() == 0xC6 || opcode() == 0x45 || opcode() == 0xE6 || opcode() == 0xA5 || opcode() == 0xA6 || opcode() == 0xA4 || opcode() == 0x46 || opcode() == 0x05 || opcode() == 0x26 || opcode() == 0x66 || opcode() == 0xE5 || opcode() == 0x85 || opcode() == 0x86 || opcode() == 0x84 || opcode() == 0x90 || opcode() == 0xB0 || opcode() == 0xF0 || opcode() == 0x30 || opcode() == 0xD0 || opcode() == 0x10 || opcode() == 0x50 || opcode() == 0x70 {
+			fmt.Printf("%02X %02X ", opcode(), operand1())
+		}
 
-	// If opcode() is a 2 byte instruction, print opcode and operand1
-	// 		fmt.Printf("%02X %02X ", opcode(), operand1())
-	// The 0x hex opcodes for the 2 byte instructions on the 6502 are
-	if opcode() == 0x69 || opcode() == 0x29 || opcode() == 0xC9 || opcode() == 0xE0 || opcode() == 0xC0 || opcode() == 0x49 || opcode() == 0xA9 || opcode() == 0xA2 || opcode() == 0xA0 || opcode() == 0x09 || opcode() == 0xE9 || opcode() == 0x65 || opcode() == 0x25 || opcode() == 0x06 || opcode() == 0x24 || opcode() == 0xC5 || opcode() == 0xE4 || opcode() == 0xC4 || opcode() == 0xC6 || opcode() == 0x45 || opcode() == 0xE6 || opcode() == 0xA5 || opcode() == 0xA6 || opcode() == 0xA4 || opcode() == 0x46 || opcode() == 0x05 || opcode() == 0x26 || opcode() == 0x66 || opcode() == 0xE5 || opcode() == 0x85 || opcode() == 0x86 || opcode() == 0x84 || opcode() == 0x90 || opcode() == 0xB0 || opcode() == 0xF0 || opcode() == 0x30 || opcode() == 0xD0 || opcode() == 0x10 || opcode() == 0x50 || opcode() == 0x70 {
-		fmt.Printf("%02X %02X ", opcode(), operand1())
-	}
-
-	// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
-	// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
-	if opcode() == 0x6D || opcode() == 0x2D || opcode() == 0x0E || opcode() == 0x2C || opcode() == 0xCD || opcode() == 0xEC || opcode() == 0xCC || opcode() == 0xCE || opcode() == 0x4D || opcode() == 0xEE || opcode() == 0x4C || opcode() == 0x20 || opcode() == 0xAD || opcode() == 0xAC || opcode() == 0xAE || opcode() == 0x4E || opcode() == 0x0D || opcode() == 0x2E || opcode() == 0x6E || opcode() == 0xED || opcode() == 0x8D || opcode() == 0x8E || opcode() == 0x8C || opcode() == 0x7D || opcode() == 0x79 || opcode() == 0x3D || opcode() == 0x39 || opcode() == 0x1E || opcode() == 0xDD || opcode() == 0xD9 || opcode() == 0xDE || opcode() == 0x5D || opcode() == 0x59 || opcode() == 0xFE || opcode() == 0xBD || opcode() == 0xB9 || opcode() == 0xBC || opcode() == 0xBE || opcode() == 0x5E || opcode() == 0x1D || opcode() == 0x19 || opcode() == 0x3E || opcode() == 0x7E || opcode() == 0xFD || opcode() == 0xF9 || opcode() == 0x9D || opcode() == 0x95 || opcode() == 0x99 || opcode() == 0xB5 || opcode() == 0x91 || opcode() == 0xB1 || opcode() == 0x81 || opcode() == 0xA1 || opcode() == 0x94 || opcode() == 0x96 || opcode() == 0xB4 || opcode() == 0xB6 || opcode() == 0x35 || opcode() == 0x15 || opcode() == 0x55 || opcode() == 0x21 || opcode() == 0x01 || opcode() == 0x41 || opcode() == 0x31 || opcode() == 0x11 || opcode() == 0x51 || opcode() == 0xF6 || opcode() == 0xD6 || opcode() == 0x4A || opcode() == 0x0A || opcode() == 0x16 || opcode() == 0x56 || opcode() == 0x36 || opcode() == 0x76 || opcode() == 0x75 || opcode() == 0xF5 || opcode() == 0xD5 || opcode() == 0xC1 || opcode() == 0xD1 || opcode() == 0x61 || opcode() == 0xE1 || opcode() == 0x71 || opcode() == 0xF1 {
-		fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
+		// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
+		// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
+		if opcode() == 0x6D || opcode() == 0x2D || opcode() == 0x0E || opcode() == 0x2C || opcode() == 0xCD || opcode() == 0xEC || opcode() == 0xCC || opcode() == 0xCE || opcode() == 0x4D || opcode() == 0xEE || opcode() == 0x4C || opcode() == 0xAD || opcode() == 0xAC || opcode() == 0xAE || opcode() == 0x4E || opcode() == 0x0D || opcode() == 0x2E || opcode() == 0x6E || opcode() == 0xED || opcode() == 0x8D || opcode() == 0x8E || opcode() == 0x8C || opcode() == 0x7D || opcode() == 0x79 || opcode() == 0x3D || opcode() == 0x39 || opcode() == 0x1E || opcode() == 0xDD || opcode() == 0xD9 || opcode() == 0xDE || opcode() == 0x5D || opcode() == 0x59 || opcode() == 0xFE || opcode() == 0xBD || opcode() == 0xB9 || opcode() == 0xBC || opcode() == 0xBE || opcode() == 0x5E || opcode() == 0x1D || opcode() == 0x19 || opcode() == 0x3E || opcode() == 0x7E || opcode() == 0xFD || opcode() == 0xF9 || opcode() == 0x9D || opcode() == 0x95 || opcode() == 0x99 || opcode() == 0xB5 || opcode() == 0x91 || opcode() == 0xB1 || opcode() == 0x81 || opcode() == 0xA1 || opcode() == 0x94 || opcode() == 0x96 || opcode() == 0xB4 || opcode() == 0xB6 || opcode() == 0x35 || opcode() == 0x15 || opcode() == 0x55 || opcode() == 0x21 || opcode() == 0x01 || opcode() == 0x41 || opcode() == 0x31 || opcode() == 0x11 || opcode() == 0x51 || opcode() == 0xF6 || opcode() == 0xD6 || opcode() == 0x4A || opcode() == 0x0A || opcode() == 0x16 || opcode() == 0x56 || opcode() == 0x36 || opcode() == 0x76 || opcode() == 0x75 || opcode() == 0xF5 || opcode() == 0xD5 || opcode() == 0xC1 || opcode() == 0xD1 || opcode() == 0x61 || opcode() == 0xE1 || opcode() == 0x71 || opcode() == 0xF1 || opcode() == 0x6C {
+			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
+		}
+	} else {
+		fmt.Printf("%04X ", previousPC)
+		fmt.Printf("%02X %02X %02X ", previousOpcode, operand1(), operand2())
+		previousOpcode = 0x00
+		previousPC = 0x0000
 	}
 
 	// Print disassembled instruction
@@ -249,7 +315,8 @@ func printMachineState() {
 	fmt.Printf("%b", getSRBit(3))
 	fmt.Printf("%b", getSRBit(2))
 	fmt.Printf("%b", getSRBit(1))
-	fmt.Printf("%b |\n", getSRBit(0))
+	fmt.Printf("%b | ", getSRBit(0))
+	fmt.Printf("Stack Address: $%02X | Stack Contents: $%02X\n", SPBaseAddress+SP, memory[SPBaseAddress+SP])
 
 	// Print full SR as binary digits with zero padding
 	//fmt.Printf("%08b |\n", SR)
@@ -323,20 +390,18 @@ func readBit(bit byte, value byte) int {
 }
 func decSP() {
 	if SP == 0x00 {
-		// Wrap around to top of stack at 0xFF
+		// Wrap around from 0x00 to 0xFF
 		SP = 0xFF
 	} else {
-		// Decrement SP normally
 		SP--
 	}
 }
 
 func incSP() {
 	if SP == 0xFF {
-		// Wrap around to bottom of stack at 0x00
+		// Wrap around from 0xFF to 0x00
 		SP = 0x00
 	} else {
-		// Increment SP normally
 		SP++
 	}
 }
@@ -691,6 +756,10 @@ func CMP(addressingMode string) {
 }
 
 func JMP(addressingMode string) {
+	//print contents of NMI vector addresses
+	fmt.Printf("memory[$0314] %04X\n", memory[0x0314])
+	previousPC = PC
+	previousOpcode = opcode()
 	incCount(0)
 	switch addressingMode {
 	case ABSOLUTE:
@@ -707,6 +776,18 @@ func JMP(addressingMode string) {
 		indirectAddress := uint16(memory[hiByteAddress])<<8 | uint16(memory[loByteAddress])
 		// Set the program counter to the indirect address
 		PC = int(indirectAddress)
+	}
+	//print
+	if *klausd && PC == KlausDInfiniteLoopAddress {
+		//print values stored at $02 and $03
+		fmt.Printf("Memory at $02: %02X\n", memory[0x02])
+		fmt.Printf("Memory at $03: %02X\n", memory[0x03])
+		//os.Exit(0)
+
+		if memory[0x02] == 0xDE && memory[0x03] == 0xB0 {
+			fmt.Println("All tests passed!")
+			os.Exit(0)
+		}
 	}
 }
 
@@ -1850,6 +1931,13 @@ func execute() {
 			/*
 				BRK - Break Command
 			*/
+			if *klausd {
+				fmt.Printf("Test failed at PC: %04X\t", PC)
+				// print opcode and disassembledInstruction at PC
+				fmt.Printf("Opcode: %02X\t", memory[PC])
+				fmt.Printf("Disassembled Instruction: %s\n", disassembledInstruction)
+			}
+
 			disassembledInstruction = fmt.Sprintf("BRK")
 			disassembleOpcode()
 			// Increment PC
@@ -1882,6 +1970,7 @@ func execute() {
 			PC = int(uint16(memory[0xFFFF])<<8 | uint16(memory[0xFFFE])) //PC = int(memory[0xFFFE]) + int(memory[0xFFFF])*256
 
 			incCount(0)
+
 		case 0x18:
 			/*
 				CLC - Clear Carry Flag
@@ -2023,12 +2112,7 @@ func execute() {
 
 			// Update memory address pointed to by SP with value stored in accumulator
 			memory[SPBaseAddress+SP] = A
-			// Decrement the stack pointer by 1 byte
-			if SP > 0 {
-				SP--
-			} else {
-				SP = 0xFF
-			}
+			decSP()
 			incCount(1)
 		case 0x08:
 			/*
@@ -2113,6 +2197,8 @@ func execute() {
 			// Get high byte of PC
 			high := uint16(memory[SPBaseAddress+SP])
 
+			previousPC = PC
+			previousOpcode = opcode()
 			incCount(0)
 			// Update PC with the value stored in memory at the address pointed to by SP
 			PC = int((high << 8) | low)
@@ -2122,17 +2208,19 @@ func execute() {
 			*/
 			disassembledInstruction = fmt.Sprintf("RTS")
 			disassembleOpcode()
-			// Increment the stack pointer by 1 byte
-			//SP++
 			//Get low byte of PC
-			low := uint16(memory[SP])
+			low := uint16(memory[SPBaseAddress+SP])
 			// Increment the stack pointer by 1 byte
-			//SP++
+			incSP()
 			//Get high byte of PC
-			high := uint16(memory[SP+1])
+			//incSP()
+			high := uint16(memory[SPBaseAddress+SP])
+			previousPC = PC
+			previousOpcode = opcode()
 			//Update PC with the value stored in memory at the address pointed to by SP
 			incCount(0)
-			PC = int((high << 8) | low)
+			PC = int((high<<8)|low) + 1
+			//dumpMemoryToFile(memory)
 		case 0x38:
 			/*
 				SEC - Set Carry Flag
@@ -2259,7 +2347,7 @@ func execute() {
 			disassembleOpcode()
 
 			// Set stack pointer to value of X register
-			SP = uint(X)
+			SP = uint16(X)
 			incCount(1)
 		case 0x98:
 			/*
@@ -3000,6 +3088,8 @@ func execute() {
 			disassembledInstruction = fmt.Sprintf("BCC $%02X", (PC + 2 + int(operand1())))
 			disassembleOpcode()
 
+			previousPC = PC
+			previousOpcode = opcode()
 			// Get offset from operand
 			offset := operand1()
 			// If carry flag is unset, branch to address
@@ -3046,7 +3136,7 @@ func execute() {
 				BNE - Branch on Result Not Zero
 			*/
 
-			disassembledInstruction = fmt.Sprintf("BNE $%02X", (PC+2+int(operand1()))&0xFF)
+			disassembledInstruction = fmt.Sprintf("BNE $%04X", PC+2+int(int8(operand1())))
 			disassembleOpcode()
 
 			// Fetch offset from operand
@@ -3200,15 +3290,14 @@ func execute() {
 			*/
 			disassembledInstruction = fmt.Sprintf("JSR $%04X", int(operand2())<<8|int(operand1()))
 			disassembleOpcode()
-
 			// First, push the high byte
 			decSP()
-			memory[SP] = byte((PC + 1) >> 8)
-
-			// Then, push the low byte
+			memory[SPBaseAddress+SP] = byte((PC + 2) >> 8)
 			decSP()
-			memory[SP] = byte((PC + 1) & 0xFF)
+			memory[SPBaseAddress+SP] = byte((PC + 2) & 0xFF)
 
+			previousPC = PC
+			previousOpcode = opcode()
 			// Now, jump to the subroutine address specified by the operands
 			PC = int(operand2())<<8 | int(operand1())
 			incCount(0)
