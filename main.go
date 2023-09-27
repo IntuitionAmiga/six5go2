@@ -3189,7 +3189,8 @@ func execute() {
 				handleState(0)
 				// Branch
 				// Add offset to lower 8bits of PC
-				setPC(PC + 3 + int(offset)&0xFF)
+				setPC(PC + int(int8(offset)))
+
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
