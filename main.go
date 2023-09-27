@@ -8,30 +8,35 @@ import (
 )
 
 const (
-	ACCUMULATOR                      = "accumulator"
-	IMMEDIATE                        = "immediate"
-	ZEROPAGE                         = "zeropage"
-	ZEROPAGEX                        = "zeropagex"
-	ZEROPAGEY                        = "zeropagey"
-	ABSOLUTE                         = "absolute"
-	ABSOLUTEX                        = "absolutex"
-	ABSOLUTEY                        = "absolutey"
-	INDIRECT                         = "indirect"
-	INDIRECTX                        = "indirectx"
-	INDIRECTY                        = "indirecty"
-	SPBaseAddress             uint16 = 0x0100
-	basicROMAddress                  = 0xA000
-	kernalROMAddress                 = 0xE000
-	threePlus1ROMAddress             = 0xD000
-	charROMAddress                   = 0xD000
-	AllSuiteAROMAddress              = 0x4000
-	KlausDTestROMAddress             = 0x0000
-	KlausDInfiniteLoopAddress        = 0x062B
-	RuudBTestROMAddress              = 0xE000
+	ACCUMULATOR = "accumulator"
+	IMMEDIATE   = "immediate"
+	ZEROPAGE    = "zeropage"
+	ZEROPAGEX   = "zeropagex"
+	ZEROPAGEY   = "zeropagey"
+	ABSOLUTE    = "absolute"
+	ABSOLUTEX   = "absolutex"
+	ABSOLUTEY   = "absolutey"
+	INDIRECT    = "indirect"
+	INDIRECTX   = "indirectx"
+	INDIRECTY   = "indirecty"
 
-	IRQVectorAddress   = 0xFFFE
-	NMIVectorAddress   = 0xFFFA
-	RESETVectorAddress = 0xFFFC
+	c64basicROMAddress  = 0xA000
+	c64kernalROMAddress = 0xE000
+	c64charROMAddress   = 0xD000
+
+	plus4basicROMAddress  = 0x8000
+	plus4kernalROMAddress = 0xC000
+	plus4charROMAddress   = 0xC000
+	threePlus1ROMAddress  = 0x8000
+
+	AllSuiteAROMAddress       = 0x4000
+	KlausDTestROMAddress      = 0x0000
+	KlausDInfiniteLoopAddress = 0x062B
+	RuudBTestROMAddress       = 0xE000
+
+	SPBaseAddress      uint16 = 0x0100
+	NMIVectorAddress          = 0xFFFA
+	RESETVectorAddress        = 0xFFFC
 )
 
 var (
@@ -47,10 +52,17 @@ var (
 
 	instructionCounter = 0
 
-	BASICROM      = make([]byte, 16384)
-	KERNALROM     = make([]byte, 8192)
-	THREEPLUS1ROM = make([]byte, 16384)
-	CHARROM       = make([]byte, 4096)
+	IRQVectorAddress uint16 = 0xFFFE
+
+	C64BASICROM  = make([]byte, 8192)
+	C64KERNALROM = make([]byte, 8192)
+	C64CHARROM   = make([]byte, 4096)
+
+	PLUS4BASICROM  = make([]byte, 16384)
+	PLUS4KERNALROM = make([]byte, 16384)
+	PLUS4CHARROM   = make([]byte, 4096)
+	THREEPLUS1ROM  = make([]byte, 16384)
+
 	AllSuiteAROM  = make([]byte, 16384)
 	KlausDTestROM = make([]byte, 65536)
 	RuudBTestROM  = make([]byte, 8192)
@@ -67,10 +79,10 @@ var (
 	previousOpcode byte
 	irq            bool
 	nmi            bool
-	resetval       bool
+	reset          bool
 )
 
-func reset() {
+func resetCPU() {
 	SP = SPBaseAddress
 	// Set SR to 0b00110100
 	SR = 0b00110110
@@ -101,39 +113,42 @@ func loadROMs() {
 	if *plus4 {
 		// Open the BASIC ROM file
 		file, _ := os.Open("roms/plus4/basic")
+		_, _ = io.ReadFull(file, PLUS4BASICROM)
+		fmt.Printf("Copying first half of BASIC ROM into memory at $%04X to $%04X\n\n", plus4basicROMAddress, plus4basicROMAddress+16384)
+		copy(memory[plus4basicROMAddress:plus4basicROMAddress+16384], PLUS4BASICROM)
+		file.Close()
 
-		// Copy the first 8KB of the BASIC ROM into memory
-		_, _ = io.ReadFull(file, BASICROM[:8192])
-		fmt.Printf("Copying first half of BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+8192)
-		copy(memory[basicROMAddress:basicROMAddress+8192], BASICROM[:8192])
+		// Open the KERNAL ROM file
+		file, _ = os.Open("roms/plus4/kernal")
+		// Read the KERNAL ROM data into PLUS4KERNALROM
+		_, _ = io.ReadFull(file, PLUS4KERNALROM)
+		// Copy the KERNAL ROM data into memory at plus4kernalROMAddress
+		copy(memory[plus4kernalROMAddress:], PLUS4KERNALROM)
+		fmt.Printf("Copying KERNAL ROM into memory at $%04X to $%04X\n\n", plus4kernalROMAddress, plus4kernalROMAddress+16384)
+		file.Close()
 
-		// Copy the second 8KB (KERNAL portion) of the BASIC ROM into memory
-		_, _ = io.ReadFull(file, KERNALROM)
-		fmt.Printf("Copying second half of BASIC ROM (KERNAL portion) into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+8192)
-		copy(memory[kernalROMAddress:], KERNALROM)
-
-		file.Close() // Remember to close the file after reading
+		dumpMemoryToFile(memory)
 	}
 	if *c64 {
 		// Load the BASIC ROM
 		file, _ := os.Open("roms/c64/basic")
-		_, _ = io.ReadFull(file, BASICROM)
-		fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", basicROMAddress, basicROMAddress+len(BASICROM))
-		copy(memory[basicROMAddress:basicROMAddress+len(BASICROM)], BASICROM)
+		_, _ = io.ReadFull(file, C64BASICROM)
+		fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", c64basicROMAddress, c64basicROMAddress+len(C64BASICROM))
+		copy(memory[c64basicROMAddress:c64basicROMAddress+len(C64BASICROM)], C64BASICROM)
 		file.Close()
 
 		// Load the KERNAL ROM
 		file, _ = os.Open("roms/c64/kernal")
-		_, _ = io.ReadFull(file, KERNALROM)
-		fmt.Printf("Copying KERNAL ROM into memory at $%04X to $%04X\n\n", kernalROMAddress, kernalROMAddress+len(KERNALROM))
-		copy(memory[kernalROMAddress:kernalROMAddress+len(KERNALROM)], KERNALROM)
+		_, _ = io.ReadFull(file, C64KERNALROM)
+		fmt.Printf("Copying KERNAL ROM into memory at $%04X to $%04X\n\n", c64kernalROMAddress, c64kernalROMAddress+len(C64KERNALROM))
+		copy(memory[c64kernalROMAddress:c64kernalROMAddress+len(C64KERNALROM)], C64KERNALROM)
 		file.Close()
 
 		// Load the CHARACTER ROM
 		file, _ = os.Open("roms/c64/chargen")
-		_, _ = io.ReadFull(file, CHARROM)
-		fmt.Printf("Copying CHARACTER ROM into memory at $%04X to $%04X\n\n", charROMAddress, charROMAddress+len(CHARROM))
-		copy(memory[charROMAddress:charROMAddress+len(CHARROM)], CHARROM)
+		_, _ = io.ReadFull(file, C64CHARROM)
+		fmt.Printf("Copying CHARACTER ROM into memory at $%04X to $%04X\n\n", c64charROMAddress, c64charROMAddress+len(C64CHARROM))
+		copy(memory[c64charROMAddress:c64charROMAddress+len(C64CHARROM)], C64CHARROM)
 		file.Close()
 	}
 
@@ -146,6 +161,7 @@ func loadROMs() {
 		// Set the interrupt vector addresses manually
 		writeMemory(IRQVectorAddress, 0x00)   // Low byte of 0x4000
 		writeMemory(IRQVectorAddress+1, 0x40) // High byte of 0x4000
+		file.Close()
 	}
 
 	if *klausd {
@@ -157,6 +173,7 @@ func loadROMs() {
 		// Set the interrupt vector addresses manually
 		writeMemory(IRQVectorAddress, 0x00)   // Low byte of 0x4000
 		writeMemory(IRQVectorAddress+1, 0x40) // High byte of 0x4000
+		file.Close()
 	}
 
 	if *ruudb {
@@ -165,6 +182,7 @@ func loadROMs() {
 		_, _ = io.ReadFull(file, RuudBTestROM)
 		copy(memory[RuudBTestROMAddress:], RuudBTestROM)
 		fmt.Printf("Copying Ruud B's 8K Test ROM into memory at $%04X to $%04X\n\n", RuudBTestROMAddress, RuudBTestROMAddress+len(RuudBTestROM))
+		file.Close()
 	}
 }
 
@@ -182,7 +200,7 @@ func main() {
 
 	// Start emulation
 	loadROMs()
-	reset()
+	resetCPU()
 	execute()
 }
 
@@ -229,7 +247,7 @@ func kernalRoutines() {
 		}
 	case 0xFFF6:
 		// This is a RESET call
-		reset()
+		resetCPU()
 	}
 	// print "kernal rom call address"
 	//fmt.Printf("\n\u001B[32;5mKernal ROM call address: $%04X\u001B[0m\n", PC)
@@ -252,7 +270,7 @@ func writeMemory(address uint16, value byte) {
 		nmi = true // Signal an NMI
 	}
 	if address == RESETVectorAddress {
-		resetval = true // Signal a RESET
+		reset = true // Signal a RESET
 	}
 	memory[address] = value
 }
@@ -304,15 +322,15 @@ func handleNMI() {
 }
 func handleRESET() {
 	fmt.Printf("Before RESET: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
-	reset()
-	resetval = false // Clear the RESET flag
+	resetCPU()
+	reset = false // Clear the RESET flag
 	fmt.Printf("After RESET: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
 }
 func incCount(amount int) {
 	if *stateMonitor {
-		if disassembledInstruction != "BRK" {
-			printMachineState()
-		}
+		//if disassembledInstruction != "BRK" {
+		printMachineState()
+		//}
 	}
 	PC += amount
 	if PC > 0xFFFF {
@@ -329,7 +347,7 @@ func incCount(amount int) {
 	if nmi {
 		handleNMI()
 	}
-	if resetval {
+	if reset {
 		handleRESET()
 	}
 }
