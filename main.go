@@ -87,11 +87,10 @@ func resetCPU() {
 	// Set SR to 0b00110100
 	SR = 0b00110110
 	if *klausd {
-		// Set PC to $0400
-		PC = 0x0400
+		setPC(0x400)
 	} else {
 		// Set PC to value stored at reset vector address
-		PC = int(readMemory(RESETVectorAddress)) + int(readMemory(RESETVectorAddress+1))*256
+		setPC(int(readMemory(RESETVectorAddress)) + int(readMemory(RESETVectorAddress+1))*256)
 	}
 }
 
@@ -301,7 +300,7 @@ func handleIRQ() {
 	// Set interrupt flag
 	setInterruptFlag()
 	// Set PC to IRQ Service Routine address
-	PC = int(readMemory(IRQVectorAddress)) | int(readMemory(IRQVectorAddress+1))<<8
+	setPC(int(readMemory(IRQVectorAddress)) | int(readMemory(IRQVectorAddress+1))<<8)
 	irq = false
 	fmt.Printf("After IRQ: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
 }
@@ -316,7 +315,7 @@ func handleNMI() {
 	updateStack(SR)
 	decSP()
 	// Set PC to NMI Service Routine address
-	PC = int(readMemory(NMIVectorAddress)) | int(readMemory(NMIVectorAddress+1))<<8
+	setPC(int(readMemory(NMIVectorAddress)) | int(readMemory(NMIVectorAddress+1))<<8)
 	nmi = false // Clear the NMI flag
 	fmt.Printf("After NMI: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
 }
@@ -332,11 +331,8 @@ func incCount(amount int) {
 		printMachineState()
 		//}
 	}
-	PC += amount
-	if PC > 0xFFFF {
-		PC = 0x0000 + (PC & 0xFFFF)
-	}
 
+	incPC(amount)
 	// If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
 	if amount != 0 {
 		instructionCounter++
@@ -350,6 +346,27 @@ func incCount(amount int) {
 	if reset {
 		handleRESET()
 	}
+}
+
+// Increment the Program Counter by a given amount
+func incPC(amount int) {
+	PC += amount
+	if PC > 0xFFFF {
+		PC = 0x0000 + (PC & 0xFFFF)
+	}
+}
+
+// Decrement the Program Counter by a given amount
+func decPC(amount int) {
+	PC -= amount
+	if PC < 0 {
+		PC = 0xFFFF + (PC & 0xFFFF)
+	}
+}
+
+// Set the Program Counter to a new address
+func setPC(newAddress int) {
+	PC = newAddress & 0xFFFF
 }
 func printMachineState() {
 	// Imitate Virtual 6502 and print PC, opcode, operand1 if two byte instruction, operand2 if three byte instruction, disassembled instruction and any operands with correct addressing mode, "|",accumulator hex value, X register hex value, Y register hex value, SP as hex value,"|", SP as binary digits
@@ -841,7 +858,7 @@ func JMP(addressingMode string) {
 		// Get the 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Set the program counter to the absolute address
-		PC = int(address)
+		setPC(int(address))
 	case INDIRECT:
 		// Get the 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -850,7 +867,7 @@ func JMP(addressingMode string) {
 		hiByteAddress := (address & 0xFF00) | ((address + 1) & 0xFF) // Ensure it wraps within the page
 		indirectAddress := uint16(readMemory(hiByteAddress))<<8 | uint16(readMemory(loByteAddress))
 		// Set the program counter to the indirect address
-		PC = int(indirectAddress)
+		setPC(int(indirectAddress))
 	}
 	//print
 	if *klausd && PC == KlausDInfiniteLoopAddress {
@@ -2013,7 +2030,7 @@ func execute() {
 			disassembledInstruction = fmt.Sprintf("BRK")
 			disassembleOpcode()
 			// Increment PC
-			PC++
+			incPC(1)
 
 			// Decrement SP and Push high byte of (PC+1) onto stack
 			decSP()
@@ -2038,7 +2055,7 @@ func execute() {
 			setInterruptFlag()
 
 			// Set PC to interrupt vector address
-			PC = int(readMemory(uint16(IRQVectorAddress+1))<<8 | readMemory(uint16(IRQVectorAddress)))
+			setPC(int(readMemory(uint16(IRQVectorAddress+1))<<8 | readMemory(uint16(IRQVectorAddress))))
 			incCount(0)
 		case 0x18:
 			/*
@@ -2270,7 +2287,7 @@ func execute() {
 			previousOpcode = opcode()
 			incCount(0)
 			// Update PC with the value stored in memory at the address pointed to by SP
-			PC = int((high << 8) | low)
+			setPC(int((high << 8) | low))
 		case 0x60:
 			/*
 				RTS - Return From Subroutine
@@ -2288,8 +2305,7 @@ func execute() {
 			previousOpcode = opcode()
 			//Update PC with the value stored in memory at the address pointed to by SP
 			incCount(0)
-			PC = int((high<<8)|low) + 1
-			//dumpMemoryToFile(memory)
+			setPC(int((high<<8)|low) + 1)
 		case 0x38:
 			/*
 				SEC - Set Carry Flag
@@ -3061,7 +3077,7 @@ func execute() {
 			// If N flag is not set, branch to address
 			if getSRBit(7) == 0 {
 				// Branch
-				PC = targetAddress
+				setPC(targetAddress)
 				//incCount(0)
 				instructionCounter++
 			} else {
@@ -3083,10 +3099,10 @@ func execute() {
 			if getSRBit(7) == 1 {
 				// Branch
 				// Add offset to PC (already incremented by 2)
-				PC = PC + 2 + int(offset)
+				setPC(PC + 2 + int(offset))
 			} else {
 				// Don't branch
-				PC = PC + 2
+				setPC(PC + 2)
 			}
 		case 0x50:
 			/*
@@ -3102,11 +3118,11 @@ func execute() {
 				incCount(0)
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = PC + 3 + int(offset)&0xFF
+				setPC(PC + 3 + int(offset)&0xFF)
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
-					PC--
+					decPC(1)
 				}
 			} else {
 				// Don't branch
@@ -3134,11 +3150,11 @@ func execute() {
 				incCount(0)
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = PC + 3 + int(offset)&0xFF
+				setPC(PC + 3 + int(offset)&0xFF)
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
-					PC--
+					decPC(1)
 				}
 			} else {
 				// Don't branch
@@ -3160,11 +3176,11 @@ func execute() {
 				incCount(0)
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = PC + 3 + int(offset)&0xFF
+				setPC(PC + 3 + int(offset)&0xFF)
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
-					PC--
+					decPC(1)
 				}
 			} else {
 				// Don't branch
@@ -3183,11 +3199,11 @@ func execute() {
 				incCount(0)
 				// Branch
 				// Add offset to lower 8bits of PC
-				PC = PC + 3 + int(offset)&0xFF
+				setPC(PC + 3 + int(offset)&0xFF)
 				// If the offset is negative, decrement the PC by 1
 				// If bit 7 is unset then it's negative
 				if readBit(7, offset) == 0 {
-					PC--
+					decPC(1)
 				}
 			} else {
 				// Don't branch
@@ -3218,7 +3234,7 @@ func execute() {
 				}
 
 				// Update the program counter
-				PC = targetAddr & 0xFFFF // Ensure the address wraps around correctly
+				setPC(targetAddr & 0xFFFF)
 			} else {
 				// If Z flag is set, don't branch
 				incCount(2)
@@ -3238,7 +3254,7 @@ func execute() {
 			if getSRBit(1) == 1 {
 				incCount(0)
 				// Add 2 to PC (1 for opcode, 1 for operand) and then add offset
-				PC = PC + 2 + int(offset)
+				setPC(PC + 2 + int(offset))
 			} else {
 				incCount(2)
 			}
@@ -3361,7 +3377,7 @@ func execute() {
 			previousPC = PC
 			previousOpcode = opcode()
 			// Now, jump to the subroutine address specified by the operands
-			PC = int(operand2())<<8 | int(operand1())
+			setPC(int(operand2())<<8 | int(operand1()))
 			incCount(0)
 		case 0xAD:
 			/*
