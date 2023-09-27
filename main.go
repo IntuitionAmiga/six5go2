@@ -325,7 +325,7 @@ func handleRESET() {
 	reset = false // Clear the RESET flag
 	fmt.Printf("After RESET: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
 }
-func incCount(amount int) {
+func advanceCycle(amount int) {
 	if *stateMonitor {
 		//if disassembledInstruction != "BRK" {
 		printMachineState()
@@ -520,7 +520,7 @@ func LDA(addressingMode string) {
 	case IMMEDIATE: // Immediate
 		A = operand1()
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGE: // Zero Page
 		// Get address
 		address := operand1()
@@ -529,7 +529,7 @@ func LDA(addressingMode string) {
 		// Set accumulator to value
 		A = value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX: // Zero Page, X
 		// Get address
 		address := operand1() + X
@@ -537,7 +537,7 @@ func LDA(addressingMode string) {
 		// Set accumulator to value
 		A = value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE: // Absolute
 		// Get 16 bit address from operand 1 and operand 2
 		address := int(operand2())<<8 | int(operand1())
@@ -545,7 +545,7 @@ func LDA(addressingMode string) {
 		// Set accumulator to value
 		A = value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX: // Absolute, X
 		// Get the 16bit X indexed absolute memory address
 		address := (int(operand2())<<8 | int(operand1())) + int(X)
@@ -553,7 +553,7 @@ func LDA(addressingMode string) {
 		// Set accumulator to value
 		A = value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEY: // Absolute, Y
 		// Get 16 bit address from operand 1 and operand 2
 		address := (int(operand2())<<8 | int(operand1())) + int(Y)
@@ -561,7 +561,7 @@ func LDA(addressingMode string) {
 		// Set accumulator to value
 		A = value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case INDIRECTX: // Indirect, X
 		// Get the 16bit X indexed zero page indirect address
 		indirectAddress := uint16(int(operand1()) + int(X)&0xFF)
@@ -576,7 +576,7 @@ func LDA(addressingMode string) {
 		// Set the accumulator to the value
 		A = value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case INDIRECTY: // Indirect, Y
 		// Get address
 		zeroPageAddress := operand1()
@@ -586,7 +586,7 @@ func LDA(addressingMode string) {
 		// Set the accumulator to the value
 		A = value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	}
 }
 func LDX(addressingMode string) {
@@ -609,7 +609,7 @@ func LDX(addressingMode string) {
 		// Load the value of the operand1() into the X register.
 		X = operand1()
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGE: // Zero Page
 		// Get address
 		address := operand1()
@@ -617,7 +617,7 @@ func LDX(addressingMode string) {
 		// Load the value at the address into X
 		X = value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEY: // Zero Page, Y
 		// Get Y indexed Zero Page address
 		address := operand1() + Y
@@ -625,7 +625,7 @@ func LDX(addressingMode string) {
 		// Load the X register with the Y indexed value in the operand
 		X = value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE: // Absolute
 		// Get 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -633,14 +633,14 @@ func LDX(addressingMode string) {
 		// Update X with the value stored at the address in the operands
 		X = value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEY: // Absolute, Y
 		// Get 16 bit Y indexed address from operands
 		address := int(operand2())<<8 | int(operand1()) + int(Y)
 		value := readMemory(uint16(address))
 		X = value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 func LDY(addressingMode string) {
@@ -663,7 +663,7 @@ func LDY(addressingMode string) {
 		// Load the value of the operand1() into the Y register.
 		Y = operand1()
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGE: // Zero Page
 		// Get address
 		address := operand1()
@@ -671,7 +671,7 @@ func LDY(addressingMode string) {
 		// Load the value at the address into Y
 		Y = value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX: // Zero Page, X
 		// Get the X indexed address
 		address := operand1() + X
@@ -679,7 +679,7 @@ func LDY(addressingMode string) {
 		// Load the Y register with the X indexed value in the operand
 		Y = value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE: // Absolute
 		// Get 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -687,7 +687,7 @@ func LDY(addressingMode string) {
 		// Update Y with the value stored at the address in the operands
 		Y = value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX: // Absolute, X
 		// Get the 16bit X indexed absolute memory address
 		address := (int(operand2())<<8 | int(operand1())) + int(X)
@@ -695,7 +695,7 @@ func LDY(addressingMode string) {
 		// Update Y with the value stored at the address
 		Y = value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 func STA(addressingMode string) {
@@ -703,35 +703,35 @@ func STA(addressingMode string) {
 	case ZEROPAGE:
 		address := operand1()
 		writeMemory(uint16(address), A)
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX:
 		address := (operand1() + X) & 0xFF // Ensure wraparound in Zero Page
 		writeMemory(uint16(address), A)
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		address := uint16(operand2())<<8 | uint16(operand1())
 		writeMemory(address, A)
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX:
 		address := (uint16(operand2())<<8 | uint16(operand1())) + uint16(X)
 		writeMemory(address, A)
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEY:
 		address := (uint16(operand2())<<8 | uint16(operand1())) + uint16(Y)
 		writeMemory(address, A)
-		incCount(3)
+		advanceCycle(3)
 	case INDIRECTX:
 		zeroPageAddress := (operand1() + X) & 0xFF
 		address := uint16(readMemory(uint16(zeroPageAddress))) | uint16(readMemory((uint16(zeroPageAddress)+1)&0xFF))<<8
 		//print out the address and the value of A
 		writeMemory(address, A)
-		incCount(2)
+		advanceCycle(2)
 	case INDIRECTY:
 		zeroPageAddress := operand1()
 		address := uint16(readMemory(uint16(zeroPageAddress))) | uint16(readMemory((uint16(zeroPageAddress)+1)&0xFF))<<8
 		finalAddress := (address + uint16(Y)) & 0xFFFF
 		writeMemory(finalAddress, A)
-		incCount(2)
+		advanceCycle(2)
 	}
 }
 
@@ -740,15 +740,15 @@ func STX(addressingMode string) {
 	case ZEROPAGE:
 		address := operand1()
 		writeMemory(uint16(address), X)
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEY: // Note the change from ZEROPAGEX to ZEROPAGEY
 		address := (operand1() + Y) & 0xFF // We add Y here, not X
 		writeMemory(uint16(address), X)
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		address := uint16(operand2())<<8 | uint16(operand1())
 		writeMemory(address, X)
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 
@@ -757,15 +757,15 @@ func STY(addressingMode string) {
 	case ZEROPAGE:
 		address := operand1()
 		writeMemory(uint16(address), Y)
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX:
 		address := (operand1() + X) & 0xFF
 		writeMemory(uint16(address), Y)
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		address := uint16(operand2())<<8 | uint16(operand1())
 		writeMemory(address, Y)
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 
@@ -794,9 +794,9 @@ func CMP(addressingMode string) {
 			unsetCarryFlag()
 		}
 		if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
-			incCount(2)
+			advanceCycle(2)
 		} else {
-			incCount(3)
+			advanceCycle(3)
 		}
 	}
 	switch addressingMode {
@@ -852,7 +852,7 @@ func CMP(addressingMode string) {
 func JMP(addressingMode string) {
 	previousPC = PC
 	previousOpcode = opcode()
-	incCount(0)
+	advanceCycle(0)
 	switch addressingMode {
 	case ABSOLUTE:
 		// Get the 16 bit address from operands
@@ -903,7 +903,7 @@ func AND(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGE:
 		// Get the address from the operand
 		address := operand1()
@@ -914,7 +914,7 @@ func AND(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX:
 		// Get address
 		address := operand1() + X
@@ -925,7 +925,7 @@ func AND(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -936,7 +936,7 @@ func AND(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX:
 		// Get address
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
@@ -947,7 +947,7 @@ func AND(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEY:
 		// Get the address
 		address := int(operand2())<<8 | int(operand1()) + int(Y)
@@ -958,7 +958,7 @@ func AND(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case INDIRECTX:
 		// Get the address
 		indirectAddress := int(operand1()) + int(X)
@@ -970,7 +970,7 @@ func AND(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case INDIRECTY:
 		// Get the 16bit address
 		address := uint16(int(operand1()))
@@ -986,7 +986,7 @@ func AND(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	}
 }
 func EOR(addressingMode string) {
@@ -1014,7 +1014,7 @@ func EOR(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGE:
 		// Get the address from the operand
 		address := operand1()
@@ -1025,7 +1025,7 @@ func EOR(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX:
 		// Get address
 		address := operand1() + X
@@ -1036,7 +1036,7 @@ func EOR(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -1047,7 +1047,7 @@ func EOR(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX:
 		// Get address
 		address := uint16(operand2())<<8 | uint16(operand1()) + uint16(X)
@@ -1058,7 +1058,7 @@ func EOR(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEY:
 		// Get the address
 		address := int(operand2())<<8 | int(operand1()) + int(Y)
@@ -1069,7 +1069,7 @@ func EOR(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case INDIRECTX:
 		// Get the address
 		indirectAddress := int(operand1()) + int(X)
@@ -1081,7 +1081,7 @@ func EOR(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case INDIRECTY:
 		// Get the 16bit address
 		address := uint16(int(operand1()))
@@ -1097,7 +1097,7 @@ func EOR(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	}
 }
 func ORA(addressingMode string) {
@@ -1123,7 +1123,7 @@ func ORA(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGE:
 		// Get the address from the operand
 		address := operand1()
@@ -1134,7 +1134,7 @@ func ORA(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX:
 		// Get address
 		address := operand1() + X
@@ -1145,7 +1145,7 @@ func ORA(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -1156,19 +1156,19 @@ func ORA(addressingMode string) {
 		// Set the accumulator to the result
 		A = result
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX:
 		address := (uint16(operand1()) + uint16(X)) | uint16(operand2())<<8
 		value = readMemory(address)
 		A |= value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEY:
 		address := (uint16(operand1()) + uint16(Y)) | uint16(operand2())<<8
 		value = readMemory(address)
 		A |= value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case INDIRECTX:
 		zeroPageAddress := (operand1() + X) & 0xFF
 		effectiveAddrLo := readMemory(uint16(zeroPageAddress))
@@ -1177,7 +1177,7 @@ func ORA(addressingMode string) {
 		value = readMemory(address)
 		A |= value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case INDIRECTY:
 		zeroPageAddress := operand1()
 		effectiveAddrLo := readMemory(uint16(zeroPageAddress))
@@ -1186,7 +1186,7 @@ func ORA(addressingMode string) {
 		value = readMemory(address)
 		A |= value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	}
 }
 func BIT(addressingMode string) {
@@ -1218,7 +1218,7 @@ func BIT(addressingMode string) {
 		// AND the value with the accumulator
 		result = A & value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operand1 and operand2
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -1227,7 +1227,7 @@ func BIT(addressingMode string) {
 		// AND the value with the accumulator
 		result = A & value
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 func INC(addressingMode string) {
@@ -1261,22 +1261,22 @@ func INC(addressingMode string) {
 		// Get the address from the operand
 		address = uint16(operand1())
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX:
 		// Get the address from the operand with X offset
 		address = uint16(operand1() + X)
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get 16-bit address from operand1 and operand2
 		address = uint16(operand2())<<8 | uint16(operand1())
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX:
 		// Get 16-bit address from operand1 and operand2 with X offset
 		address = (uint16(operand2())<<8 | uint16(operand1())) + uint16(X)
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 func DEC(addressingMode string) {
@@ -1310,22 +1310,22 @@ func DEC(addressingMode string) {
 		// Get the address from the operand
 		address = uint16(operand1())
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX:
 		// Get the address from the operand with X offset
 		address = uint16(operand1() + X)
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get 16-bit address from operand1 and operand2
 		address = uint16(operand2())<<8 | uint16(operand1())
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX:
 		// Get 16-bit address from operand1 and operand2 with X offset
 		address = (uint16(operand2())<<8 | uint16(operand1())) + uint16(X)
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 func ADC(addressingMode string) {
@@ -1383,10 +1383,10 @@ func ADC(addressingMode string) {
 
 		// Your addressing mode cycle counts remain the same
 		if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
-			incCount(2)
+			advanceCycle(2)
 		}
 		if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
-			incCount(3)
+			advanceCycle(3)
 		}
 	}
 	switch addressingMode {
@@ -1504,10 +1504,10 @@ func SBC(addressingMode string) {
 
 		// Your addressing mode cycle counts remain the same
 		if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
-			incCount(2)
+			advanceCycle(2)
 		}
 		if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX || addressingMode == ABSOLUTEY {
-			incCount(3)
+			advanceCycle(3)
 		}
 	}
 	switch addressingMode {
@@ -1590,17 +1590,17 @@ func ROR(addressingMode string) {
 		if addressingMode == ACCUMULATOR {
 			// Store the result in the accumulator
 			A = result
-			incCount(1)
+			advanceCycle(1)
 		}
 		if addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX {
 			// Store the value back into memory
 			writeMemory(uint16(address), result)
-			incCount(2)
+			advanceCycle(2)
 		}
 		if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX {
 			// Store the value back into memory
 			writeMemory(address16, result)
-			incCount(3)
+			advanceCycle(3)
 		}
 	}
 	switch addressingMode {
@@ -1672,17 +1672,17 @@ func ROL(addressingMode string) {
 		if addressingMode == ACCUMULATOR {
 			// Store the result in the accumulator
 			A = result
-			incCount(1)
+			advanceCycle(1)
 		}
 		if addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX {
 			// Store the value back into memory
 			writeMemory(uint16(address), result)
-			incCount(2)
+			advanceCycle(2)
 		}
 		if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX {
 			// Store the value back into memory
 			writeMemory(address16, result)
-			incCount(3)
+			advanceCycle(3)
 		}
 	}
 	switch addressingMode {
@@ -1766,7 +1766,7 @@ func LSR(addressingMode string) {
 		// Store the result back into the accumulator
 		A = result
 		setFlags()
-		incCount(1)
+		advanceCycle(1)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
@@ -1777,7 +1777,7 @@ func LSR(addressingMode string) {
 		// Store the value back into memory
 		writeMemory(uint16(address), result)
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX:
 		// Get the X indexed address
 		address := operand1() + X
@@ -1788,7 +1788,7 @@ func LSR(addressingMode string) {
 		// Store the shifted value in memory
 		writeMemory(uint16(address), result)
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -1799,7 +1799,7 @@ func LSR(addressingMode string) {
 		// Store the shifted value back in memory
 		writeMemory(address, result)
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX:
 		// Get the 16bit X indexed absolute memory address
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -1811,7 +1811,7 @@ func LSR(addressingMode string) {
 		// Store the shifted value back in memory
 		writeMemory(address, result)
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 
@@ -1849,7 +1849,7 @@ func ASL(addressingMode string) {
 		// Update the accumulator with the result
 		A = result
 		setFlags()
-		incCount(1)
+		advanceCycle(1)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
@@ -1860,7 +1860,7 @@ func ASL(addressingMode string) {
 		// Store the value back into memory
 		writeMemory(uint16(address), result)
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGEX:
 		// Get the X indexed address
 		address := operand1() + X
@@ -1871,7 +1871,7 @@ func ASL(addressingMode string) {
 		// Store the shifted value in memory
 		writeMemory(uint16(address), result)
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get 16 bit address from operands
 		address := uint16(operand2())<<8 | uint16(operand1())
@@ -1882,7 +1882,7 @@ func ASL(addressingMode string) {
 		// Store the shifted value back in memory
 		writeMemory(address, result)
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	case ABSOLUTEX:
 		// Get the 16bit X indexed absolute memory address
 		address := int(operand2())<<8 | int(operand1()) + int(X)
@@ -1893,7 +1893,7 @@ func ASL(addressingMode string) {
 		// Store the shifted value back in memory
 		writeMemory(uint16(address), result)
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 
@@ -1931,7 +1931,7 @@ func CPX(addressingMode string) {
 		// Compare X with value
 		result = X - value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
@@ -1940,14 +1940,14 @@ func CPX(addressingMode string) {
 		// Store result of X-memory stored at operand1() in result variable
 		result = X - value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get address
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get value at address
 		value = readMemory(address)
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 func CPY(addressingMode string) {
@@ -1980,7 +1980,7 @@ func CPY(addressingMode string) {
 		// Subtract operand from Y
 		result = Y - operand1()
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ZEROPAGE:
 		// Get address
 		address := operand1()
@@ -1989,14 +1989,14 @@ func CPY(addressingMode string) {
 		// Store result of Y-memory stored at operand1() in result variable
 		result = Y - value
 		setFlags()
-		incCount(2)
+		advanceCycle(2)
 	case ABSOLUTE:
 		// Get address
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Get value at address
 		value = readMemory(address)
 		setFlags()
-		incCount(3)
+		advanceCycle(3)
 	}
 }
 
@@ -2056,7 +2056,7 @@ func execute() {
 
 			// Set PC to interrupt vector address
 			setPC(int(readMemory(uint16(IRQVectorAddress+1))<<8 | readMemory(uint16(IRQVectorAddress))))
-			incCount(0)
+			advanceCycle(0)
 		case 0x18:
 			/*
 				CLC - Clear Carry Flag
@@ -2066,7 +2066,7 @@ func execute() {
 			disassembleOpcode()
 			// Set SR carry flag bit 0 to 0
 			unsetCarryFlag()
-			incCount(1)
+			advanceCycle(1)
 		case 0xD8:
 			/*
 				CLD - Clear Decimal Mode
@@ -2075,7 +2075,7 @@ func execute() {
 			disassembledInstruction = fmt.Sprintf("CLD")
 			disassembleOpcode()
 			unsetDecimalFlag()
-			incCount(1)
+			advanceCycle(1)
 		case 0x58:
 			/*
 				CLI - Clear Interrupt Disable
@@ -2084,7 +2084,7 @@ func execute() {
 			disassembleOpcode()
 			// Set SR interrupt disable bit 2 to 0
 			unsetInterruptFlag()
-			incCount(1)
+			advanceCycle(1)
 		case 0xB8:
 			/*
 				CLV - Clear Overflow Flag
@@ -2093,7 +2093,7 @@ func execute() {
 			disassembleOpcode()
 			// Set SR overflow flag bit 6 to 0
 			unsetOverflowFlag()
-			incCount(1)
+			advanceCycle(1)
 		case 0xCA:
 			/*
 				DEX - Decrement Index Register X By One
@@ -2115,7 +2115,7 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
-			incCount(1)
+			advanceCycle(1)
 		case 0x88:
 			/*
 				DEY - Decrement Index Register Y By One
@@ -2137,7 +2137,7 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
-			incCount(1)
+			advanceCycle(1)
 		case 0xE8:
 			/*
 				INX - Increment Index Register X By One
@@ -2159,7 +2159,7 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
-			incCount(1)
+			advanceCycle(1)
 		case 0xC8:
 			/*
 				INY - Increment Index Register Y By One
@@ -2181,14 +2181,14 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
-			incCount(1)
+			advanceCycle(1)
 		case 0xEA:
 			/*
 				NOP - No Operation
 			*/
 			disassembledInstruction = fmt.Sprintf("NOP")
 			disassembleOpcode()
-			incCount(1)
+			advanceCycle(1)
 		case 0x48:
 			/*
 				PHA - Push Accumulator On Stack
@@ -2199,7 +2199,7 @@ func execute() {
 			// Update memory address pointed to by SP with value stored in accumulator
 			updateStack(A)
 			decSP()
-			incCount(1)
+			advanceCycle(1)
 		case 0x08:
 			/*
 			   PHP - Push Processor Status On Stack
@@ -2217,7 +2217,7 @@ func execute() {
 			// Decrement the stack pointer
 			decSP()
 
-			incCount(1)
+			advanceCycle(1)
 		case 0x68:
 			/*
 			   PLA - Pull Accumulator From Stack
@@ -2248,7 +2248,7 @@ func execute() {
 				unsetZeroFlag()
 			}
 
-			incCount(1)
+			advanceCycle(1)
 		case 0x28:
 			/*
 				PLP - Pull Processor Status From Stack
@@ -2259,7 +2259,7 @@ func execute() {
 			// Update SR with the value stored at the address pointed to by SP
 			SR = readStack()
 			incSP()
-			incCount(1)
+			advanceCycle(1)
 		case 0x40:
 			/*
 			   RTI - Return From Interrupt
@@ -2285,7 +2285,7 @@ func execute() {
 
 			previousPC = PC
 			previousOpcode = opcode()
-			incCount(0)
+			advanceCycle(0)
 			// Update PC with the value stored in memory at the address pointed to by SP
 			setPC(int((high << 8) | low))
 		case 0x60:
@@ -2304,7 +2304,7 @@ func execute() {
 			previousPC = PC
 			previousOpcode = opcode()
 			//Update PC with the value stored in memory at the address pointed to by SP
-			incCount(0)
+			advanceCycle(0)
 			setPC(int((high<<8)|low) + 1)
 		case 0x38:
 			/*
@@ -2315,7 +2315,7 @@ func execute() {
 
 			// Set SR carry flag bit 0 to 1
 			setCarryFlag()
-			incCount(1)
+			advanceCycle(1)
 		case 0xF8:
 			/*
 				SED - Set Decimal Mode
@@ -2325,7 +2325,7 @@ func execute() {
 
 			// Set SR decimal mode flag to 1
 			setDecimalFlag()
-			incCount(1)
+			advanceCycle(1)
 		case 0x78:
 			/*
 				SEI - Set Interrupt Disable
@@ -2335,7 +2335,7 @@ func execute() {
 
 			// Set SR interrupt disable bit 2 to 1
 			setInterruptFlag()
-			incCount(1)
+			advanceCycle(1)
 		case 0xAA:
 			/*
 				TAX - Transfer Accumulator To Index X
@@ -2357,7 +2357,7 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
-			incCount(1)
+			advanceCycle(1)
 		case 0xA8:
 			/*
 				TAY - Transfer Accumulator To Index Y
@@ -2379,7 +2379,7 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
-			incCount(1)
+			advanceCycle(1)
 		case 0xBA:
 			/*
 				TSX - Transfer Stack Pointer To Index X
@@ -2401,7 +2401,7 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
-			incCount(1)
+			advanceCycle(1)
 		case 0x8A:
 			/*
 				TXA - Transfer Index X To Accumulator
@@ -2423,7 +2423,7 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
-			incCount(1)
+			advanceCycle(1)
 		case 0x9A:
 			/*
 				TXS - Transfer Index X To Stack Pointer
@@ -2433,7 +2433,7 @@ func execute() {
 
 			// Set stack pointer to value of X register
 			SP = uint16(X)
-			incCount(1)
+			advanceCycle(1)
 		case 0x98:
 			/*
 				TYA - Transfer Index Y To Accumulator
@@ -2455,7 +2455,7 @@ func execute() {
 			} else {
 				unsetZeroFlag()
 			}
-			incCount(1)
+			advanceCycle(1)
 
 		// Accumulator instructions
 		/*
@@ -3078,12 +3078,12 @@ func execute() {
 			if getSRBit(7) == 0 {
 				// Branch
 				setPC(targetAddress)
-				//incCount(0)
+				//advanceCycle(0)
 				instructionCounter++
 			} else {
 				// Don't branch
 				// Increment the instruction counter by 2
-				incCount(2)
+				advanceCycle(2)
 			}
 
 		case 0x30:
@@ -3115,7 +3115,7 @@ func execute() {
 			offset := operand1()
 			// If overflow flag is not set, branch to address
 			if getSRBit(6) == 0 {
-				incCount(0)
+				advanceCycle(0)
 				// Branch
 				// Add offset to lower 8bits of PC
 				setPC(PC + 3 + int(offset)&0xFF)
@@ -3126,7 +3126,7 @@ func execute() {
 				}
 			} else {
 				// Don't branch
-				incCount(2)
+				advanceCycle(2)
 			}
 		case 0x55:
 			/*
@@ -3147,7 +3147,7 @@ func execute() {
 			offset := operand1()
 			// If overflow flag is set, branch to address
 			if getSRBit(6) == 1 {
-				incCount(0)
+				advanceCycle(0)
 				// Branch
 				// Add offset to lower 8bits of PC
 				setPC(PC + 3 + int(offset)&0xFF)
@@ -3158,7 +3158,7 @@ func execute() {
 				}
 			} else {
 				// Don't branch
-				incCount(2)
+				advanceCycle(2)
 			}
 		case 0x90:
 			/*
@@ -3173,7 +3173,7 @@ func execute() {
 			offset := operand1()
 			// If carry flag is unset, branch to address
 			if getSRBit(0) == 0 {
-				incCount(0)
+				advanceCycle(0)
 				// Branch
 				// Add offset to lower 8bits of PC
 				setPC(PC + 3 + int(offset)&0xFF)
@@ -3184,7 +3184,7 @@ func execute() {
 				}
 			} else {
 				// Don't branch
-				incCount(2)
+				advanceCycle(2)
 			}
 		case 0xB0:
 			/*
@@ -3196,7 +3196,7 @@ func execute() {
 			offset := operand1()
 			// If carry flag is set, branch to address
 			if getSRBit(0) == 1 {
-				incCount(0)
+				advanceCycle(0)
 				// Branch
 				// Add offset to lower 8bits of PC
 				setPC(PC + 3 + int(offset)&0xFF)
@@ -3207,7 +3207,7 @@ func execute() {
 				}
 			} else {
 				// Don't branch
-				incCount(2)
+				advanceCycle(2)
 			}
 
 		case 0xD0:
@@ -3228,16 +3228,16 @@ func execute() {
 
 				// Check if the branch crosses a page boundary
 				if (PC & 0xFF00) != (targetAddr & 0xFF00) {
-					incCount(2) // Add extra cycle if branch crosses page boundary
+					advanceCycle(2) // Add extra cycle if branch crosses page boundary
 				} else {
-					incCount(1) // Account for the cycle used by the branch instruction
+					advanceCycle(1) // Account for the cycle used by the branch instruction
 				}
 
 				// Update the program counter
 				setPC(targetAddr & 0xFFFF)
 			} else {
 				// If Z flag is set, don't branch
-				incCount(2)
+				advanceCycle(2)
 			}
 
 		case 0xF0:
@@ -3252,11 +3252,11 @@ func execute() {
 
 			// If Z flag is set, branch to address
 			if getSRBit(1) == 1 {
-				incCount(0)
+				advanceCycle(0)
 				// Add 2 to PC (1 for opcode, 1 for operand) and then add offset
 				setPC(PC + 2 + int(offset))
 			} else {
-				incCount(2)
+				advanceCycle(2)
 			}
 
 		case 0xF6:
@@ -3378,7 +3378,7 @@ func execute() {
 			previousOpcode = opcode()
 			// Now, jump to the subroutine address specified by the operands
 			setPC(int(operand2())<<8 | int(operand1()))
-			incCount(0)
+			advanceCycle(0)
 		case 0xAD:
 			/*
 				LDA - Load Accumulator with Memory
