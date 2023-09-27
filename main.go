@@ -117,7 +117,7 @@ func loadROMs() {
 		file, _ := os.Open("roms/plus4/basic")
 		_, _ = io.ReadFull(file, PLUS4BASICROM)
 		fmt.Printf("Copying first half of BASIC ROM into memory at $%04X to $%04X\n\n", plus4basicROMAddress, plus4basicROMAddress+16384)
-		copy(memory[plus4basicROMAddress:plus4basicROMAddress+16384], PLUS4BASICROM)
+		copy(memory[plus4basicROMAddress:plus4basicROMAddress+len(PLUS4BASICROM)], PLUS4BASICROM)
 		err := file.Close()
 		if err != nil {
 			return
@@ -134,8 +134,7 @@ func loadROMs() {
 		if err != nil {
 			return
 		}
-
-		dumpMemoryToFile(memory)
+		//dumpMemoryToFile(memory)
 	}
 	if *c64 {
 		// Load the BASIC ROM
@@ -871,10 +870,11 @@ func CMP(addressingMode string) {
 		value = readMemory(uint16(address))
 		setFlags()
 	case INDIRECTY: // Indirect, Y
-		// Get address from operand1() and add Y to it
-		address := readMemory(uint16(operand1())) + Y
-		// Get value at address
-		value = readMemory(uint16(address))
+		// Get the address of the operand
+		zeroPageAddress := operand1()
+		address := uint16(readMemory(uint16(zeroPageAddress))) | uint16(readMemory((uint16(zeroPageAddress)+1)&0xFF))<<8
+		finalAddress := (address + uint16(Y)) & 0xFFFF
+		value = readMemory(finalAddress)
 		setFlags()
 	}
 }
@@ -904,6 +904,10 @@ func JMP(addressingMode string) {
 			fmt.Println("All tests passed!")
 			os.Exit(0)
 		}
+	}
+
+	if PC == 0x8683 {
+		fmt.Printf("Value stored at $0300 is %02X\n", readMemory(0x0300))
 	}
 }
 
@@ -3248,13 +3252,15 @@ func execute() {
 			if getSRBit(1) == 0 {
 				// Calculate the branch target address
 				targetAddr := PC + 2 + int(int8(offset))
-
 				// Check if the branch crosses a page boundary
 				if (PC & 0xFF00) != (targetAddr & 0xFF00) {
-					handleState(2) // Add extra cycle if branch crosses page boundary
+					handleState(2)
 				} else {
-					handleState(1) // Account for the cycle used by the branch instruction
+					handleState(1)
 				}
+				fmt.Printf("PC: %04X\n", PC)
+				fmt.Printf("Offset: %02X\n", offset)
+				fmt.Printf("Calculated Target Address: %04X\n", targetAddr)
 
 				// Update the program counter
 				setPC(targetAddr & 0xFFFF)
