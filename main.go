@@ -350,9 +350,6 @@ func handleIRQ() {
 	if getSRBit(2) == 1 {
 		return
 	}
-	fmt.Printf("Value stored at IRQVectorAddress %04X is %04X\n", IRQVectorAddress, readMemory(IRQVectorAddress))
-	fmt.Printf("Before IRQ: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
-
 	// Push PC onto stack
 	updateStack(byte(PC >> 8)) // high byte
 	decSP()
@@ -366,10 +363,8 @@ func handleIRQ() {
 	// Set PC to IRQ Service Routine address
 	setPC(int(readMemory(IRQVectorAddress)) | int(readMemory(IRQVectorAddress+1))<<8)
 	irq = false
-	fmt.Printf("After IRQ: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
 }
 func handleNMI() {
-	fmt.Printf("Before NMI: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
 	// Push PC onto stack
 	updateStack(byte(PC >> 8)) // high byte
 	decSP()
@@ -381,13 +376,10 @@ func handleNMI() {
 	// Set PC to NMI Service Routine address
 	setPC(int(readMemory(NMIVectorAddress)) | int(readMemory(NMIVectorAddress+1))<<8)
 	nmi = false // Clear the NMI flag
-	fmt.Printf("After NMI: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
 }
 func handleRESET() {
-	fmt.Printf("Before RESET: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
 	resetCPU()
 	reset = false // Clear the RESET flag
-	fmt.Printf("After RESET: PC: %04X, SP: %02X, SR: %02X\n", PC, SP, SR)
 }
 func handleState(amount int) {
 	if *stateMonitor {
@@ -608,13 +600,11 @@ func LDA(addressingMode string) {
 		A = value
 		setFlags()
 		handleState(2)
-	case INDIRECTY: // Indirect, Y
-		// Get address
+	case INDIRECTY:
 		zeroPageAddress := operand1()
-		address := (uint16(readMemory(uint16(zeroPageAddress+1)))<<8 | uint16(readMemory(uint16(zeroPageAddress)))) + uint16(Y)
-		// Get the value at the address
-		value := readMemory(address)
-		// Set the accumulator to the value
+		address := uint16(readMemory(uint16(zeroPageAddress))) | uint16(readMemory((uint16(zeroPageAddress)+1)&0xFF))<<8
+		finalAddress := (address + uint16(Y)) & 0xFFFF
+		value := readMemory(finalAddress)
 		A = value
 		setFlags()
 		handleState(2)
@@ -904,10 +894,6 @@ func JMP(addressingMode string) {
 			fmt.Println("All tests passed!")
 			os.Exit(0)
 		}
-	}
-
-	if PC == 0x8683 {
-		fmt.Printf("Value stored at $0300 is %02X\n", readMemory(0x0300))
 	}
 }
 
@@ -3258,10 +3244,6 @@ func execute() {
 				} else {
 					handleState(1)
 				}
-				fmt.Printf("PC: %04X\n", PC)
-				fmt.Printf("Offset: %02X\n", offset)
-				fmt.Printf("Calculated Target Address: %04X\n", targetAddr)
-
 				// Update the program counter
 				setPC(targetAddr & 0xFFFF)
 			} else {
