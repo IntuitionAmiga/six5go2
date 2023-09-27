@@ -118,7 +118,10 @@ func loadROMs() {
 		_, _ = io.ReadFull(file, PLUS4BASICROM)
 		fmt.Printf("Copying first half of BASIC ROM into memory at $%04X to $%04X\n\n", plus4basicROMAddress, plus4basicROMAddress+16384)
 		copy(memory[plus4basicROMAddress:plus4basicROMAddress+16384], PLUS4BASICROM)
-		file.Close()
+		err := file.Close()
+		if err != nil {
+			return
+		}
 
 		// Open the KERNAL ROM file
 		file, _ = os.Open("roms/plus4/kernal")
@@ -127,7 +130,10 @@ func loadROMs() {
 		// Copy the KERNAL ROM data into memory at plus4kernalROMAddress
 		copy(memory[plus4kernalROMAddress:], PLUS4KERNALROM)
 		fmt.Printf("Copying KERNAL ROM into memory at $%04X to $%04X\n\n", plus4kernalROMAddress, plus4kernalROMAddress+16384)
-		file.Close()
+		err = file.Close()
+		if err != nil {
+			return
+		}
 
 		dumpMemoryToFile(memory)
 	}
@@ -137,21 +143,30 @@ func loadROMs() {
 		_, _ = io.ReadFull(file, C64BASICROM)
 		fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", c64basicROMAddress, c64basicROMAddress+len(C64BASICROM))
 		copy(memory[c64basicROMAddress:c64basicROMAddress+len(C64BASICROM)], C64BASICROM)
-		file.Close()
+		err := file.Close()
+		if err != nil {
+			return
+		}
 
 		// Load the KERNAL ROM
 		file, _ = os.Open("roms/c64/kernal")
 		_, _ = io.ReadFull(file, C64KERNALROM)
 		fmt.Printf("Copying KERNAL ROM into memory at $%04X to $%04X\n\n", c64kernalROMAddress, c64kernalROMAddress+len(C64KERNALROM))
 		copy(memory[c64kernalROMAddress:c64kernalROMAddress+len(C64KERNALROM)], C64KERNALROM)
-		file.Close()
+		err = file.Close()
+		if err != nil {
+			return
+		}
 
 		// Load the CHARACTER ROM
 		file, _ = os.Open("roms/c64/chargen")
 		_, _ = io.ReadFull(file, C64CHARROM)
 		fmt.Printf("Copying CHARACTER ROM into memory at $%04X to $%04X\n\n", c64charROMAddress, c64charROMAddress+len(C64CHARROM))
 		copy(memory[c64charROMAddress:c64charROMAddress+len(C64CHARROM)], C64CHARROM)
-		file.Close()
+		err = file.Close()
+		if err != nil {
+			return
+		}
 	}
 
 	if *allsuitea {
@@ -163,7 +178,10 @@ func loadROMs() {
 		// Set the interrupt vector addresses manually
 		writeMemory(IRQVectorAddress, 0x00)   // Low byte of 0x4000
 		writeMemory(IRQVectorAddress+1, 0x40) // High byte of 0x4000
-		file.Close()
+		err := file.Close()
+		if err != nil {
+			return
+		}
 	}
 
 	if *klausd {
@@ -175,7 +193,10 @@ func loadROMs() {
 		// Set the interrupt vector addresses manually
 		writeMemory(IRQVectorAddress, 0x00)   // Low byte of 0x4000
 		writeMemory(IRQVectorAddress+1, 0x40) // High byte of 0x4000
-		file.Close()
+		err := file.Close()
+		if err != nil {
+			return
+		}
 	}
 
 	if *ruudb {
@@ -184,7 +205,10 @@ func loadROMs() {
 		_, _ = io.ReadFull(file, RuudBTestROM)
 		copy(memory[RuudBTestROMAddress:], RuudBTestROM)
 		fmt.Printf("Copying Ruud B's 8K Test ROM into memory at $%04X to $%04X\n\n", RuudBTestROMAddress, RuudBTestROMAddress+len(RuudBTestROM))
-		file.Close()
+		err := file.Close()
+		if err != nil {
+			return
+		}
 	}
 }
 func dumpMemoryToFile(memory [65536]byte) {
@@ -193,10 +217,18 @@ func dumpMemoryToFile(memory [65536]byte) {
 		fmt.Println("Error creating file:", err)
 		return
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
 
 	for _, byteValue := range memory {
-		fmt.Fprintf(file, "%02X ", byteValue)
+		_, err := fmt.Fprintf(file, "%02X ", byteValue)
+		if err != nil {
+			return
+		}
 	}
 	fmt.Println("Memory dump completed!")
 }
