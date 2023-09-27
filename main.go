@@ -113,34 +113,34 @@ func resetCPU() {
 }
 func loadROMs() {
 	if *plus4 {
-		// Open the BASIC ROM file
-		file, _ := os.Open("roms/plus4/basic")
-		_, _ = io.ReadFull(file, PLUS4BASICROM)
-		fmt.Printf("Copying first half of BASIC ROM into memory at $%04X to $%04X\n\n", plus4basicROMAddress, plus4basicROMAddress+16384)
-		copy(memory[plus4basicROMAddress:plus4basicROMAddress+len(PLUS4BASICROM)], PLUS4BASICROM)
+
+		// Open the KERNAL ROM file
+		file, _ := os.Open("roms/plus4/kernal")
+		// Read the KERNAL ROM data into PLUS4KERNALROM
+		_, _ = io.ReadFull(file, PLUS4KERNALROM)
+		// Copy the KERNAL ROM data into memory at plus4kernalROMAddress
+		copy(memory[plus4kernalROMAddress:], PLUS4KERNALROM)
+		fmt.Printf("Copying %vKB KERNAL ROM into memory at $%04X to $%04X\n\n", len(PLUS4KERNALROM)/1024, plus4kernalROMAddress, plus4kernalROMAddress+len(PLUS4KERNALROM))
 		err := file.Close()
 		if err != nil {
 			return
 		}
 
-		// Open the KERNAL ROM file
-		file, _ = os.Open("roms/plus4/kernal")
-		// Read the KERNAL ROM data into PLUS4KERNALROM
-		_, _ = io.ReadFull(file, PLUS4KERNALROM)
-		// Copy the KERNAL ROM data into memory at plus4kernalROMAddress
-		copy(memory[plus4kernalROMAddress:], PLUS4KERNALROM)
-		fmt.Printf("Copying KERNAL ROM into memory at $%04X to $%04X\n\n", plus4kernalROMAddress, plus4kernalROMAddress+16384)
+		// Open the BASIC ROM file
+		file, _ = os.Open("roms/plus4/basic")
+		_, _ = io.ReadFull(file, PLUS4BASICROM)
+		fmt.Printf("Copying %vKB BASIC ROM into memory at $%04X to $%04X\n\n", len(PLUS4BASICROM)/1024, plus4basicROMAddress, plus4basicROMAddress+len(PLUS4BASICROM))
+		copy(memory[plus4basicROMAddress:plus4basicROMAddress+len(PLUS4BASICROM)], PLUS4BASICROM)
 		err = file.Close()
 		if err != nil {
 			return
 		}
-		//dumpMemoryToFile(memory)
 	}
 	if *c64 {
 		// Load the BASIC ROM
 		file, _ := os.Open("roms/c64/basic")
 		_, _ = io.ReadFull(file, C64BASICROM)
-		fmt.Printf("Copying BASIC ROM into memory at $%04X to $%04X\n\n", c64basicROMAddress, c64basicROMAddress+len(C64BASICROM))
+		fmt.Printf("Copying %vKB BASIC ROM into memory from $%04X to $%04X\n\n", len(C64BASICROM)/1024, c64basicROMAddress, c64basicROMAddress+len(C64BASICROM))
 		copy(memory[c64basicROMAddress:c64basicROMAddress+len(C64BASICROM)], C64BASICROM)
 		err := file.Close()
 		if err != nil {
@@ -150,7 +150,7 @@ func loadROMs() {
 		// Load the KERNAL ROM
 		file, _ = os.Open("roms/c64/kernal")
 		_, _ = io.ReadFull(file, C64KERNALROM)
-		fmt.Printf("Copying KERNAL ROM into memory at $%04X to $%04X\n\n", c64kernalROMAddress, c64kernalROMAddress+len(C64KERNALROM))
+		fmt.Printf("Copying %vKB KERNAL ROM into memory from $%04X to $%04X\n\n", len(C64KERNALROM)/1024, c64kernalROMAddress, c64kernalROMAddress+len(C64KERNALROM))
 		copy(memory[c64kernalROMAddress:c64kernalROMAddress+len(C64KERNALROM)], C64KERNALROM)
 		err = file.Close()
 		if err != nil {
@@ -160,7 +160,7 @@ func loadROMs() {
 		// Load the CHARACTER ROM
 		file, _ = os.Open("roms/c64/chargen")
 		_, _ = io.ReadFull(file, C64CHARROM)
-		fmt.Printf("Copying CHARACTER ROM into memory at $%04X to $%04X\n\n", c64charROMAddress, c64charROMAddress+len(C64CHARROM))
+		fmt.Printf("Copying %vKB CHARACTER ROM into memory from $%04X to $%04X\n\n", len(C64CHARROM)/1024, c64charROMAddress, c64charROMAddress+len(C64CHARROM))
 		copy(memory[c64charROMAddress:c64charROMAddress+len(C64CHARROM)], C64CHARROM)
 		err = file.Close()
 		if err != nil {
@@ -172,7 +172,7 @@ func loadROMs() {
 		// Copy AllSuiteA ROM into memory
 		file, _ := os.Open("roms/AllSuiteA.bin")
 		_, _ = io.ReadFull(file, AllSuiteAROM)
-		fmt.Printf("Copying AllSuiteA ROM into memory at $%04X to $%04X\n\n", AllSuiteAROMAddress, AllSuiteAROMAddress+len(AllSuiteAROM))
+		fmt.Printf("Copying %vKB AllSuiteA ROM into memory from $%04X to $%04X\n\n", len(AllSuiteAROM)/1024, AllSuiteAROMAddress, AllSuiteAROMAddress+len(AllSuiteAROM))
 		copy(memory[AllSuiteAROMAddress:], AllSuiteAROM)
 		// Set the interrupt vector addresses manually
 		writeMemory(IRQVectorAddress, 0x00)   // Low byte of 0x4000
@@ -188,7 +188,7 @@ func loadROMs() {
 		file, _ := os.Open("roms/6502_functional_test.bin")
 		_, _ = io.ReadFull(file, KlausDTestROM)
 		copy(memory[KlausDTestROMAddress:], KlausDTestROM)
-		fmt.Printf("Copying Klaus Dormann's 6502 functional test ROM into memory at $%04X to $%04X\n\n", KlausDTestROMAddress, KlausDTestROMAddress+len(KlausDTestROM))
+		fmt.Printf("Copying Klaus Dormann's %vKB 6502 functional test ROM into memory from $%04X to $%04X\n\n", len(KlausDTestROM)/1024, KlausDTestROMAddress, KlausDTestROMAddress+len(KlausDTestROM))
 		// Set the interrupt vector addresses manually
 		writeMemory(IRQVectorAddress, 0x00)   // Low byte of 0x4000
 		writeMemory(IRQVectorAddress+1, 0x40) // High byte of 0x4000
@@ -203,7 +203,7 @@ func loadROMs() {
 		file, _ := os.Open("roms/TTL6502.BIN")
 		_, _ = io.ReadFull(file, RuudBTestROM)
 		copy(memory[RuudBTestROMAddress:], RuudBTestROM)
-		fmt.Printf("Copying Ruud B's 8K Test ROM into memory at $%04X to $%04X\n\n", RuudBTestROMAddress, RuudBTestROMAddress+len(RuudBTestROM))
+		fmt.Printf("Copying Ruud B's %vKB Test ROM into memory from $%04X to $%04X\n\n", len(RuudBTestROM)/1024, RuudBTestROMAddress, RuudBTestROMAddress+len(RuudBTestROM))
 		err := file.Close()
 		if err != nil {
 			return
@@ -246,7 +246,7 @@ func petsciiToAscii(petscii uint8) uint8 {
 func kernalRoutines() {
 	// CHROUT routine is at $FFD2
 	switch PC {
-	case 0xFFD2:
+	case 0xFFB1:
 		// This is a CHROUT call
 		fmt.Printf("Call to CHROUT!!!!\n")
 		ch := petsciiToAscii(A) // Convert PETSCII to ASCII
@@ -3183,19 +3183,15 @@ func execute() {
 			previousPC = PC
 			previousOpcode = opcode()
 			// Get offset from operand
-			offset := operand1()
+			lsb := uint8(operand1() & 0xFF)
+			offset := int8(lsb)
 			// If carry flag is unset, branch to address
 			if getSRBit(0) == 0 {
 				handleState(0)
 				// Branch
 				// Add offset to lower 8bits of PC
-				setPC(PC + int(int8(offset)))
-
-				// If the offset is negative, decrement the PC by 1
-				// If bit 7 is unset then it's negative
-				if readBit(7, offset) == 0 {
-					decPC(1)
-				}
+				setPC(PC + int(offset))
+				//handleState(0)
 			} else {
 				// Don't branch
 				handleState(2)
