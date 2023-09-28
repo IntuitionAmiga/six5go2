@@ -2309,14 +2309,18 @@ func execute() {
 			disassembleOpcode()
 			//Get low byte of new PC
 			low := uint16(readStack())
+			fmt.Printf("Low: %04X\n", low)
 			// Increment the stack pointer
 			incSP()
 			//Get high byte of new PC
 			high := uint16(readStack())
+			fmt.Printf("High: %04X\n", high)
 			previousPC = PC
 			previousOpcode = opcode()
 			//Update PC with the value stored in memory at the address pointed to by SP
+			fmt.Printf("PC before update: %04X\n", PC)
 			setPC(int((high << 8) | low))
+			fmt.Printf("PC after update: %04X\n", PC)
 			handleState(0)
 		case 0x38:
 			/*
