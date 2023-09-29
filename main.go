@@ -170,7 +170,7 @@ func loadROMs() {
 
 	if *allsuitea {
 		// Copy AllSuiteA ROM into memory
-		file, _ := os.Open("roms/AllSuiteA.bin")
+		file, _ := os.Open("roms/tests/AllSuiteA.bin")
 		_, _ = io.ReadFull(file, AllSuiteAROM)
 		fmt.Printf("Copying %vKB AllSuiteA ROM into memory from $%04X to $%04X\n\n", len(AllSuiteAROM)/1024, AllSuiteAROMAddress, AllSuiteAROMAddress+len(AllSuiteAROM)-1)
 		copy(memory[AllSuiteAROMAddress:], AllSuiteAROM)
@@ -185,7 +185,7 @@ func loadROMs() {
 
 	if *klausd {
 		//Copy roms/6502_functional_test.bin into memory
-		file, _ := os.Open("roms/6502_functional_test.bin")
+		file, _ := os.Open("roms/tests/6502_functional_test.bin")
 		_, _ = io.ReadFull(file, KlausDTestROM)
 		copy(memory[KlausDTestROMAddress:], KlausDTestROM)
 		fmt.Printf("Copying Klaus Dormann's %vKB 6502 functional test ROM into memory from $%04X to $%04X\n\n", len(KlausDTestROM)/1024, KlausDTestROMAddress, KlausDTestROMAddress+len(KlausDTestROM)-1)
@@ -200,7 +200,7 @@ func loadROMs() {
 
 	if *ruudb {
 		//Copy roms/TTL6502.BIN into memory
-		file, _ := os.Open("roms/TTL6502.BIN")
+		file, _ := os.Open("roms/tests/TTL6502.BIN")
 		_, _ = io.ReadFull(file, RuudBTestROM)
 		copy(memory[RuudBTestROMAddress:], RuudBTestROM)
 		fmt.Printf("Copying Ruud B's %vKB Test ROM into memory from $%04X to $%04X\n\n", len(RuudBTestROM)/1024, RuudBTestROMAddress, RuudBTestROMAddress+len(RuudBTestROM)-1)
