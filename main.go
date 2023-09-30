@@ -86,7 +86,8 @@ var (
 )
 
 func main() {
-	fmt.Printf("Six5go2 v2.0 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley\n\n")
+	fmt.Printf("Six5go2 v2.0 - 6502 Emulator and Disassembler in Golang (c) 2022-2023 Zayn Otley\n\n")
+	fmt.Printf("https://github.com/intuitionamiga/six5go2/tree/v2\n\n")
 	flag.Parse()
 
 	if len(os.Args) < 2 {
@@ -95,7 +96,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory))
+	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory)-1)
 
 	// Start emulation
 	loadROMs()
@@ -211,6 +212,10 @@ func loadROMs() {
 		if err != nil {
 			return
 		}
+	}
+	if *stateMonitor {
+		fmt.Printf("PC  |OP|OPERANDS|  DISASSEMBLY  | \t REGISTERS\t |  STACK MEM  | SR FLAGS | INSTRUCTION COUNTER\n")
+		fmt.Printf("----|--|--------|---------------|------------------------|-------------|----------|---------------------------------\n")
 	}
 }
 func dumpMemoryToFile(memory [65536]byte) {
@@ -404,51 +409,49 @@ func handleState(amount int) {
 	}
 }
 func printMachineState() {
-	// Imitate Virtual 6502 and print PC, opcode, operand1 if two byte instruction, operand2 if three byte instruction, disassembled instruction and any operands with correct addressing mode, "|",accumulator hex value, X register hex value, Y register hex value, SP as hex value,"|", SP as binary digits
-
 	if BRKtrue || (previousOpcode != 0x20 && previousOpcode != 0x4C && previousOpcode != 0x6C) {
 		if previousOpcode == 0x60 || (previousOpcode == 0x00 && BRKtrue || previousOpcode == 0x40) {
-			fmt.Printf("%04X ", previousPC)
-			fmt.Printf("%02X ", previousOpcode)
+			fmt.Printf("%04X|", previousPC)
+			fmt.Printf("%02X|", previousOpcode)
 			previousOpcode = 0x00
 			previousPC = 0x0000
 			previousOperand1 = 0x00
 			previousOperand2 = 0x00
 			BRKtrue = false
 		} else {
-			fmt.Printf("%04X ", PC)
+			fmt.Printf("%04X|", PC)
 			// If opcode() is a 1 byte instruction, print opcode
 			if opcode() == 0x08 || opcode() == 0x10 || opcode() == 0x18 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A {
-				fmt.Printf("%02X ", opcode())
+				fmt.Printf("%02X|", opcode())
 			}
 
 			// If opcode() is a 2 byte instruction, print opcode and operand1
 			// 		fmt.Printf("%02X %02X ", opcode(), operand1())
 			// The 0x hex opcodes for the 2 byte instructions on the 6502 are
 			if opcode() == 0x69 || opcode() == 0x29 || opcode() == 0xC9 || opcode() == 0xE0 || opcode() == 0xC0 || opcode() == 0x49 || opcode() == 0xA9 || opcode() == 0xA2 || opcode() == 0xA0 || opcode() == 0x09 || opcode() == 0xE9 || opcode() == 0x65 || opcode() == 0x25 || opcode() == 0x06 || opcode() == 0x24 || opcode() == 0xC5 || opcode() == 0xE4 || opcode() == 0xC4 || opcode() == 0xC6 || opcode() == 0x45 || opcode() == 0xE6 || opcode() == 0xA5 || opcode() == 0xA6 || opcode() == 0xA4 || opcode() == 0x46 || opcode() == 0x05 || opcode() == 0x26 || opcode() == 0x66 || opcode() == 0xE5 || opcode() == 0x85 || opcode() == 0x86 || opcode() == 0x84 || opcode() == 0x90 || opcode() == 0xB0 || opcode() == 0xF0 || opcode() == 0x30 || opcode() == 0xD0 || opcode() == 0x10 || opcode() == 0x50 || opcode() == 0x70 {
-				fmt.Printf("%02X %02X", opcode(), operand1())
+				fmt.Printf("%02X|%02X", opcode(), operand1())
 			}
 
 			// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
 			// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
 			if opcode() == 0x6D || opcode() == 0x2D || opcode() == 0x0E || opcode() == 0x2C || opcode() == 0xCD || opcode() == 0xEC || opcode() == 0xCC || opcode() == 0xCE || opcode() == 0x4D || opcode() == 0xEE || opcode() == 0xAD || opcode() == 0xAC || opcode() == 0xAE || opcode() == 0x4E || opcode() == 0x0D || opcode() == 0x2E || opcode() == 0x6E || opcode() == 0xED || opcode() == 0x8D || opcode() == 0x8E || opcode() == 0x8C || opcode() == 0x7D || opcode() == 0x79 || opcode() == 0x3D || opcode() == 0x39 || opcode() == 0x1E || opcode() == 0xDD || opcode() == 0xD9 || opcode() == 0xDE || opcode() == 0x5D || opcode() == 0x59 || opcode() == 0xFE || opcode() == 0xBD || opcode() == 0xB9 || opcode() == 0xBC || opcode() == 0xBE || opcode() == 0x5E || opcode() == 0x1D || opcode() == 0x19 || opcode() == 0x3E || opcode() == 0x7E || opcode() == 0xFD || opcode() == 0xF9 || opcode() == 0x9D || opcode() == 0x95 || opcode() == 0x99 || opcode() == 0xB5 || opcode() == 0x91 || opcode() == 0xB1 || opcode() == 0x81 || opcode() == 0xA1 || opcode() == 0x94 || opcode() == 0x96 || opcode() == 0xB4 || opcode() == 0xB6 || opcode() == 0x35 || opcode() == 0x15 || opcode() == 0x55 || opcode() == 0x21 || opcode() == 0x01 || opcode() == 0x41 || opcode() == 0x31 || opcode() == 0x11 || opcode() == 0x51 || opcode() == 0xF6 || opcode() == 0xD6 || opcode() == 0x4A || opcode() == 0x0A || opcode() == 0x16 || opcode() == 0x56 || opcode() == 0x36 || opcode() == 0x76 || opcode() == 0x75 || opcode() == 0xF5 || opcode() == 0xD5 || opcode() == 0xC1 || opcode() == 0xD1 || opcode() == 0x61 || opcode() == 0xE1 || opcode() == 0x71 || opcode() == 0xF1 {
-				fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
+				fmt.Printf("%02X|%02X %02X ", opcode(), operand1(), operand2())
 			}
 		}
 	} else if previousOpcode == 0x20 || previousOpcode == 0x4C || previousOpcode == 0x6C {
-		fmt.Printf("%04X %02X %02X %02X ", previousPC, previousOpcode, previousOperand1, previousOperand2)
+		fmt.Printf("%04X|%02X|%02X %02X ", previousPC, previousOpcode, previousOperand1, previousOperand2)
 		previousOpcode = 0x00
 		previousPC = 0x0000
 		previousOperand1 = 0x00
 		previousOperand2 = 0x00
 	} else {
-		fmt.Printf("%04X ", previousPC)
-		fmt.Printf("%02X %02X %02X ", previousOpcode, previousOperand1, previousOperand2)
+		fmt.Printf("%04X|", previousPC)
+		fmt.Printf("%02X|%02X %02X ", previousOpcode, previousOperand1, previousOperand2)
 
 	}
 
 	// Print disassembled instruction
-	fmt.Printf("\t%s", disassembledInstruction)
+	fmt.Printf("\t|%s", disassembledInstruction)
 	// Print A,X,Y,SP as hex values
 	fmt.Printf("\t| A:%02X X:%02X Y:%02X SP:%04X | STACK:$%04X | ", A, X, Y, SPBaseAddress+SP, readStack())
 
@@ -499,7 +502,7 @@ func printMachineState() {
 	} else {
 		fmt.Printf("-")
 	}
-	fmt.Printf(" | InstrCount: %032d\n", instructionCounter)
+	fmt.Printf(" | %032d\n", instructionCounter)
 }
 func readBit(bit byte, value byte) int {
 	// Read bit from value and return it
@@ -934,10 +937,6 @@ func JMP(addressingMode string) {
 		// Handle 6502 page boundary bug
 		loByteAddress := address
 		hiByteAddress := (address & 0xFF00) | ((address + 1) & 0xFF) // Ensure it wraps within the page
-		fmt.Printf("loByteAddress: %04X\n", loByteAddress)
-		fmt.Printf("Value at loByteAddress: %02X\n", readMemory(loByteAddress))
-		fmt.Printf("hiByteAddress: %04X\n", hiByteAddress)
-		fmt.Printf("Value at hiByteAddress: %02X\n", readMemory(hiByteAddress))
 		indirectAddress := uint16(readMemory(hiByteAddress))<<8 | uint16(readMemory(loByteAddress))
 		// Set the program counter to the indirect address
 		setPC(int(indirectAddress))
@@ -2579,7 +2578,7 @@ func execute() {
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
-			disassembledInstruction = fmt.Sprintf("ADC #$%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("ADC #$%02X", operand1())
 			disassembleOpcode()
 
 			ADC("immediate")
@@ -2595,7 +2594,7 @@ func execute() {
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("CMP #$%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("CMP #$%02X", operand1())
 			disassembleOpcode()
 
 			CMP("immediate")
@@ -2603,7 +2602,7 @@ func execute() {
 			/*
 				CPX - Compare Index Register X To Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("CPX #$%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("CPX #$%02X", operand1())
 			disassembleOpcode()
 
 			CPX("immediate")
@@ -2611,7 +2610,7 @@ func execute() {
 			/*
 				CPY - Compare Index Register Y To Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("CPY #$%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("CPY #$%02X", operand1())
 			disassembleOpcode()
 
 			CPY("immediate")
@@ -2619,7 +2618,7 @@ func execute() {
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("EOR #$%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("EOR #$%02X", operand1())
 			disassembleOpcode()
 
 			EOR("immediate")
@@ -2658,7 +2657,7 @@ func execute() {
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
-			disassembledInstruction = fmt.Sprintf("SBC #$%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("SBC #$%02X", operand1())
 			disassembleOpcode()
 			SBC("immediate")
 
@@ -2674,7 +2673,7 @@ func execute() {
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
-			disassembledInstruction = fmt.Sprintf("ADC $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("ADC $%02X", operand1())
 			disassembleOpcode()
 
 			ADC("zeropage")
@@ -2682,7 +2681,7 @@ func execute() {
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("AND $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("AND $%02X", operand1())
 			disassembleOpcode()
 
 			AND("zeropage")
@@ -2690,7 +2689,7 @@ func execute() {
 			/*
 				ASL - Arithmetic Shift Left
 			*/
-			disassembledInstruction = fmt.Sprintf("ASL $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("ASL $%02X", operand1())
 			disassembleOpcode()
 
 			ASL("zeropage")
@@ -2698,7 +2697,7 @@ func execute() {
 			/*
 				BIT - Test Bits in Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("BIT $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("BIT $%02X", operand1())
 			disassembleOpcode()
 
 			BIT("zeropage")
@@ -2706,14 +2705,14 @@ func execute() {
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("CMP $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("CMP $%02X", operand1())
 			disassembleOpcode()
 			CMP("zeropage")
 		case 0xE4:
 			/*
 				CPX - Compare Index Register X To Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("CPX $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("CPX $%02X", operand1())
 			disassembleOpcode()
 
 			CPX("zeropage")
@@ -2721,14 +2720,14 @@ func execute() {
 			/*
 				CPY - Compare Index Register Y To Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("CPY $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("CPY $%02X", operand1())
 			disassembleOpcode()
 			CPY("zeropage")
 		case 0xC6:
 			/*
 				DEC - Decrement Memory By One
 			*/
-			disassembledInstruction = fmt.Sprintf("DEC $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("DEC $%02X", operand1())
 			disassembleOpcode()
 
 			DEC("zeropage")
@@ -2736,7 +2735,7 @@ func execute() {
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("EOR $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("EOR $%02X", operand1())
 			disassembleOpcode()
 
 			EOR("zeropage")
@@ -2744,7 +2743,7 @@ func execute() {
 			/*
 				INC - Increment Memory By One
 			*/
-			disassembledInstruction = fmt.Sprintf("INC $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("INC $%02X", operand1())
 			disassembleOpcode()
 
 			INC("zeropage")
@@ -2752,7 +2751,7 @@ func execute() {
 			/*
 				LDA - Load Accumulator with Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("LDA $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("LDA $%02X", operand1())
 			disassembleOpcode()
 
 			LDA("zeropage")
@@ -2760,14 +2759,14 @@ func execute() {
 			/*
 				LDX - Load Index Register X From Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("LDX $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("LDX $%02X", operand1())
 			disassembleOpcode()
 			LDX("zeropage")
 		case 0xA4:
 			/*
 				LDY - Load Index Register Y From Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("LDY $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("LDY $%02X", operand1())
 			disassembleOpcode()
 
 			LDY("zeropage")
@@ -2775,7 +2774,7 @@ func execute() {
 			/*
 				LSR - Logical Shift Right
 			*/
-			disassembledInstruction = fmt.Sprintf("LSR $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("LSR $%02X", operand1())
 			disassembleOpcode()
 
 			LSR("zeropage")
@@ -2783,7 +2782,7 @@ func execute() {
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("ORA $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("ORA $%02X", operand1())
 			disassembleOpcode()
 
 			ORA("zeropage")
@@ -2791,7 +2790,7 @@ func execute() {
 			/*
 				ROL - Rotate Left
 			*/
-			disassembledInstruction = fmt.Sprintf("ROL $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("ROL $%02X", operand1())
 			disassembleOpcode()
 
 			ROL("zeropage")
@@ -2799,7 +2798,7 @@ func execute() {
 			/*
 				ROR - Rotate Right
 			*/
-			disassembledInstruction = fmt.Sprintf("ROR $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("ROR $%02X", operand1())
 			disassembleOpcode()
 
 			ROR("zeropage")
@@ -2807,7 +2806,7 @@ func execute() {
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
-			disassembledInstruction = fmt.Sprintf("SBC $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("SBC $%02X", operand1())
 			disassembleOpcode()
 
 			SBC("zeropage")
@@ -2816,7 +2815,7 @@ func execute() {
 				STA - Store Accumulator in Memory
 			*/
 
-			disassembledInstruction = fmt.Sprintf("STA $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("STA $%02X", operand1())
 			disassembleOpcode()
 
 			STA("zeropage")
@@ -2824,14 +2823,14 @@ func execute() {
 			/*
 				STX - Store Index Register X In Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("STX $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("STX $%02X", operand1())
 			disassembleOpcode()
 			STX("zeropage")
 		case 0x84:
 			/*
 				STY - Store Index Register Y In Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("STY $%02X\t", operand1())
+			disassembledInstruction = fmt.Sprintf("STY $%02X", operand1())
 			disassembleOpcode()
 
 			STY("zeropage")
@@ -3308,7 +3307,7 @@ func execute() {
 			/*
 			   BEQ - Branch on Result Zero
 			*/
-			disassembledInstruction = fmt.Sprintf("BEQ $%02X", PC+2+int(int8(operand1())))
+			disassembledInstruction = fmt.Sprintf("BEQ $%04X", PC+2+int(int8(operand1())))
 			disassembleOpcode()
 
 			// Get offset from address in operand
