@@ -214,8 +214,8 @@ func loadROMs() {
 		}
 	}
 	if *stateMonitor {
-		fmt.Printf("PC  |OP|OPERANDS|  DISASSEMBLY  | \t REGISTERS\t |  STACK MEM  | SR FLAGS |        INSTRUCTION COUNTER\n")
-		fmt.Printf("----|--|--------|---------------|------------------------|-------------|----------|---------------------------------\n")
+		fmt.Printf("PC  |OP|OPERANDS|  DISASSEMBLY  | \t REGISTERS\t  |  STACK  | SR FLAGS |        INSTRUCTION COUNTER\n")
+		fmt.Printf("----|--|--------|---------------|-------------------------|---------|----------|---------------------------------\n")
 	}
 }
 func dumpMemoryToFile(memory [65536]byte) {
@@ -421,7 +421,7 @@ func printMachineState() {
 		} else {
 			fmt.Printf("%04X|", PC)
 			// If opcode() is a 1 byte instruction, print opcode
-			if opcode() == 0x08 || opcode() == 0x10 || opcode() == 0x18 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A {
+			if opcode() == 0x08 || opcode() == 0x18 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A {
 				fmt.Printf("%02X|", opcode())
 			}
 
@@ -453,7 +453,7 @@ func printMachineState() {
 	// Print disassembled instruction
 	fmt.Printf("\t|%s", disassembledInstruction)
 	// Print A,X,Y,SP as hex values
-	fmt.Printf("\t| A:%02X X:%02X Y:%02X SP:%04X | STACK:$%04X | ", A, X, Y, SPBaseAddress+SP, readStack())
+	fmt.Printf("\t| A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | ", A, X, Y, SPBaseAddress+SP, readStack())
 
 	// Print full SR as binary digits with zero padding
 	//fmt.Printf("%08b | ", SR)
