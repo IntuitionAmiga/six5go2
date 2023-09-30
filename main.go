@@ -50,7 +50,7 @@ var (
 
 	disassembledInstruction string
 
-	instructionCounter = 0
+	instructionCounter uint32 = 0
 
 	IRQVectorAddress uint16 = 0xFFFE
 
@@ -426,7 +426,7 @@ func printMachineState() {
 			// 		fmt.Printf("%02X %02X ", opcode(), operand1())
 			// The 0x hex opcodes for the 2 byte instructions on the 6502 are
 			if opcode() == 0x69 || opcode() == 0x29 || opcode() == 0xC9 || opcode() == 0xE0 || opcode() == 0xC0 || opcode() == 0x49 || opcode() == 0xA9 || opcode() == 0xA2 || opcode() == 0xA0 || opcode() == 0x09 || opcode() == 0xE9 || opcode() == 0x65 || opcode() == 0x25 || opcode() == 0x06 || opcode() == 0x24 || opcode() == 0xC5 || opcode() == 0xE4 || opcode() == 0xC4 || opcode() == 0xC6 || opcode() == 0x45 || opcode() == 0xE6 || opcode() == 0xA5 || opcode() == 0xA6 || opcode() == 0xA4 || opcode() == 0x46 || opcode() == 0x05 || opcode() == 0x26 || opcode() == 0x66 || opcode() == 0xE5 || opcode() == 0x85 || opcode() == 0x86 || opcode() == 0x84 || opcode() == 0x90 || opcode() == 0xB0 || opcode() == 0xF0 || opcode() == 0x30 || opcode() == 0xD0 || opcode() == 0x10 || opcode() == 0x50 || opcode() == 0x70 {
-				fmt.Printf("%02X %02X ", opcode(), operand1())
+				fmt.Printf("%02X %02X", opcode(), operand1())
 			}
 
 			// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
@@ -450,23 +450,56 @@ func printMachineState() {
 	// Print disassembled instruction
 	fmt.Printf("\t%s", disassembledInstruction)
 	// Print A,X,Y,SP as hex values
-	fmt.Printf("\t|%02X %02X %02X %02X| ", A, X, Y, SP)
-
-	// SR flags are     N,V,-,B,D,I,Z,C
-	// SR flag bits are 7,6,5,4,3,2,1,0
-
-	//getSRBit flags for 7,6,3,2,1,0 and print as binary digits
-	//getSRBit flags for N,V,D,I,Z and C and print as binary digits
-	fmt.Printf("%b", getSRBit(7))
-	fmt.Printf("%b", getSRBit(6))
-	fmt.Printf("%b", getSRBit(3))
-	fmt.Printf("%b", getSRBit(2))
-	fmt.Printf("%b", getSRBit(1))
-	fmt.Printf("%b | ", getSRBit(0))
-	fmt.Printf("Stack Address: $%04X | Stack Contents: $%04X | Full SR: ", SPBaseAddress+SP, readStack())
+	fmt.Printf("\t| A:%02X X:%02X Y:%02X SP:%04X | STACK:$%04X | ", A, X, Y, SPBaseAddress+SP, readStack())
 
 	// Print full SR as binary digits with zero padding
-	fmt.Printf("%08b |\n", SR)
+	//fmt.Printf("%08b | ", SR)
+
+	// Print N if SR bit 7 is 1 else print -
+	if getSRBit(7) == 1 {
+		fmt.Printf("N")
+	} else {
+		fmt.Printf("-")
+	}
+	// Print V if SR bit 6 is 1 else print -
+	if getSRBit(6) == 1 {
+		fmt.Printf("V")
+	} else {
+		fmt.Printf("-")
+	}
+	// Print - for SR bit 5
+	fmt.Printf("-")
+	// Print B if SR bit 4 is 1 else print -
+	if getSRBit(4) == 1 {
+		fmt.Printf("B")
+	} else {
+		fmt.Printf("-")
+	}
+	// Print D if SR bit 3 is 1 else print -
+	if getSRBit(3) == 1 {
+		fmt.Printf("D")
+	} else {
+		fmt.Printf("-")
+	}
+	// Print I if SR bit 2 is 1 else print -
+	if getSRBit(2) == 1 {
+		fmt.Printf("I")
+	} else {
+		fmt.Printf("-")
+	}
+	// Print Z if SR bit 1 is 1 else print -
+	if getSRBit(1) == 1 {
+		fmt.Printf("Z")
+	} else {
+		fmt.Printf("-")
+	}
+	// Print C if SR bit 0 is 1 else print -
+	if getSRBit(0) == 1 {
+		fmt.Printf("C")
+	} else {
+		fmt.Printf("-")
+	}
+	fmt.Printf(" | InstrCount: %032d\n", instructionCounter)
 }
 func readBit(bit byte, value byte) int {
 	// Read bit from value and return it
@@ -901,6 +934,10 @@ func JMP(addressingMode string) {
 		// Handle 6502 page boundary bug
 		loByteAddress := address
 		hiByteAddress := (address & 0xFF00) | ((address + 1) & 0xFF) // Ensure it wraps within the page
+		fmt.Printf("loByteAddress: %04X\n", loByteAddress)
+		fmt.Printf("Value at loByteAddress: %02X\n", readMemory(loByteAddress))
+		fmt.Printf("hiByteAddress: %04X\n", hiByteAddress)
+		fmt.Printf("Value at hiByteAddress: %02X\n", readMemory(hiByteAddress))
 		indirectAddress := uint16(readMemory(hiByteAddress))<<8 | uint16(readMemory(loByteAddress))
 		// Set the program counter to the indirect address
 		setPC(int(indirectAddress))
@@ -2056,7 +2093,7 @@ func execute() {
 				fmt.Printf("Disassembled Instruction: %s\n", disassembledInstruction)
 			}
 
-			disassembledInstruction = fmt.Sprintf("BRK")
+			disassembledInstruction = fmt.Sprintf("BRK\t")
 			disassembleOpcode()
 			previousPC = PC
 			previousOpcode = opcode()
@@ -2094,7 +2131,7 @@ func execute() {
 				CLC - Clear Carry Flag
 			*/
 			// print the SR as binary digits
-			disassembledInstruction = fmt.Sprintf("CLC")
+			disassembledInstruction = fmt.Sprintf("CLC\t")
 			disassembleOpcode()
 			// Set SR carry flag bit 0 to 0
 			unsetCarryFlag()
@@ -2104,7 +2141,7 @@ func execute() {
 				CLD - Clear Decimal Mode
 			*/
 
-			disassembledInstruction = fmt.Sprintf("CLD")
+			disassembledInstruction = fmt.Sprintf("CLD\t")
 			disassembleOpcode()
 			unsetDecimalFlag()
 			handleState(1)
@@ -2112,7 +2149,7 @@ func execute() {
 			/*
 				CLI - Clear Interrupt Disable
 			*/
-			disassembledInstruction = fmt.Sprintf("CLI")
+			disassembledInstruction = fmt.Sprintf("CLI\t")
 			disassembleOpcode()
 			// Set SR interrupt disable bit 2 to 0
 			unsetInterruptFlag()
@@ -2121,27 +2158,27 @@ func execute() {
 			/*
 				CLV - Clear Overflow Flag
 			*/
-			disassembledInstruction = fmt.Sprintf("CLV")
+			disassembledInstruction = fmt.Sprintf("CLV\t")
 			disassembleOpcode()
 			// Set SR overflow flag bit 6 to 0
 			unsetOverflowFlag()
 			handleState(1)
 		case 0xCA:
-			/*
-				DEX - Decrement Index Register X By One
-			*/
-			disassembledInstruction = fmt.Sprintf("DEX")
+			// DEX - Decrement Index Register X By One
+			disassembledInstruction = fmt.Sprintf("DEX\t")
 			disassembleOpcode()
 
 			// Decrement the X register by 1
 			X--
-			// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-			if getXBit(7) == 1 {
+
+			// Update the Negative Flag based on the new value of X
+			if X&0x80 != 0 {
 				setNegativeFlag()
 			} else {
 				unsetNegativeFlag()
 			}
-			// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
+
+			// Update the Zero Flag based on the new value of X
 			if X == 0 {
 				setZeroFlag()
 			} else {
@@ -2152,7 +2189,7 @@ func execute() {
 			/*
 				DEY - Decrement Index Register Y By One
 			*/
-			disassembledInstruction = fmt.Sprintf("DEY")
+			disassembledInstruction = fmt.Sprintf("DEY\t")
 			disassembleOpcode()
 
 			// Decrement the  Y register by 1
@@ -2174,7 +2211,7 @@ func execute() {
 			/*
 				INX - Increment Index Register X By One
 			*/
-			disassembledInstruction = fmt.Sprintf("INX")
+			disassembledInstruction = fmt.Sprintf("INX\t")
 			disassembleOpcode()
 
 			// Increment the X register by 1
@@ -2196,7 +2233,7 @@ func execute() {
 			/*
 				INY - Increment Index Register Y By One
 			*/
-			disassembledInstruction = fmt.Sprintf("INY")
+			disassembledInstruction = fmt.Sprintf("INY\t")
 			disassembleOpcode()
 
 			// Increment the  Y register by 1
@@ -2218,14 +2255,14 @@ func execute() {
 			/*
 				NOP - No Operation
 			*/
-			disassembledInstruction = fmt.Sprintf("NOP")
+			disassembledInstruction = fmt.Sprintf("NOP\t")
 			disassembleOpcode()
 			handleState(1)
 		case 0x48:
 			/*
 				PHA - Push Accumulator On Stack
 			*/
-			disassembledInstruction = fmt.Sprintf("PHA")
+			disassembledInstruction = fmt.Sprintf("PHA\t")
 			disassembleOpcode()
 
 			// Update memory address pointed to by SP with value stored in accumulator
@@ -2236,7 +2273,7 @@ func execute() {
 			/*
 			   PHP - Push Processor Status On Stack
 			*/
-			disassembledInstruction = fmt.Sprintf("PHP")
+			disassembledInstruction = fmt.Sprintf("PHP\t")
 			disassembleOpcode()
 
 			// Set the break flag and the unused bit before pushing
@@ -2254,7 +2291,7 @@ func execute() {
 			/*
 			   PLA - Pull Accumulator From Stack
 			*/
-			disassembledInstruction = fmt.Sprintf("PLA")
+			disassembledInstruction = fmt.Sprintf("PLA\t")
 			disassembleOpcode()
 
 			// Increment the stack pointer first
@@ -2285,7 +2322,7 @@ func execute() {
 			/*
 				PLP - Pull Processor Status From Stack
 			*/
-			disassembledInstruction = fmt.Sprintf("PLP")
+			disassembledInstruction = fmt.Sprintf("PLP\t")
 			disassembleOpcode()
 
 			// Update SR with the value stored at the address pointed to by SP
@@ -2297,7 +2334,7 @@ func execute() {
 			   RTI - Return From Interrupt
 			*/
 
-			disassembledInstruction = fmt.Sprintf("RTI")
+			disassembledInstruction = fmt.Sprintf("RTI\t")
 			disassembleOpcode()
 
 			SR = readStack() & 0xCF
@@ -2324,7 +2361,7 @@ func execute() {
 			/*
 				RTS - Return From Subroutine
 			*/
-			disassembledInstruction = fmt.Sprintf("RTS")
+			disassembledInstruction = fmt.Sprintf("RTS\t")
 			disassembleOpcode()
 			//Get low byte of new PC
 			low := uint16(readStack())
@@ -2341,7 +2378,7 @@ func execute() {
 			/*
 				SEC - Set Carry Flag
 			*/
-			disassembledInstruction = fmt.Sprintf("SEC")
+			disassembledInstruction = fmt.Sprintf("SEC\t")
 			disassembleOpcode()
 
 			// Set SR carry flag bit 0 to 1
@@ -2351,7 +2388,7 @@ func execute() {
 			/*
 				SED - Set Decimal Mode
 			*/
-			disassembledInstruction = fmt.Sprintf("SED")
+			disassembledInstruction = fmt.Sprintf("SED\t")
 			disassembleOpcode()
 
 			// Set SR decimal mode flag to 1
@@ -2361,7 +2398,7 @@ func execute() {
 			/*
 				SEI - Set Interrupt Disable
 			*/
-			disassembledInstruction = fmt.Sprintf("SEI")
+			disassembledInstruction = fmt.Sprintf("SEI\t")
 			disassembleOpcode()
 
 			// Set SR interrupt disable bit 2 to 1
@@ -2371,7 +2408,7 @@ func execute() {
 			/*
 				TAX - Transfer Accumulator To Index X
 			*/
-			disassembledInstruction = fmt.Sprintf("TAX")
+			disassembledInstruction = fmt.Sprintf("TAX\t")
 			disassembleOpcode()
 
 			// Update X with the value of A
@@ -2393,7 +2430,7 @@ func execute() {
 			/*
 				TAY - Transfer Accumulator To Index Y
 			*/
-			disassembledInstruction = fmt.Sprintf("TAY")
+			disassembledInstruction = fmt.Sprintf("TAY\t")
 			disassembleOpcode()
 
 			// Set Y register to the value of the accumulator
@@ -2415,7 +2452,7 @@ func execute() {
 			/*
 				TSX - Transfer Stack Pointer To Index X
 			*/
-			disassembledInstruction = fmt.Sprintf("TSX")
+			disassembledInstruction = fmt.Sprintf("TSX\t")
 			disassembleOpcode()
 
 			// Update X with the SP
@@ -2437,7 +2474,7 @@ func execute() {
 			/*
 				TXA - Transfer Index X To Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("TXA")
+			disassembledInstruction = fmt.Sprintf("TXA\t")
 			disassembleOpcode()
 
 			// Set accumulator to value of X register
@@ -2459,7 +2496,7 @@ func execute() {
 			/*
 				TXS - Transfer Index X To Stack Pointer
 			*/
-			disassembledInstruction = fmt.Sprintf("TXS")
+			disassembledInstruction = fmt.Sprintf("TXS\t")
 			disassembleOpcode()
 
 			// Set stack pointer to value of X register
@@ -2469,7 +2506,7 @@ func execute() {
 			/*
 				TYA - Transfer Index Y To Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("TYA")
+			disassembledInstruction = fmt.Sprintf("TYA\t")
 			disassembleOpcode()
 
 			// Set accumulator to value of Y register
@@ -2500,14 +2537,14 @@ func execute() {
 			/*
 				ASL - Arithmetic Shift Left
 			*/
-			disassembledInstruction = fmt.Sprintf("ASL")
+			disassembledInstruction = fmt.Sprintf("ASL\t")
 			disassembleOpcode()
 			ASL("accumulator")
 		case 0x4A:
 			/*
 				LSR - Logical Shift Right
 			*/
-			disassembledInstruction = fmt.Sprintf("LSR")
+			disassembledInstruction = fmt.Sprintf("LSR\t")
 			disassembleOpcode()
 
 			LSR("accumulator")
@@ -2515,7 +2552,7 @@ func execute() {
 			/*
 				ROL - Rotate Left
 			*/
-			disassembledInstruction = fmt.Sprintf("ROL")
+			disassembledInstruction = fmt.Sprintf("ROL\t")
 			disassembleOpcode()
 
 			ROL("accumulator")
@@ -2523,7 +2560,7 @@ func execute() {
 			/*
 				ROR - Rotate Right
 			*/
-			disassembledInstruction = fmt.Sprintf("ROR")
+			disassembledInstruction = fmt.Sprintf("ROR\t")
 			disassembleOpcode()
 			ROR("accumulator")
 		}
@@ -2542,7 +2579,7 @@ func execute() {
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
-			disassembledInstruction = fmt.Sprintf("ADC #$%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("ADC #$%02X\t", operand1())
 			disassembleOpcode()
 
 			ADC("immediate")
@@ -2558,7 +2595,7 @@ func execute() {
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("CMP #$%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("CMP #$%02X\t", operand1())
 			disassembleOpcode()
 
 			CMP("immediate")
@@ -2566,7 +2603,7 @@ func execute() {
 			/*
 				CPX - Compare Index Register X To Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("CPX #$%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("CPX #$%02X\t", operand1())
 			disassembleOpcode()
 
 			CPX("immediate")
@@ -2574,7 +2611,7 @@ func execute() {
 			/*
 				CPY - Compare Index Register Y To Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("CPY #$%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("CPY #$%02X\t", operand1())
 			disassembleOpcode()
 
 			CPY("immediate")
@@ -2582,7 +2619,7 @@ func execute() {
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("EOR #$%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("EOR #$%02X\t", operand1())
 			disassembleOpcode()
 
 			EOR("immediate")
@@ -2621,7 +2658,7 @@ func execute() {
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
-			disassembledInstruction = fmt.Sprintf("SBC #$%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("SBC #$%02X\t", operand1())
 			disassembleOpcode()
 			SBC("immediate")
 
@@ -2637,7 +2674,7 @@ func execute() {
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
-			disassembledInstruction = fmt.Sprintf("ADC $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("ADC $%02X\t", operand1())
 			disassembleOpcode()
 
 			ADC("zeropage")
@@ -2645,7 +2682,7 @@ func execute() {
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("AND $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("AND $%02X\t", operand1())
 			disassembleOpcode()
 
 			AND("zeropage")
@@ -2653,7 +2690,7 @@ func execute() {
 			/*
 				ASL - Arithmetic Shift Left
 			*/
-			disassembledInstruction = fmt.Sprintf("ASL $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("ASL $%02X\t", operand1())
 			disassembleOpcode()
 
 			ASL("zeropage")
@@ -2661,7 +2698,7 @@ func execute() {
 			/*
 				BIT - Test Bits in Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("BIT $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("BIT $%02X\t", operand1())
 			disassembleOpcode()
 
 			BIT("zeropage")
@@ -2669,14 +2706,14 @@ func execute() {
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("CMP $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("CMP $%02X\t", operand1())
 			disassembleOpcode()
 			CMP("zeropage")
 		case 0xE4:
 			/*
 				CPX - Compare Index Register X To Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("CPX $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("CPX $%02X\t", operand1())
 			disassembleOpcode()
 
 			CPX("zeropage")
@@ -2684,14 +2721,14 @@ func execute() {
 			/*
 				CPY - Compare Index Register Y To Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("CPY $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("CPY $%02X\t", operand1())
 			disassembleOpcode()
 			CPY("zeropage")
 		case 0xC6:
 			/*
 				DEC - Decrement Memory By One
 			*/
-			disassembledInstruction = fmt.Sprintf("DEC $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("DEC $%02X\t", operand1())
 			disassembleOpcode()
 
 			DEC("zeropage")
@@ -2699,7 +2736,7 @@ func execute() {
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("EOR $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("EOR $%02X\t", operand1())
 			disassembleOpcode()
 
 			EOR("zeropage")
@@ -2707,7 +2744,7 @@ func execute() {
 			/*
 				INC - Increment Memory By One
 			*/
-			disassembledInstruction = fmt.Sprintf("INC $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("INC $%02X\t", operand1())
 			disassembleOpcode()
 
 			INC("zeropage")
@@ -2715,7 +2752,7 @@ func execute() {
 			/*
 				LDA - Load Accumulator with Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("LDA $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("LDA $%02X\t", operand1())
 			disassembleOpcode()
 
 			LDA("zeropage")
@@ -2723,14 +2760,14 @@ func execute() {
 			/*
 				LDX - Load Index Register X From Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("LDX $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("LDX $%02X\t", operand1())
 			disassembleOpcode()
 			LDX("zeropage")
 		case 0xA4:
 			/*
 				LDY - Load Index Register Y From Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("LDY $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("LDY $%02X\t", operand1())
 			disassembleOpcode()
 
 			LDY("zeropage")
@@ -2738,7 +2775,7 @@ func execute() {
 			/*
 				LSR - Logical Shift Right
 			*/
-			disassembledInstruction = fmt.Sprintf("LSR $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("LSR $%02X\t", operand1())
 			disassembleOpcode()
 
 			LSR("zeropage")
@@ -2746,7 +2783,7 @@ func execute() {
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
-			disassembledInstruction = fmt.Sprintf("ORA $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("ORA $%02X\t", operand1())
 			disassembleOpcode()
 
 			ORA("zeropage")
@@ -2754,7 +2791,7 @@ func execute() {
 			/*
 				ROL - Rotate Left
 			*/
-			disassembledInstruction = fmt.Sprintf("ROL $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("ROL $%02X\t", operand1())
 			disassembleOpcode()
 
 			ROL("zeropage")
@@ -2762,7 +2799,7 @@ func execute() {
 			/*
 				ROR - Rotate Right
 			*/
-			disassembledInstruction = fmt.Sprintf("ROR $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("ROR $%02X\t", operand1())
 			disassembleOpcode()
 
 			ROR("zeropage")
@@ -2770,7 +2807,7 @@ func execute() {
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
-			disassembledInstruction = fmt.Sprintf("SBC $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("SBC $%02X\t", operand1())
 			disassembleOpcode()
 
 			SBC("zeropage")
@@ -2779,7 +2816,7 @@ func execute() {
 				STA - Store Accumulator in Memory
 			*/
 
-			disassembledInstruction = fmt.Sprintf("STA $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("STA $%02X\t", operand1())
 			disassembleOpcode()
 
 			STA("zeropage")
@@ -2787,14 +2824,14 @@ func execute() {
 			/*
 				STX - Store Index Register X In Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("STX $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("STX $%02X\t", operand1())
 			disassembleOpcode()
 			STX("zeropage")
 		case 0x84:
 			/*
 				STY - Store Index Register Y In Memory
 			*/
-			disassembledInstruction = fmt.Sprintf("STY $%02X", operand1())
+			disassembledInstruction = fmt.Sprintf("STY $%02X\t", operand1())
 			disassembleOpcode()
 
 			STY("zeropage")
@@ -3397,7 +3434,7 @@ func execute() {
 			disassembleOpcode()
 			// First, push the high byte
 			decSP()
-			updateStack(byte((PC >> 8)))
+			updateStack(byte(PC >> 8))
 			decSP()
 			updateStack(byte((PC)&0xFF) + 2)
 
