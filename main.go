@@ -82,6 +82,7 @@ var (
 	irq              bool
 	nmi              bool
 	reset            bool
+	BRKtrue          bool = false
 )
 
 func main() {
@@ -385,9 +386,7 @@ func handleRESET() {
 }
 func handleState(amount int) {
 	if *stateMonitor {
-		//if disassembledInstruction != "BRK" {
 		printMachineState()
-		//}
 	}
 	incPC(amount)
 	// If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
@@ -406,16 +405,16 @@ func handleState(amount int) {
 }
 func printMachineState() {
 	// Imitate Virtual 6502 and print PC, opcode, operand1 if two byte instruction, operand2 if three byte instruction, disassembled instruction and any operands with correct addressing mode, "|",accumulator hex value, X register hex value, Y register hex value, SP as hex value,"|", SP as binary digits
-	//print opcode
-	//fmt.Printf("opcode in machine state is %04X ", opcode())
-	if previousOpcode != 0x20 && previousOpcode != 0x4C && previousOpcode != 0x6C && previousOpcode != 0x40 {
-		if previousOpcode == 0x60 {
-			fmt.Printf("%02X ", previousPC)
+
+	if BRKtrue || (previousOpcode != 0x20 && previousOpcode != 0x4C && previousOpcode != 0x6C && previousOpcode != 0x40) {
+		if previousOpcode == 0x60 || (previousOpcode == 0x00 && BRKtrue) {
+			fmt.Printf("%04X ", previousPC)
 			fmt.Printf("%02X ", previousOpcode)
 			previousOpcode = 0x00
 			previousPC = 0x0000
 			previousOperand1 = 0x00
 			previousOperand2 = 0x00
+			BRKtrue = false
 		} else {
 			fmt.Printf("%04X ", PC)
 			// If opcode() is a 1 byte instruction, print opcode
@@ -2043,6 +2042,7 @@ func execute() {
 			/*
 				BRK - Break Command
 			*/
+			BRKtrue = true
 			if *klausd {
 				fmt.Printf("Test failed at PC: %04X\t", PC)
 				// print opcode and disassembledInstruction at PC
@@ -2054,11 +2054,6 @@ func execute() {
 			disassembleOpcode()
 			previousPC = PC
 			previousOpcode = opcode()
-			fmt.Printf("Value stored at $8000: %04X\n", readMemory(0x8000))
-			fmt.Printf("PC: %04X\n", PC)
-			fmt.Printf("Opcode: %02X\n", readMemory(uint16(PC)))
-			fmt.Printf("Previous PC: %04X\n", previousPC)
-			fmt.Printf("Previous Opcode: %02X\n", previousOpcode)
 			// Increment PC
 			//incPC(1)
 
