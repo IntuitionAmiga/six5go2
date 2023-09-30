@@ -68,18 +68,20 @@ var (
 	RuudBTestROM  = make([]byte, 8192)
 
 	// CPURegisters and RAM
-	A              byte        = 0x0  // Accumulator
-	X              byte        = 0x0  // X register
-	Y              byte        = 0x0  // Y register		(76543210) SR Bit 5 is always set
-	SR             byte               // Status Register	(NVEBDIZC)
-	SP             uint16      = 0xFF // Stack Pointer
-	PC             int                // Program Counter
-	memory         [65536]byte        // Memory
-	previousPC     int
-	previousOpcode byte
-	irq            bool
-	nmi            bool
-	reset          bool
+	A                byte        = 0x0  // Accumulator
+	X                byte        = 0x0  // X register
+	Y                byte        = 0x0  // Y register		(76543210) SR Bit 5 is always set
+	SR               byte               // Status Register	(NVEBDIZC)
+	SP               uint16      = 0xFF // Stack Pointer
+	PC               int                // Program Counter
+	memory           [65536]byte        // Memory
+	previousPC       int
+	previousOpcode   byte
+	previousOperand1 byte
+	previousOperand2 byte
+	irq              bool
+	nmi              bool
+	reset            bool
 )
 
 func main() {
@@ -409,7 +411,7 @@ func printMachineState() {
 	if previousOpcode != 0x20 && previousOpcode != 0x4C && previousOpcode != 0x6C && previousOpcode != 0x60 && previousOpcode != 0x40 {
 		fmt.Printf("%04X ", PC)
 		// If opcode() is a 1 byte instruction, print opcode
-		if opcode() == 0x00 || opcode() == 0x08 || opcode() == 0x10 || opcode() == 0x18 || opcode() == 0x20 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x40 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A || opcode() == 0x60 {
+		if opcode() == 0x00 || opcode() == 0x08 || opcode() == 0x10 || opcode() == 0x18 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x40 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A || opcode() == 0x60 {
 			fmt.Printf("%02X ", opcode())
 		}
 
@@ -427,9 +429,11 @@ func printMachineState() {
 		}
 	} else {
 		fmt.Printf("%04X ", previousPC)
-		fmt.Printf("%02X %02X %02X ", previousOpcode, operand1(), operand2())
+		fmt.Printf("%02X %02X %02X ", previousOpcode, previousOperand1, previousOperand2)
 		previousOpcode = 0x00
 		previousPC = 0x0000
+		previousOperand1 = 0x00
+		previousOperand2 = 0x00
 	}
 
 	// Print disassembled instruction
@@ -872,6 +876,8 @@ func CMP(addressingMode string) {
 func JMP(addressingMode string) {
 	previousPC = PC
 	previousOpcode = opcode()
+	previousOperand1 = operand1()
+	previousOperand2 = operand2()
 	handleState(0)
 	switch addressingMode {
 	case ABSOLUTE:
@@ -2042,7 +2048,7 @@ func execute() {
 			disassembledInstruction = fmt.Sprintf("BRK")
 			disassembleOpcode()
 			// Increment PC
-			incPC(1)
+			//incPC(1)
 
 			// Decrement SP and Push high byte of (PC+1) onto stack
 			decSP()
@@ -2309,18 +2315,18 @@ func execute() {
 			disassembleOpcode()
 			//Get low byte of new PC
 			low := uint16(readStack())
-			fmt.Printf("Low: %04X\n", low)
+			//fmt.Printf("Low: %04X\n", low)
 			// Increment the stack pointer
 			incSP()
 			//Get high byte of new PC
 			high := uint16(readStack())
-			fmt.Printf("High: %04X\n", high)
+			//fmt.Printf("High: %04X\n", high)
 			previousPC = PC
 			previousOpcode = opcode()
 			//Update PC with the value stored in memory at the address pointed to by SP
-			fmt.Printf("PC before update: %04X\n", PC)
+			//fmt.Printf("PC before update: %04X\n", PC)
 			setPC(int((high << 8) | low))
-			fmt.Printf("PC after update: %04X\n", PC)
+			//fmt.Printf("PC after update: %04X\n", PC)
 			handleState(0)
 		case 0x38:
 			/*
@@ -3185,6 +3191,7 @@ func execute() {
 
 			previousPC = PC
 			previousOpcode = opcode()
+			previousOperand1 = operand1()
 			// Get offset from operand
 			lsb := uint8(operand1() & 0xFF)
 			offset := int8(lsb)
@@ -3381,12 +3388,14 @@ func execute() {
 			disassembleOpcode()
 			// First, push the high byte
 			decSP()
-			updateStack(byte((PC + 2) >> 8))
+			updateStack(byte((PC >> 8)))
 			decSP()
-			updateStack(byte((PC + 2) & 0xFF))
+			updateStack(byte((PC) & 0xFF))
 
 			previousPC = PC
 			previousOpcode = opcode()
+			previousOperand1 = operand1()
+			previousOperand2 = operand2()
 			// Now, jump to the subroutine address specified by the operands
 			setPC(int(operand2())<<8 | int(operand1()))
 			handleState(0)
