@@ -408,32 +408,38 @@ func printMachineState() {
 	// Imitate Virtual 6502 and print PC, opcode, operand1 if two byte instruction, operand2 if three byte instruction, disassembled instruction and any operands with correct addressing mode, "|",accumulator hex value, X register hex value, Y register hex value, SP as hex value,"|", SP as binary digits
 	//print opcode
 	//fmt.Printf("opcode in machine state is %04X ", opcode())
-	if previousOpcode != 0x20 && previousOpcode != 0x4C && previousOpcode != 0x6C && previousOpcode != 0x60 && previousOpcode != 0x40 {
-		fmt.Printf("%04X ", PC)
-		// If opcode() is a 1 byte instruction, print opcode
-		if opcode() == 0x00 || opcode() == 0x08 || opcode() == 0x10 || opcode() == 0x18 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x40 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A || opcode() == 0x60 {
-			fmt.Printf("%02X ", opcode())
-		}
+	if previousOpcode != 0x20 && previousOpcode != 0x4C && previousOpcode != 0x6C && previousOpcode != 0x40 {
+		if previousOpcode == 0x60 {
+			fmt.Printf("%02X ", previousPC)
+			fmt.Printf("%02X ", previousOpcode)
+			previousOpcode = 0x00
+			previousPC = 0x0000
+			previousOperand1 = 0x00
+			previousOperand2 = 0x00
+		} else {
+			fmt.Printf("%04X ", PC)
+			// If opcode() is a 1 byte instruction, print opcode
+			if opcode() == 0x08 || opcode() == 0x10 || opcode() == 0x18 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x40 || opcode() == 0x48 || opcode() == 0x50 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x70 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A {
+				fmt.Printf("%02X ", opcode())
+			}
 
-		// If opcode() is a 2 byte instruction, print opcode and operand1
-		// 		fmt.Printf("%02X %02X ", opcode(), operand1())
-		// The 0x hex opcodes for the 2 byte instructions on the 6502 are
-		if opcode() == 0x69 || opcode() == 0x29 || opcode() == 0xC9 || opcode() == 0xE0 || opcode() == 0xC0 || opcode() == 0x49 || opcode() == 0xA9 || opcode() == 0xA2 || opcode() == 0xA0 || opcode() == 0x09 || opcode() == 0xE9 || opcode() == 0x65 || opcode() == 0x25 || opcode() == 0x06 || opcode() == 0x24 || opcode() == 0xC5 || opcode() == 0xE4 || opcode() == 0xC4 || opcode() == 0xC6 || opcode() == 0x45 || opcode() == 0xE6 || opcode() == 0xA5 || opcode() == 0xA6 || opcode() == 0xA4 || opcode() == 0x46 || opcode() == 0x05 || opcode() == 0x26 || opcode() == 0x66 || opcode() == 0xE5 || opcode() == 0x85 || opcode() == 0x86 || opcode() == 0x84 || opcode() == 0x90 || opcode() == 0xB0 || opcode() == 0xF0 || opcode() == 0x30 || opcode() == 0xD0 || opcode() == 0x10 || opcode() == 0x50 || opcode() == 0x70 {
-			fmt.Printf("%02X %02X ", opcode(), operand1())
-		}
+			// If opcode() is a 2 byte instruction, print opcode and operand1
+			// 		fmt.Printf("%02X %02X ", opcode(), operand1())
+			// The 0x hex opcodes for the 2 byte instructions on the 6502 are
+			if opcode() == 0x69 || opcode() == 0x29 || opcode() == 0xC9 || opcode() == 0xE0 || opcode() == 0xC0 || opcode() == 0x49 || opcode() == 0xA9 || opcode() == 0xA2 || opcode() == 0xA0 || opcode() == 0x09 || opcode() == 0xE9 || opcode() == 0x65 || opcode() == 0x25 || opcode() == 0x06 || opcode() == 0x24 || opcode() == 0xC5 || opcode() == 0xE4 || opcode() == 0xC4 || opcode() == 0xC6 || opcode() == 0x45 || opcode() == 0xE6 || opcode() == 0xA5 || opcode() == 0xA6 || opcode() == 0xA4 || opcode() == 0x46 || opcode() == 0x05 || opcode() == 0x26 || opcode() == 0x66 || opcode() == 0xE5 || opcode() == 0x85 || opcode() == 0x86 || opcode() == 0x84 || opcode() == 0x90 || opcode() == 0xB0 || opcode() == 0xF0 || opcode() == 0x30 || opcode() == 0xD0 || opcode() == 0x10 || opcode() == 0x50 || opcode() == 0x70 {
+				fmt.Printf("%02X %02X ", opcode(), operand1())
+			}
 
-		// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
-		// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
-		if opcode() == 0x6D || opcode() == 0x2D || opcode() == 0x0E || opcode() == 0x2C || opcode() == 0xCD || opcode() == 0xEC || opcode() == 0xCC || opcode() == 0xCE || opcode() == 0x4D || opcode() == 0xEE || opcode() == 0x4C || opcode() == 0xAD || opcode() == 0xAC || opcode() == 0xAE || opcode() == 0x4E || opcode() == 0x0D || opcode() == 0x2E || opcode() == 0x6E || opcode() == 0xED || opcode() == 0x8D || opcode() == 0x8E || opcode() == 0x8C || opcode() == 0x7D || opcode() == 0x79 || opcode() == 0x3D || opcode() == 0x39 || opcode() == 0x1E || opcode() == 0xDD || opcode() == 0xD9 || opcode() == 0xDE || opcode() == 0x5D || opcode() == 0x59 || opcode() == 0xFE || opcode() == 0xBD || opcode() == 0xB9 || opcode() == 0xBC || opcode() == 0xBE || opcode() == 0x5E || opcode() == 0x1D || opcode() == 0x19 || opcode() == 0x3E || opcode() == 0x7E || opcode() == 0xFD || opcode() == 0xF9 || opcode() == 0x9D || opcode() == 0x95 || opcode() == 0x99 || opcode() == 0xB5 || opcode() == 0x91 || opcode() == 0xB1 || opcode() == 0x81 || opcode() == 0xA1 || opcode() == 0x94 || opcode() == 0x96 || opcode() == 0xB4 || opcode() == 0xB6 || opcode() == 0x35 || opcode() == 0x15 || opcode() == 0x55 || opcode() == 0x21 || opcode() == 0x01 || opcode() == 0x41 || opcode() == 0x31 || opcode() == 0x11 || opcode() == 0x51 || opcode() == 0xF6 || opcode() == 0xD6 || opcode() == 0x4A || opcode() == 0x0A || opcode() == 0x16 || opcode() == 0x56 || opcode() == 0x36 || opcode() == 0x76 || opcode() == 0x75 || opcode() == 0xF5 || opcode() == 0xD5 || opcode() == 0xC1 || opcode() == 0xD1 || opcode() == 0x61 || opcode() == 0xE1 || opcode() == 0x71 || opcode() == 0xF1 || opcode() == 0x6C {
-			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
+			// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
+			// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
+			if opcode() == 0x6D || opcode() == 0x2D || opcode() == 0x0E || opcode() == 0x2C || opcode() == 0xCD || opcode() == 0xEC || opcode() == 0xCC || opcode() == 0xCE || opcode() == 0x4D || opcode() == 0xEE || opcode() == 0x4C || opcode() == 0xAD || opcode() == 0xAC || opcode() == 0xAE || opcode() == 0x4E || opcode() == 0x0D || opcode() == 0x2E || opcode() == 0x6E || opcode() == 0xED || opcode() == 0x8D || opcode() == 0x8E || opcode() == 0x8C || opcode() == 0x7D || opcode() == 0x79 || opcode() == 0x3D || opcode() == 0x39 || opcode() == 0x1E || opcode() == 0xDD || opcode() == 0xD9 || opcode() == 0xDE || opcode() == 0x5D || opcode() == 0x59 || opcode() == 0xFE || opcode() == 0xBD || opcode() == 0xB9 || opcode() == 0xBC || opcode() == 0xBE || opcode() == 0x5E || opcode() == 0x1D || opcode() == 0x19 || opcode() == 0x3E || opcode() == 0x7E || opcode() == 0xFD || opcode() == 0xF9 || opcode() == 0x9D || opcode() == 0x95 || opcode() == 0x99 || opcode() == 0xB5 || opcode() == 0x91 || opcode() == 0xB1 || opcode() == 0x81 || opcode() == 0xA1 || opcode() == 0x94 || opcode() == 0x96 || opcode() == 0xB4 || opcode() == 0xB6 || opcode() == 0x35 || opcode() == 0x15 || opcode() == 0x55 || opcode() == 0x21 || opcode() == 0x01 || opcode() == 0x41 || opcode() == 0x31 || opcode() == 0x11 || opcode() == 0x51 || opcode() == 0xF6 || opcode() == 0xD6 || opcode() == 0x4A || opcode() == 0x0A || opcode() == 0x16 || opcode() == 0x56 || opcode() == 0x36 || opcode() == 0x76 || opcode() == 0x75 || opcode() == 0xF5 || opcode() == 0xD5 || opcode() == 0xC1 || opcode() == 0xD1 || opcode() == 0x61 || opcode() == 0xE1 || opcode() == 0x71 || opcode() == 0xF1 || opcode() == 0x6C {
+				fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
+			}
 		}
 	} else {
 		fmt.Printf("%04X ", previousPC)
 		fmt.Printf("%02X %02X %02X ", previousOpcode, previousOperand1, previousOperand2)
-		previousOpcode = 0x00
-		previousPC = 0x0000
-		previousOperand1 = 0x00
-		previousOperand2 = 0x00
+
 	}
 
 	// Print disassembled instruction
@@ -457,7 +463,6 @@ func printMachineState() {
 	// Print full SR as binary digits with zero padding
 	fmt.Printf("%08b |\n", SR)
 }
-
 func readBit(bit byte, value byte) int {
 	// Read bit from value and return it
 	return int((value >> bit) & 1)
@@ -2047,6 +2052,13 @@ func execute() {
 
 			disassembledInstruction = fmt.Sprintf("BRK")
 			disassembleOpcode()
+			previousPC = PC
+			previousOpcode = opcode()
+			fmt.Printf("Value stored at $8000: %04X\n", readMemory(0x8000))
+			fmt.Printf("PC: %04X\n", PC)
+			fmt.Printf("Opcode: %02X\n", readMemory(uint16(PC)))
+			fmt.Printf("Previous PC: %04X\n", previousPC)
+			fmt.Printf("Previous Opcode: %02X\n", previousOpcode)
 			// Increment PC
 			//incPC(1)
 
@@ -2315,17 +2327,16 @@ func execute() {
 			disassembleOpcode()
 			//Get low byte of new PC
 			low := uint16(readStack())
-			//fmt.Printf("Low: %04X\n", low)
 			// Increment the stack pointer
 			incSP()
 			//Get high byte of new PC
 			high := uint16(readStack())
-			//fmt.Printf("High: %04X\n", high)
 			previousPC = PC
 			previousOpcode = opcode()
 			//Update PC with the value stored in memory at the address pointed to by SP
 			//fmt.Printf("PC before update: %04X\n", PC)
 			setPC(int((high << 8) | low))
+
 			//fmt.Printf("PC after update: %04X\n", PC)
 			handleState(0)
 		case 0x38:
@@ -3390,7 +3401,7 @@ func execute() {
 			decSP()
 			updateStack(byte((PC >> 8)))
 			decSP()
-			updateStack(byte((PC) & 0xFF))
+			updateStack(byte((PC)&0xFF) + 2)
 
 			previousPC = PC
 			previousOpcode = opcode()
