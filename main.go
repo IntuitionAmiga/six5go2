@@ -45,8 +45,8 @@ var (
 	plus4        = flag.Bool("plus4", false, "Plus/4 ROMs")
 	ruudb        = flag.Bool("ruudb", false, "RuudB's 8K Test ROM")
 	c64          = flag.Bool("c64", false, "C64 ROMs")
-	disassemble  = flag.Bool("dis", false, "Disassembler mode")
-	stateMonitor = flag.Bool("state", false, "State monitor mode")
+	disassemble  = flag.Bool("dis", false, "Disassembler mode (Optional)")
+	stateMonitor = flag.Bool("state", false, "State monitor mode (Optional)")
 
 	disassembledInstruction string
 
