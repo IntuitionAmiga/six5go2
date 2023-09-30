@@ -214,7 +214,7 @@ func loadROMs() {
 		}
 	}
 	if *stateMonitor {
-		fmt.Printf("PC  |OP|OPERANDS|  DISASSEMBLY  | \t REGISTERS\t |  STACK MEM  | SR FLAGS | INSTRUCTION COUNTER\n")
+		fmt.Printf("PC  |OP|OPERANDS|  DISASSEMBLY  | \t REGISTERS\t |  STACK MEM  | SR FLAGS |        INSTRUCTION COUNTER\n")
 		fmt.Printf("----|--|--------|---------------|------------------------|-------------|----------|---------------------------------\n")
 	}
 }
