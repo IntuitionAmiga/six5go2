@@ -431,11 +431,11 @@ func printMachineState() {
 
 			// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
 			// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
-			if opcode() == 0x6D || opcode() == 0x2D || opcode() == 0x0E || opcode() == 0x2C || opcode() == 0xCD || opcode() == 0xEC || opcode() == 0xCC || opcode() == 0xCE || opcode() == 0x4D || opcode() == 0xEE || opcode() == 0x4C || opcode() == 0xAD || opcode() == 0xAC || opcode() == 0xAE || opcode() == 0x4E || opcode() == 0x0D || opcode() == 0x2E || opcode() == 0x6E || opcode() == 0xED || opcode() == 0x8D || opcode() == 0x8E || opcode() == 0x8C || opcode() == 0x7D || opcode() == 0x79 || opcode() == 0x3D || opcode() == 0x39 || opcode() == 0x1E || opcode() == 0xDD || opcode() == 0xD9 || opcode() == 0xDE || opcode() == 0x5D || opcode() == 0x59 || opcode() == 0xFE || opcode() == 0xBD || opcode() == 0xB9 || opcode() == 0xBC || opcode() == 0xBE || opcode() == 0x5E || opcode() == 0x1D || opcode() == 0x19 || opcode() == 0x3E || opcode() == 0x7E || opcode() == 0xFD || opcode() == 0xF9 || opcode() == 0x9D || opcode() == 0x95 || opcode() == 0x99 || opcode() == 0xB5 || opcode() == 0x91 || opcode() == 0xB1 || opcode() == 0x81 || opcode() == 0xA1 || opcode() == 0x94 || opcode() == 0x96 || opcode() == 0xB4 || opcode() == 0xB6 || opcode() == 0x35 || opcode() == 0x15 || opcode() == 0x55 || opcode() == 0x21 || opcode() == 0x01 || opcode() == 0x41 || opcode() == 0x31 || opcode() == 0x11 || opcode() == 0x51 || opcode() == 0xF6 || opcode() == 0xD6 || opcode() == 0x4A || opcode() == 0x0A || opcode() == 0x16 || opcode() == 0x56 || opcode() == 0x36 || opcode() == 0x76 || opcode() == 0x75 || opcode() == 0xF5 || opcode() == 0xD5 || opcode() == 0xC1 || opcode() == 0xD1 || opcode() == 0x61 || opcode() == 0xE1 || opcode() == 0x71 || opcode() == 0xF1 || opcode() == 0x6C {
+			if opcode() == 0x6D || opcode() == 0x2D || opcode() == 0x0E || opcode() == 0x2C || opcode() == 0xCD || opcode() == 0xEC || opcode() == 0xCC || opcode() == 0xCE || opcode() == 0x4D || opcode() == 0xEE || opcode() == 0xAD || opcode() == 0xAC || opcode() == 0xAE || opcode() == 0x4E || opcode() == 0x0D || opcode() == 0x2E || opcode() == 0x6E || opcode() == 0xED || opcode() == 0x8D || opcode() == 0x8E || opcode() == 0x8C || opcode() == 0x7D || opcode() == 0x79 || opcode() == 0x3D || opcode() == 0x39 || opcode() == 0x1E || opcode() == 0xDD || opcode() == 0xD9 || opcode() == 0xDE || opcode() == 0x5D || opcode() == 0x59 || opcode() == 0xFE || opcode() == 0xBD || opcode() == 0xB9 || opcode() == 0xBC || opcode() == 0xBE || opcode() == 0x5E || opcode() == 0x1D || opcode() == 0x19 || opcode() == 0x3E || opcode() == 0x7E || opcode() == 0xFD || opcode() == 0xF9 || opcode() == 0x9D || opcode() == 0x95 || opcode() == 0x99 || opcode() == 0xB5 || opcode() == 0x91 || opcode() == 0xB1 || opcode() == 0x81 || opcode() == 0xA1 || opcode() == 0x94 || opcode() == 0x96 || opcode() == 0xB4 || opcode() == 0xB6 || opcode() == 0x35 || opcode() == 0x15 || opcode() == 0x55 || opcode() == 0x21 || opcode() == 0x01 || opcode() == 0x41 || opcode() == 0x31 || opcode() == 0x11 || opcode() == 0x51 || opcode() == 0xF6 || opcode() == 0xD6 || opcode() == 0x4A || opcode() == 0x0A || opcode() == 0x16 || opcode() == 0x56 || opcode() == 0x36 || opcode() == 0x76 || opcode() == 0x75 || opcode() == 0xF5 || opcode() == 0xD5 || opcode() == 0xC1 || opcode() == 0xD1 || opcode() == 0x61 || opcode() == 0xE1 || opcode() == 0x71 || opcode() == 0xF1 || opcode() == 0x6C {
 				fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
 			}
 		}
-	} else if previousOpcode == 0x20 {
+	} else if previousOpcode == 0x20 || previousOpcode == 0x4C {
 		fmt.Printf("%04X %02X %02X %02X ", previousPC, previousOpcode, previousOperand1, previousOperand2)
 		previousOpcode = 0x00
 		previousPC = 0x0000
@@ -2335,10 +2335,7 @@ func execute() {
 			previousPC = PC
 			previousOpcode = opcode()
 			//Update PC with the value stored in memory at the address pointed to by SP
-			//fmt.Printf("PC before update: %04X\n", PC)
 			setPC(int((high<<8)|low) + 1)
-
-			fmt.Printf("PC after update: %04X\n", PC)
 			handleState(0)
 		case 0x38:
 			/*
