@@ -435,6 +435,12 @@ func printMachineState() {
 				fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
 			}
 		}
+	} else if previousOpcode == 0x20 {
+		fmt.Printf("%04X %02X %02X %02X ", previousPC, previousOpcode, previousOperand1, previousOperand2)
+		previousOpcode = 0x00
+		previousPC = 0x0000
+		previousOperand1 = 0x00
+		previousOperand2 = 0x00
 	} else {
 		fmt.Printf("%04X ", previousPC)
 		fmt.Printf("%02X %02X %02X ", previousOpcode, previousOperand1, previousOperand2)
