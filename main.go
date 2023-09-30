@@ -2336,9 +2336,9 @@ func execute() {
 			previousOpcode = opcode()
 			//Update PC with the value stored in memory at the address pointed to by SP
 			//fmt.Printf("PC before update: %04X\n", PC)
-			setPC(int((high << 8) | low))
+			setPC(int((high<<8)|low) + 1)
 
-			//fmt.Printf("PC after update: %04X\n", PC)
+			fmt.Printf("PC after update: %04X\n", PC)
 			handleState(0)
 		case 0x38:
 			/*
