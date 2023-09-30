@@ -2,36 +2,37 @@
 
 # six5go2
 
-Six5go2 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley
+Six5go2 v2.0 - 6502 Emulator and Disassembler in Golang (c) 2022 Zayn Otley
 
-USAGE   - ./six5go2 target_filename hex_entry_point dis/mon hex
-
-EXAMPLE - ./six5go2 AllSuiteA.bin 4000 mon
-
-EXAMPLE - ./six5go2 AllSuiteA.bin 4000 dis
-
-EXAMPLE - ./six5go2 AllSuiteA.bin 4000 dis hex
-
-Choose Disassembler or Machine Monitor at command line with dis or mon parameter.
-
-Specify hex as optional parameter with the disassembler to have opcodes as comments in the source output.
-
+Usage: ./six5go2 [options]
+  -allsuitea
+        AllSuiteA ROM
+  -c64
+        C64 ROMs
+  -dis
+        Disassembler mode (Optional)
+  -klausd
+        Klaus Dormann's 6502 functional test ROM
+  -plus4
+        Plus/4 ROMs
+  -ruudb
+        RuudB's 8K Test ROM
+  -state
+        State monitor mode (Optional)
 
 To build the project:
 
     git clone https://github.com/intuitionamiga/six5go2.git
     cd six5go2
+    git checkout v2
     go build -ldflags="-s -w" .
 
-To run the disassembler on the AllSuiteA 6502 opcode test suite:
+To run the disassembler on the C64 ROMs with machine state displayed:
 
-    ./six5go2 AllSuiteA.bin 4000 dis
+    ./six5go2 -c64 -state
 
-To run the disassembler with hex opcodes as comments:
+To run the disassembler
 
-    ./six5go2 AllSuiteA.bin 4000 dis hex
+    ./six5go2 -c64 -dis
 
-To run the machine monitor:
-
-    ./six5go2 AllSuiteA.bin 4000 mon
            
