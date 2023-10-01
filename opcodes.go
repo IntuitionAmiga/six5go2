@@ -2519,3 +2519,28 @@ func STY_ZX() {
 	disassembleOpcode()
 	STY("zeropagex")
 }
+
+// Y Indexed Zero Page addressing mode instructions
+/*
+	$nn,Y
+
+	This form of addressing is used in conjunction with the Y index register. The effective address is calculated by adding the second byte to the contents of the index register. Since this is a form of "Zero Page" addressing, the content of the second byte references a location in page zero. Additionally, due to the “Zero Page" addressing nature of this mode, no carry is added to the low order 8 bits of memory and crossing of page boundaries does not occur.
+
+	Bytes: 2
+*/
+func LDX_ZY() {
+	/*
+		LDX - Load Index Register X From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDX $%02X,Y", operand1())
+	disassembleOpcode()
+	LDX("zeropagey")
+}
+func STX_ZY() {
+	/*
+		STX - Store Index Register X In Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STX $%02X,Y", operand1())
+	disassembleOpcode()
+	STX("zeropagey")
+}

@@ -533,24 +533,13 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0xB6:
+		case 0xB6: //LDX
 			cycleStart()
-			/*
-				LDX - Load Index Register X From Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDX $%02X,Y", operand1())
-			disassembleOpcode()
-			LDX("zeropagey")
+			LDX_ZY()
 			cycleEnd()
-		case 0x96:
+		case 0x96: //STX
 			cycleStart()
-			/*
-				STX - Store Index Register X In Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("STX $%02X,Y", operand1())
-			disassembleOpcode()
-
-			STX("zeropagey")
+			STX_ZY()
 			cycleEnd()
 
 		// X Indexed Zero Page Indirect addressing mode instructions
