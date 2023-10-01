@@ -550,83 +550,37 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x61:
+		case 0x61: //ADC
 			cycleStart()
-			/*
-				ADC - Add Memory to Accumulator with Carry
-			*/
-			disassembledInstruction = fmt.Sprintf("ADC ($%02X,X)", operand1())
-			disassembleOpcode()
-			ADC("indirectx")
+			ADC_IX()
 			cycleEnd()
-		case 0x21:
+		case 0x21: //AND
 			cycleStart()
-			/*
-				AND - "AND" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("AND ($%02X,X)", operand1())
-			disassembleOpcode()
-
-			AND("indirectx")
+			AND_IX()
 			cycleEnd()
-		case 0xC1:
+		case 0xC1: //CMP
 			cycleStart()
-			/*
-				CMP - Compare Memory and Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("CMP ($%02X,X)", operand1())
-			disassembleOpcode()
-
-			CMP("indirectx")
+			CMP_IX()
 			cycleEnd()
-		case 0x41:
+		case 0x41: //EOR
 			cycleStart()
-			/*
-				EOR - "Exclusive OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("EOR ($%02X,X)", operand1())
-			disassembleOpcode()
-
-			EOR("indirectx")
+			EOR_IX()
 			cycleEnd()
-		case 0xA1:
+		case 0xA1: //LDA
 			cycleStart()
-			/*
-				LDA - Load Accumulator with Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDA ($%02X,X)", operand1())
-			disassembleOpcode()
-
-			LDA("indirectx")
+			LDA_IX()
 			cycleEnd()
-		case 0x01:
+		case 0x01: //ORA
 			cycleStart()
-			/*
-				ORA - "OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("ORA ($%02X,X)", operand1())
-			disassembleOpcode()
-
-			ORA("indirectx")
+			ORA_IX()
 			cycleEnd()
-		case 0xE1:
+		case 0xE1: //SBC
 			cycleStart()
-			/*
-				SBC - Subtract Memory from Accumulator with Borrow
-			*/
-			disassembledInstruction = fmt.Sprintf("SBC ($%02X,X)", operand1())
-			disassembleOpcode()
-
-			SBC("indirectx")
+			SBC_IX()
 			cycleEnd()
-		case 0x81:
+		case 0x81: //STA
 			cycleStart()
-			/*
-				STA - Store Accumulator in Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("STA ($%02X,X)", operand1())
-			disassembleOpcode()
-			STA("indirectx")
+			STA_IX()
 			cycleEnd()
 
 		// Zero Page Indirect Y Indexed addressing mode instructions

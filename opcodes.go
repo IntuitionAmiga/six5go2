@@ -2544,3 +2544,76 @@ func STX_ZY() {
 	disassembleOpcode()
 	STX("zeropagey")
 }
+
+// X Indexed Zero Page Indirect addressing mode instructions
+/*
+	($nn,X)
+
+	In indexed indirect addressing, the second byte of the instruction is added to the contents of the X index register, discarding the carry. The result of this addition points to a memory location on page zero whose contents is the high order eight bits of the effective address. The next memory location in page zero contains the low order eight bits of the effective address. Both memory locations specifying the low and high order bytes of the effective address must be in page zero.
+
+	Bytes: 2
+*/
+func ADC_IX() {
+	/*
+		ADC - Add Memory to Accumulator with Carry
+	*/
+	disassembledInstruction = fmt.Sprintf("ADC ($%02X,X)", operand1())
+	disassembleOpcode()
+	ADC("indirectx")
+}
+func AND_IX() {
+	/*
+		AND - "AND" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("AND ($%02X,X)", operand1())
+	disassembleOpcode()
+	AND("indirectx")
+}
+func CMP_IX() {
+	/*
+		CMP - Compare Memory and Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("CMP ($%02X,X)", operand1())
+	disassembleOpcode()
+	CMP("indirectx")
+}
+func EOR_IX() {
+	/*
+		EOR - "Exclusive OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("EOR ($%02X,X)", operand1())
+	disassembleOpcode()
+	EOR("indirectx")
+}
+func LDA_IX() {
+	/*
+		LDA - Load Accumulator with Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDA ($%02X,X)", operand1())
+	disassembleOpcode()
+	LDA("indirectx")
+}
+func ORA_IX() {
+	/*
+		ORA - "OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("ORA ($%02X,X)", operand1())
+	disassembleOpcode()
+	ORA("indirectx")
+}
+func SBC_IX() {
+	/*
+		SBC - Subtract Memory from Accumulator with Borrow
+	*/
+	disassembledInstruction = fmt.Sprintf("SBC ($%02X,X)", operand1())
+	disassembleOpcode()
+	SBC("indirectx")
+}
+func STA_IX() {
+	/*
+		STA - Store Accumulator in Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STA ($%02X,X)", operand1())
+	disassembleOpcode()
+	STA("indirectx")
+}
