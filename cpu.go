@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"time"
 )
 
@@ -686,231 +685,97 @@ func startCPU() {
 
 			Bytes: 3
 		*/
-		case 0x6D:
+		case 0x6D: //ADC
 			cycleStart()
-			/*
-				ADC - Add Memory to Accumulator with Carry
-			*/
-			disassembledInstruction = fmt.Sprintf("ADC $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			ADC("absolute")
+			ADC_ABS()
 			cycleEnd()
-		case 0x2D:
+		case 0x2D: //AND
 			cycleStart()
-			/*
-				AND - "AND" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("AND $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-
-			AND("absolute")
+			AND_ABS()
 			cycleEnd()
-		case 0x0E:
+		case 0x0E: //ASL
 			cycleStart()
-			/*
-				ASL - Arithmetic Shift Left
-			*/
-			disassembledInstruction = fmt.Sprintf("ASL $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			ASL("absolute")
+			ASL_ABS()
 			cycleEnd()
-		case 0x2C:
+		case 0x2C: //BIT
 			cycleStart()
-			/*
-				BIT - Test Bits in Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("BIT $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			BIT("absolute")
+			BIT_ABS()
 			cycleEnd()
-		case 0xCD:
+		case 0xCD: //CMP
 			cycleStart()
-			/*
-				CMP - Compare Memory and Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("CMP $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			CMP("absolute")
+			CMP_ABS()
 			cycleEnd()
-		case 0xEC:
+		case 0xEC: //CPX
 			cycleStart()
-			/*
-				CPX - Compare Index Register X To Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("CPX $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			CPX("absolute")
+			CPX_ABS()
 			cycleEnd()
 		case 0xCC:
 			cycleStart()
-			/*
-				CPY - Compare Index Register Y To Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("CPY $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			CPY("absolute")
+			CPY_ABS()
 			cycleEnd()
-		case 0xCE:
+		case 0xCE: //DEC
 			cycleStart()
-			/*
-				DEC - Decrement Memory By One
-			*/
-			disassembledInstruction = fmt.Sprintf("DEC $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			DEC("absolute")
+			DEC_ABS()
 			cycleEnd()
-		case 0x4D:
+		case 0x4D: //EOR
 			cycleStart()
-			/*
-				EOR - "Exclusive OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("EOR $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			EOR("absolute")
+			EOR_ABS()
 			cycleEnd()
-		case 0xEE:
+		case 0xEE: //INC
 			cycleStart()
-			/*
-				INC - Increment Memory By One
-			*/
-			disassembledInstruction = fmt.Sprintf("INC $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			INC("absolute")
+			INC_ABS()
 			cycleEnd()
-		case 0x4C:
+		case 0x4C: //JMP
 			cycleStart()
-			/*
-				JMP - JMP Absolute
-			*/
-			disassembledInstruction = fmt.Sprintf("JMP $%04X", int(operand2())<<8|int(operand1()))
-			disassembleOpcode()
-			// For AllSuiteA.bin 6502 opcode test suite
-			if *allsuitea && readMemory(0x210) == 0xFF {
-				fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", readMemory(0x210))
-				os.Exit(0)
-			}
-			JMP("absolute")
+			JMP_ABS()
 			cycleEnd()
-		case 0x20:
+		case 0x20: //JSR
 			cycleStart()
-			/*
-				JSR - Jump To Subroutine
-			*/
-			disassembledInstruction = fmt.Sprintf("JSR $%04X", int(operand2())<<8|int(operand1()))
-			disassembleOpcode()
-			// First, push the high byte
-			decSP()
-			updateStack(byte(PC >> 8))
-			decSP()
-			updateStack(byte((PC)&0xFF) + 2)
-
-			previousPC = PC
-			previousOpcode = opcode()
-			previousOperand1 = operand1()
-			previousOperand2 = operand2()
-			// Now, jump to the subroutine address specified by the operands
-			setPC(int(operand2())<<8 | int(operand1()))
-			updateCycleCounter(1)
-			handleState(0)
+			JSR_ABS()
 			cycleEnd()
-		case 0xAD:
+		case 0xAD: //LDA
 			cycleStart()
-			/*
-				LDA - Load Accumulator with Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDA $%04X", uint16(operand2())<<8|uint16(operand1()))
-			disassembleOpcode()
-			LDA("absolute")
+			LDA_ABS()
 			cycleEnd()
-		case 0xAE:
+		case 0xAE: //LDX
 			cycleStart()
-			/*
-				LDX - Load Index Register X From Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDX $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			LDX("absolute")
+			LDX_ABS()
 			cycleEnd()
-		case 0xAC:
+		case 0xAC: //LDY
 			cycleStart()
-			/*
-				LDY - Load Index Register Y From Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDY $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			LDY("absolute")
+			LDY_ABS()
 			cycleEnd()
-		case 0x4E:
+		case 0x4E: //LSR
 			cycleStart()
-			/*
-				LSR - Logical Shift Right
-			*/
-			disassembledInstruction = fmt.Sprintf("LSR $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			LSR("absolute")
+			LSR_ABS()
 			cycleEnd()
-		case 0x0D:
+		case 0x0D: //ORA
 			cycleStart()
-			/*
-				ORA - "OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("ORA $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			ORA("absolute")
+			ORA_ABS()
 			cycleEnd()
-		case 0x2E:
+		case 0x2E: //ROL
 			cycleStart()
-			/*
-				ROL - Rotate Left
-			*/
-			disassembledInstruction = fmt.Sprintf("ROL $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			ROL("absolute")
+			ROL_ABS()
 			cycleEnd()
-		case 0x6E:
+		case 0x6E: //ROR
 			cycleStart()
-			/*
-				ROR - Rotate Right
-			*/
-			disassembledInstruction = fmt.Sprintf("ROR $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			ROR("absolute")
+			ROR_ABS()
 			cycleEnd()
-		case 0xED:
+		case 0xED: //SBC
 			cycleStart()
-			/*
-				SBC - Subtract Memory from Accumulator with Borrow
-			*/
-			disassembledInstruction = fmt.Sprintf("SBC $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			SBC("absolute")
+			SBC_ABS()
 			cycleEnd()
-		case 0x8D:
+		case 0x8D: //STA
 			cycleStart()
-			/*
-				STA - Store Accumulator in Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("STA $%04X", uint16(operand2())<<8|uint16(operand1()))
-			disassembleOpcode()
-			STA("absolute")
+			STA_ABS()
 			cycleEnd()
 		case 0x8E:
 			cycleStart()
-			/*
-				STX - Store Index Register X In Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("STX $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			STX("absolute")
+			STX_ABS()
 			cycleEnd()
-		case 0x8C:
+		case 0x8C: //STY
 			cycleStart()
-			/*
-				STY - Store Index Register Y In Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("STY $%02X%02X", operand2(), operand1())
-			disassembleOpcode()
-			STY("absolute")
+			STY_ABS()
 			cycleEnd()
 
 		// X Indexed Absolute addressing mode instructions

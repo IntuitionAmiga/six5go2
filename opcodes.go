@@ -2907,3 +2907,215 @@ func BEQ_R() {
 		handleState(2)
 	}
 }
+
+// 3 byte instructions with 2 operands
+// Absolute addressing mode instructions
+/*
+	$nnnn
+
+	In absolute addressing, the second byte of the instruction specifies the eight high order bits of the effective address while the third byte specifies the eight low order bits. Thus, the absolute addressing mode allows access to the entire 65 K bytes of addressable memory.
+
+	Bytes: 3
+*/
+func ADC_ABS() {
+	/*
+		ADC - Add Memory to Accumulator with Carry
+	*/
+	disassembledInstruction = fmt.Sprintf("ADC $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	ADC("absolute")
+}
+func AND_ABS() {
+	/*
+		AND - "AND" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("AND $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	AND("absolute")
+}
+func ASL_ABS() {
+	/*
+		ASL - Arithmetic Shift Left
+	*/
+	disassembledInstruction = fmt.Sprintf("ASL $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	ASL("absolute")
+}
+func BIT_ABS() {
+	/*
+		BIT - Test Bits in Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("BIT $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	BIT("absolute")
+}
+func CMP_ABS() {
+	/*
+		CMP - Compare Memory and Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("CMP $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	CMP("absolute")
+}
+func CPX_ABS() {
+	/*
+		CPX - Compare Index Register X To Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("CPX $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	CPX("absolute")
+}
+func CPY_ABS() {
+	/*
+		CPY - Compare Index Register Y To Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("CPY $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	CPY("absolute")
+}
+func DEC_ABS() {
+	/*
+		DEC - Decrement Memory By One
+	*/
+	disassembledInstruction = fmt.Sprintf("DEC $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	DEC("absolute")
+}
+func EOR_ABS() {
+	/*
+		EOR - "Exclusive OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("EOR $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	EOR("absolute")
+}
+func INC_ABS() {
+	/*
+		INC - Increment Memory By One
+	*/
+	disassembledInstruction = fmt.Sprintf("INC $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	INC("absolute")
+}
+func JMP_ABS() {
+	/*
+		JMP - JMP Absolute
+	*/
+	disassembledInstruction = fmt.Sprintf("JMP $%04X", int(operand2())<<8|int(operand1()))
+	disassembleOpcode()
+	// For AllSuiteA.bin 6502 opcode test suite
+	if *allsuitea && readMemory(0x210) == 0xFF {
+		fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", readMemory(0x210))
+		os.Exit(0)
+	}
+	JMP("absolute")
+}
+func JSR_ABS() {
+	/*
+		JSR - Jump To Subroutine
+	*/
+	disassembledInstruction = fmt.Sprintf("JSR $%04X", int(operand2())<<8|int(operand1()))
+	disassembleOpcode()
+	// First, push the high byte
+	decSP()
+	updateStack(byte(PC >> 8))
+	decSP()
+	updateStack(byte((PC)&0xFF) + 2)
+
+	previousPC = PC
+	previousOpcode = opcode()
+	previousOperand1 = operand1()
+	previousOperand2 = operand2()
+	// Now, jump to the subroutine address specified by the operands
+	setPC(int(operand2())<<8 | int(operand1()))
+	updateCycleCounter(1)
+	handleState(0)
+}
+func LDA_ABS() {
+	/*
+		LDA - Load Accumulator with Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDA $%04X", uint16(operand2())<<8|uint16(operand1()))
+	disassembleOpcode()
+	LDA("absolute")
+}
+func LDX_ABS() {
+	/*
+		LDX - Load Index Register X From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDX $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	LDX("absolute")
+}
+func LDY_ABS() {
+	/*
+		LDY - Load Index Register Y From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDY $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	LDY("absolute")
+}
+func LSR_ABS() {
+	/*
+		LSR - Logical Shift Right
+	*/
+	disassembledInstruction = fmt.Sprintf("LSR $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	LSR("absolute")
+}
+func ORA_ABS() {
+	/*
+		ORA - "OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("ORA $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	ORA("absolute")
+}
+func ROL_ABS() {
+	/*
+		ROL - Rotate Left
+	*/
+	disassembledInstruction = fmt.Sprintf("ROL $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	ROL("absolute")
+}
+func ROR_ABS() {
+	/*
+		ROR - Rotate Right
+	*/
+	disassembledInstruction = fmt.Sprintf("ROR $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	ROR("absolute")
+}
+func SBC_ABS() {
+	/*
+		SBC - Subtract Memory from Accumulator with Borrow
+	*/
+	disassembledInstruction = fmt.Sprintf("SBC $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	SBC("absolute")
+}
+func STA_ABS() {
+	/*
+		STA - Store Accumulator in Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STA $%04X", uint16(operand2())<<8|uint16(operand1()))
+	disassembleOpcode()
+	STA("absolute")
+}
+func STX_ABS() {
+	/*
+		STX - Store Index Register X In Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STX $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	STX("absolute")
+}
+func STY_ABS() {
+	/*
+		STY - Store Index Register Y In Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STY $%02X%02X", operand2(), operand1())
+	disassembleOpcode()
+	STY("absolute")
+}
