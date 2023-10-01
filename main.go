@@ -583,7 +583,8 @@ func LDA(addressingMode string) {
 			unsetZeroFlag()
 		}
 		// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
-		if getABit(7) == 1 {
+		//if getABit(7) == 1 {
+		if A&0x80 != 0 {
 			setNegativeFlag()
 		} else {
 			unsetNegativeFlag()
