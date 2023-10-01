@@ -1526,36 +1526,19 @@ func SBC(addressingMode string) {
 
 	setFlags := func() {
 		// Check for BCD mode (Decimal flag set)
-		if getSRBit(3) == 1 {
-			tmpResult := int(A) - int(value)
-			if getSRBit(0) == 0 { // If the carry flag is clear, subtract an extra 1
-				tmpResult--
+		if getSRBit(3) == 1 { // BCD mode
+
+			temp := (A & 0x0F) - (value & 0x0F) - (getSRBit(0) ^ 1)
+			if temp < 0 {
+				temp -= 6
 			}
 
-			// Determine overflow for binary mode (to correctly set V flag)
-			if (A^value)&0x80 != 0 && (A^byte(tmpResult))&0x80 != 0 {
-				setOverflowFlag()
-			} else {
-				unsetOverflowFlag()
+			result = int((A & 0xF0) - (value & 0xF0) - (temp & 0x0F))
+
+			if result < 0 {
+				result -= 0x60
 			}
 
-			// Adjust for BCD
-			if (A&0x0F)-(value&0x0F)-(getSRBit(0)^1) < 0 {
-				tmpResult -= 6
-			}
-			if tmpResult < 0 {
-				tmpResult -= 0x60
-			}
-
-			// Set or unset the C flag
-			if tmpResult >= 0 {
-				setCarryFlag()
-			} else {
-				unsetCarryFlag()
-				tmpResult += 0x100 // Wrap around to positive
-			}
-
-			result = tmpResult & 0xFF // Store the result in 8 bits
 		} else {
 			// Binary mode
 			result = int(A) - int(value)
