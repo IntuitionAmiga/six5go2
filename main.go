@@ -85,10 +85,12 @@ var (
 	reset            bool
 	BRKtrue          bool = false
 
-	cycleCounter   uint64        = 0
-	cpuSpeed       uint64        = 1000000                               // 1 MHz for a standard 6502
-	cycleTime      time.Duration = time.Second / time.Duration(cpuSpeed) // time per cycle in nanoseconds
-	cycleStartTime time.Time                                             // High-resolution timer
+	cycleCounter uint64 = 0
+	cpuSpeedHz   uint64 = 985248 // 985248 Hz for a standard 6502
+	//cpuSpeedHz     uint64        = 98524
+	cycleTime      time.Duration = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
+	cycleStartTime time.Time                                               // High-resolution timer
+	timeSpent      time.Duration                                           // Time spent executing instructions
 
 )
 
@@ -222,8 +224,8 @@ func loadROMs() {
 		}
 	}
 	if *stateMonitor {
-		fmt.Printf("|  PC  | OP |OPERANDS|    DISASSEMBLY   | \t REGISTERS\t  |  STACK  | SR FLAGS | INSTRUCTION COUNT |  CPU CYCLE COUNT  | μs  |\n")
-		fmt.Printf("|------|----|--------|------------------|-------------------------|---------|----------|---------------------------------------|-----|\n")
+		fmt.Printf("|  PC  | OP |OPERANDS|    DISASSEMBLY   | \t REGISTERS\t  |  STACK  | SR FLAGS | INST COUNT | CYCLE COUNT | TIME SPENT  |\n")
+		fmt.Printf("|------|----|--------|------------------|-------------------------|---------|----------|------------|-------------|-------------|\n")
 	}
 }
 func dumpMemoryToFile(memory [65536]byte) {
@@ -510,9 +512,14 @@ func printMachineState() {
 	} else {
 		fmt.Printf("-")
 	}
-	fmt.Printf(" | $%016X | ", instructionCounter)
-	fmt.Printf("$%016X | ", cycleCounter)
-	fmt.Printf("%v |\n", cycleTime)
+	fmt.Printf(" | $%08X  | ", instructionCounter)
+	fmt.Printf(" $%08X  | ", cycleCounter)
+	if timeSpent == 0 {
+		fmt.Printf("%v\t\t|\n", timeSpent)
+	} else {
+		fmt.Printf("%v\t|\n", timeSpent)
+
+	}
 }
 func readBit(bit byte, value byte) int {
 	// Read bit from value and return it
@@ -600,6 +607,7 @@ func cycleEnd() {
 	if remainingTime > 0 {
 		time.Sleep(remainingTime)
 	}
+	timeSpent = time.Now().Sub(cycleStartTime)
 }
 
 // 6502 mnemonics with multiple addressing modes
