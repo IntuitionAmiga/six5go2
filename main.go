@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 const (
@@ -84,7 +85,9 @@ var (
 	reset            bool
 	BRKtrue          bool = false
 
-	cycleCounter uint64 = 0
+	cycleCounter uint64        = 0
+	cpuSpeed     uint64        = 1000000                               // 1 MHz for a standard 6502
+	cycleTime    time.Duration = time.Second / time.Duration(cpuSpeed) // time per cycle in nanoseconds
 )
 
 func main() {
@@ -217,8 +220,8 @@ func loadROMs() {
 		}
 	}
 	if *stateMonitor {
-		fmt.Printf("|  PC  | OP |OPERANDS|    DISASSEMBLY   | \t REGISTERS\t  |  STACK  | SR FLAGS | INSTRUCTION COUNT |  CPU CYCLE COUNT  |\n")
-		fmt.Printf("|------|----|--------|------------------|-------------------------|---------|----------|---------------------------------------|\n")
+		fmt.Printf("|  PC  | OP |OPERANDS|    DISASSEMBLY   | \t REGISTERS\t  |  STACK  | SR FLAGS | INSTRUCTION COUNT |  CPU CYCLE COUNT  | μs  |\n")
+		fmt.Printf("|------|----|--------|------------------|-------------------------|---------|----------|---------------------------------------|-----|\n")
 	}
 }
 func dumpMemoryToFile(memory [65536]byte) {
@@ -506,7 +509,8 @@ func printMachineState() {
 		fmt.Printf("-")
 	}
 	fmt.Printf(" | $%016X | ", instructionCounter)
-	fmt.Printf("$%016X | \n", cycleCounter)
+	fmt.Printf("$%016X | ", cycleCounter)
+	fmt.Printf("%v |\n", cycleTime)
 }
 func readBit(bit byte, value byte) int {
 	// Read bit from value and return it
@@ -583,6 +587,8 @@ func updateCycleCounter(amount uint64) {
 
 // 6502 mnemonics with multiple addressing modes
 func LDA(addressingMode string) {
+	var startTime time.Time = time.Now() // High-resolution timer
+
 	setFlags := func() {
 		// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
 		if A == 0 {
@@ -675,6 +681,16 @@ func LDA(addressingMode string) {
 		setFlags()
 		updateCycleCounter(5)
 		handleState(2)
+	}
+
+	// Calculate the time we should wait
+	elapsedTime := time.Since(startTime)
+	expectedTime := time.Duration(cycleCounter) * cycleTime
+	remainingTime := expectedTime - elapsedTime
+
+	// Wait for the remaining time if needed
+	if remainingTime > 0 {
+		time.Sleep(remainingTime)
 	}
 }
 func LDX(addressingMode string) {
