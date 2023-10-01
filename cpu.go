@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -900,15 +899,11 @@ func startCPU() {
 			cycleStart()
 			STA_ABY()
 			cycleEnd()
+
 		// Absolute Indirect addressing mode instructions
-		case 0x6C:
+		case 0x6C: //JMP
 			cycleStart()
-			/*
-				JMP - JMP Indirect
-			*/
-			disassembledInstruction = fmt.Sprintf("JMP ($%02X%02X)", operand2(), operand1())
-			disassembleOpcode()
-			JMP("indirect")
+			JMP_IND()
 			cycleEnd()
 		}
 		if *plus4 {

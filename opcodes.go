@@ -3337,3 +3337,13 @@ func STA_ABY() {
 	disassembleOpcode()
 	STA("absolutey")
 }
+
+// Absolute Indirect addressing mode instructions
+func JMP_IND() {
+	/*
+		JMP - JMP Indirect
+	*/
+	disassembledInstruction = fmt.Sprintf("JMP ($%02X%02X)", operand2(), operand1())
+	disassembleOpcode()
+	JMP("indirect")
+}
