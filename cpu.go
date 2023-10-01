@@ -468,141 +468,61 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x75:
+		case 0x75: //ADC
 			cycleStart()
-			/*
-				ADC - Add Memory to Accumulator with Carry
-			*/
-			disassembledInstruction = fmt.Sprintf("ADC $%02X,X", operand1())
-			disassembleOpcode()
-
-			ADC("zeropagex")
+			ADC_ZX()
 			cycleEnd()
-		case 0x35:
+		case 0x35: //AND
 			cycleStart()
-			/*
-				AND - "AND" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("AND $%02X,X", operand1())
-			disassembleOpcode()
-
-			AND("zeropagex")
+			AND_ZX()
 			cycleEnd()
-		case 0x16:
+		case 0x16: //ASL
 			cycleStart()
-			/*
-				ASL - Arithmetic Shift Left
-			*/
-			disassembledInstruction = fmt.Sprintf("ASL $%02X,X", operand1())
-			disassembleOpcode()
-
-			ASL("zeropagex")
+			ASL_ZX()
 			cycleEnd()
-		case 0xD5:
+		case 0xD5: //CMP
 			cycleStart()
-			/*
-				CMP - Compare Memory and Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("CMP $%02X,X", operand1())
-			disassembleOpcode()
-
-			CMP("zeropagex")
+			CMP_ZX()
 			cycleEnd()
-		case 0xD6:
+		case 0xD6: //DEC
 			cycleStart()
-			/*
-				DEC - Decrement Memory By One
-			*/
-			disassembledInstruction = fmt.Sprintf("DEC $%02X,X", operand1())
-			disassembleOpcode()
-
-			DEC("zeropagex")
+			DEC_ZX()
 			cycleEnd()
-		case 0xB5:
+		case 0xB5: //LDA
 			cycleStart()
-			/*
-				LDA - Load Accumulator with Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDA $%02X,X", operand1())
-			disassembleOpcode()
-
-			LDA("zeropagex")
+			LDA_ZX()
 			cycleEnd()
-		case 0xB4:
+		case 0xB4: //LDY
 			cycleStart()
-			/*
-				LDY - Load Index Register Y From Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDY $%02X,X", operand1())
-			disassembleOpcode()
-
-			LDY("zeropagex")
+			LDY_ZX()
 			cycleEnd()
-		case 0x56:
+		case 0x56: //LSR
 			cycleStart()
-			/*
-				LSR - Logical Shift Right
-			*/
-			disassembledInstruction = fmt.Sprintf("LSR $%02X,X", operand1())
-			disassembleOpcode()
-
-			LSR("zeropagex")
+			LSR_ZX()
 			cycleEnd()
-		case 0x15:
+		case 0x15: //ORA
 			cycleStart()
-			/*
-				ORA - "OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("ORA $%02X,X", operand1())
-			disassembleOpcode()
-
-			ORA("zeropagex")
+			ORA_ZX()
 			cycleEnd()
-		case 0x36:
+		case 0x36: //ROL
 			cycleStart()
-			/*
-				ROL - Rotate Left
-			*/
-			disassembledInstruction = fmt.Sprintf("ROL $%02X,X", operand1())
-			disassembleOpcode()
-			ROL("zeropagex")
+			ROL_ZX()
 			cycleEnd()
-		case 0x76:
+		case 0x76: //ROR
 			cycleStart()
-			/*
-				ROR - Rotate Right
-			*/
-			disassembledInstruction = fmt.Sprintf("ROR $%02X,X", operand1())
-			disassembleOpcode()
-			ROR("zeropagex")
+			ROR_ZX()
 			cycleEnd()
-		case 0xF5:
+		case 0xF5: //SBC
 			cycleStart()
-			/*
-				SBC - Subtract Memory from Accumulator with Borrow
-			*/
-			disassembledInstruction = fmt.Sprintf("SBC $%02X,X", operand1())
-			disassembleOpcode()
-			SBC("zeropagex")
+			SBC_ZX()
 			cycleEnd()
-		case 0x95:
+		case 0x95: //STA
 			cycleStart()
-			/*
-				STA - Store Accumulator in Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("STA $%02X,X", operand1())
-			disassembleOpcode()
-			STA("zeropagex")
+			STA_ZX()
 			cycleEnd()
-		case 0x94:
+		case 0x94: //STY
 			cycleStart()
-			/*
-				STY - Store Index Register Y In Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("STY $%02X,X", operand1())
-			disassembleOpcode()
-
-			STY("zeropagex")
+			STY_ZX()
 			cycleEnd()
 
 		// Y Indexed Zero Page addressing mode instructions

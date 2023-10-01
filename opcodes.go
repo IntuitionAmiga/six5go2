@@ -2398,3 +2398,124 @@ func STY_Z() {
 	disassembleOpcode()
 	STY("zeropage")
 }
+
+// X Indexed Zero Page addressing mode instructions
+/*
+	$nn,X
+
+	This form of addressing is used in conjunction with the X index register. The effective address is calculated by adding the second byte to the contents of the index register. Since this is a form of "Zero Page" addressing, the content of the second byte references a location in page zero. Additionally, due to the “Zero Page" addressing nature of this mode, no carry is added to the low order 8 bits of memory and crossing of page boundaries does not occur.
+
+	Bytes: 2
+*/
+func ADC_ZX() {
+	/*
+		ADC - Add Memory to Accumulator with Carry
+	*/
+	disassembledInstruction = fmt.Sprintf("ADC $%02X,X", operand1())
+	disassembleOpcode()
+	ADC("zeropagex")
+}
+func AND_ZX() {
+	/*
+		AND - "AND" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("AND $%02X,X", operand1())
+	disassembleOpcode()
+	AND("zeropagex")
+}
+func ASL_ZX() {
+	/*
+		ASL - Arithmetic Shift Left
+	*/
+	disassembledInstruction = fmt.Sprintf("ASL $%02X,X", operand1())
+	disassembleOpcode()
+	ASL("zeropagex")
+}
+func CMP_ZX() {
+	/*
+		CMP - Compare Memory and Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("CMP $%02X,X", operand1())
+	disassembleOpcode()
+	CMP("zeropagex")
+}
+func DEC_ZX() {
+	/*
+		DEC - Decrement Memory By One
+	*/
+	disassembledInstruction = fmt.Sprintf("DEC $%02X,X", operand1())
+	disassembleOpcode()
+	DEC("zeropagex")
+}
+func LDA_ZX() {
+	/*
+		LDA - Load Accumulator with Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDA $%02X,X", operand1())
+	disassembleOpcode()
+	LDA("zeropagex")
+}
+func LDY_ZX() {
+	/*
+		LDY - Load Index Register Y From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDY $%02X,X", operand1())
+	disassembleOpcode()
+	LDY("zeropagex")
+}
+func LSR_ZX() {
+	/*
+		LSR - Logical Shift Right
+	*/
+	disassembledInstruction = fmt.Sprintf("LSR $%02X,X", operand1())
+	disassembleOpcode()
+	LSR("zeropagex")
+}
+func ORA_ZX() {
+	/*
+		ORA - "OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("ORA $%02X,X", operand1())
+	disassembleOpcode()
+	ORA("zeropagex")
+}
+func ROL_ZX() {
+	/*
+		ROL - Rotate Left
+	*/
+	disassembledInstruction = fmt.Sprintf("ROL $%02X,X", operand1())
+	disassembleOpcode()
+	ROL("zeropagex")
+}
+func ROR_ZX() {
+	/*
+		ROR - Rotate Right
+	*/
+	disassembledInstruction = fmt.Sprintf("ROR $%02X,X", operand1())
+	disassembleOpcode()
+	ROR("zeropagex")
+}
+func SBC_ZX() {
+	/*
+		SBC - Subtract Memory from Accumulator with Borrow
+	*/
+	disassembledInstruction = fmt.Sprintf("SBC $%02X,X", operand1())
+	disassembleOpcode()
+	SBC("zeropagex")
+}
+func STA_ZX() {
+	/*
+		STA - Store Accumulator in Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STA $%02X,X", operand1())
+	disassembleOpcode()
+	STA("zeropagex")
+}
+func STY_ZX() {
+	/*
+		STY - Store Index Register Y In Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STY $%02X,X", operand1())
+	disassembleOpcode()
+	STY("zeropagex")
+}
