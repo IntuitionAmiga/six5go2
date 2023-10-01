@@ -1984,13 +1984,15 @@ func CPX(addressingMode string) {
 			unsetCarryFlag()
 		}
 		// If bit 7 of result is 1 then set negative flag else unset negative flag
-		if readBit(7, result) == 1 {
+		//if readBit(7, result) == 1 {
+		if result&0x80 != 0 {
 			setNegativeFlag()
 		} else {
 			unsetNegativeFlag()
 		}
 		// If value == X then set zero flag else unset zero flag
-		if value == X {
+		//if value == X {
+		if result == 0 {
 			setZeroFlag()
 		} else {
 			unsetZeroFlag()
