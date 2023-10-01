@@ -3119,3 +3119,136 @@ func STY_ABS() {
 	disassembleOpcode()
 	STY("absolute")
 }
+
+// X Indexed Absolute addressing mode instructions
+/*
+	$nnnn,X
+
+	This form of addressing is used in conjunction with the X index register. The effective address is formed by adding the contents of X to the address contained in the second and third bytes of the instruction. This mode allows the index register to contain the index or count value and the instruction to contain the base address. This type of indexing allows any location referencing and the index to modify multiple fields resulting in reduced coding and execution time.
+
+	Note on the MOS 6502:
+
+	The value at the specified address, ignoring the the addressing mode's X offset, is read (and discarded) before the final address is read. This may cause side effects in I/O registers.
+
+
+	Bytes: 3
+*/
+func ADC_ABX() {
+	/*
+		ADC - Add Memory to Accumulator with Carry
+	*/
+	disassembledInstruction = fmt.Sprintf("ADC $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	ADC("absolutex")
+}
+func AND_ABX() {
+	/*
+		AND - "AND" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("AND $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	AND("absolutex")
+}
+func ASL_ABX() {
+	/*
+		ASL - Arithmetic Shift Left
+	*/
+	disassembledInstruction = fmt.Sprintf("ASL $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	ASL("absolutex")
+}
+func CMP_ABX() {
+	/*
+		CMP - Compare Memory and Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("CMP $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	CMP("absolutex")
+}
+func DEC_ABX() {
+	/*
+		DEC - Decrement Memory By One
+	*/
+	disassembledInstruction = fmt.Sprintf("DEC $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	DEC("absolutex")
+}
+func EOR_ABX() {
+	/*
+		EOR - "Exclusive OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("EOR $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	EOR("absolutex")
+}
+func INC_ABX() {
+	/*
+		INC - Increment Memory By One
+	*/
+	disassembledInstruction = fmt.Sprintf("INC $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	INC("absolutex")
+}
+func LDA_ABX() {
+	/*
+		LDA - Load Accumulator with Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDA $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	LDA("absolutex")
+}
+func LDY_ABX() {
+	/*
+		LDY - Load Index Register Y From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDY $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	LDY("absolutex")
+}
+func LSR_ABX() {
+	/*
+		LSR - Logical Shift Right
+	*/
+	disassembledInstruction = fmt.Sprintf("LSR $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	LSR("absolutex")
+}
+func ORA_ABX() {
+	/*
+		ORA - "OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("ORA $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	ORA("absolutex")
+}
+func ROL_ABX() {
+	/*
+	 */
+	disassembledInstruction = fmt.Sprintf("ROL $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	ROL("absolutex")
+}
+func ROR_ABX() {
+	/*
+		ROR - Rotate Right
+	*/
+	disassembledInstruction = fmt.Sprintf("ROR $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	ROR("absolutex")
+}
+func SBC_ABX() {
+	/*
+		SBC - Subtract Memory from Accumulator with Borrow
+	*/
+	disassembledInstruction = fmt.Sprintf("SBC $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	SBC("absolutex")
+}
+func STA_ABX() {
+	/*
+		STA - Store Accumulator in Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STA $%02X%02X,X", operand2(), operand1())
+	disassembleOpcode()
+	STA("absolutex")
+}
