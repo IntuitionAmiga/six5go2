@@ -1415,14 +1415,17 @@ func ADC(addressingMode string) {
 		}
 
 		if getSRBit(3) == 1 { // BCD mode
-			// Adjust for BCD
-			if (A&0x0F)+(value&0x0F)+getSRBit(0) > 9 {
-				tmpResult += 6
+			temp := (A & 0x0F) + (value & 0x0F) + getSRBit(0)
+			if temp > 9 {
+				temp += 6
 			}
 
-			if tmpResult > 0x99 {
-				tmpResult += 0x60
+			result = int((A & 0xF0) + (value & 0xF0) + (temp & 0x0F))
+
+			if result > 0x99 {
+				result += 0x60
 			}
+
 		}
 
 		// Set or unset the C flag
