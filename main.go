@@ -1365,7 +1365,8 @@ func DEC(addressingMode string) {
 
 		// Update status flags
 		// If bit 7 of the result is set, set the negative flag
-		if readBit(7, result) == 1 {
+		//if readBit(7, result) == 1 {
+		if result&0x80 != 0 {
 			setNegativeFlag()
 		} else {
 			unsetNegativeFlag()
