@@ -591,85 +591,39 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x71:
+		case 0x71: //ADC
 			cycleStart()
-			/*
-				ADC - Add Memory to Accumulator with Carry
-			*/
-			disassembledInstruction = fmt.Sprintf("ADC ($%02X),Y", operand1())
-			disassembleOpcode()
+			ADC_IY()
+			cycleEnd()
+		case 0x31: //AND
+			cycleStart()
+			AND_IY()
+			cycleEnd()
+		case 0xD1: //CMP
+			cycleStart()
+			CMP_IY()
+			cycleEnd()
+		case 0x51: //EOR
+			cycleStart()
+			EOR_IY()
+			cycleEnd()
+		case 0xB1: //LDA
+			cycleStart()
+			LDA_IY()
+			cycleEnd()
+		case 0x11: //ORA
+			cycleStart()
+			ORA_IY()
+			cycleEnd()
+		case 0xF1: //SBC
+			cycleStart()
+			SBC_IY()
+			cycleEnd()
+		case 0x91: //STA
+			cycleStart()
+			STA_IY()
+			cycleEnd()
 
-			ADC("indirecty")
-			cycleEnd()
-		case 0x31:
-			cycleStart()
-			/*
-				AND - "AND" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("AND ($%02X),Y", operand1())
-			disassembleOpcode()
-
-			AND("indirecty")
-			cycleEnd()
-		case 0xD1:
-			cycleStart()
-			/*
-				CMP - Compare Memory and Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("CMP ($%02X),Y", operand1())
-			disassembleOpcode()
-
-			CMP("indirecty")
-			cycleEnd()
-		case 0x51:
-			cycleStart()
-			/*
-				EOR - "Exclusive OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("EOR ($%02X),Y", operand1())
-			disassembleOpcode()
-
-			EOR("indirecty")
-			cycleEnd()
-		case 0xB1:
-			cycleStart()
-			/*
-				LDA - Load Accumulator with Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDA ($%02X),Y", operand1())
-			disassembleOpcode()
-
-			LDA("indirecty")
-			cycleEnd()
-		case 0x11:
-			cycleStart()
-			/*
-				ORA - "OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("ORA ($%02X),Y", operand1())
-			disassembleOpcode()
-			ORA("indirecty")
-			cycleEnd()
-		case 0xF1:
-			cycleStart()
-			/*
-				SBC - Subtract Memory from Accumulator with Borrow
-			*/
-			disassembledInstruction = fmt.Sprintf("SBC ($%02X),Y", operand1())
-			disassembleOpcode()
-
-			SBC("indirecty")
-			cycleEnd()
-		case 0x91:
-			cycleStart()
-			/*
-				STA - Store Accumulator in Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("STA ($%02X),Y", operand1())
-			disassembleOpcode()
-
-			STA("indirecty")
-			cycleEnd()
 		// Relative addressing mode instructions
 		/*
 			$nnnn
@@ -705,7 +659,6 @@ func startCPU() {
 				updateCycleCounter(1)
 				handleState(2)
 			}
-
 		case 0x30:
 			cycleStart()
 			/*

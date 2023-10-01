@@ -2617,3 +2617,76 @@ func STA_IX() {
 	disassembleOpcode()
 	STA("indirectx")
 }
+
+// Zero Page Indirect Y Indexed addressing mode instructions
+/*
+	($nn),Y
+
+	In indirect indexed addressing, the second byte of the instruction points to a memory location in page zero. The contents of this memory location is added to the contents of the Y index register, the result being the high order eight bits of the effective address. The carry from this addition is added to the contents of the next page zero memory location, the result being the low order eight bits of the effective address.
+
+	Bytes: 2
+*/
+func ADC_IY() {
+	/*
+		ADC - Add Memory to Accumulator with Carry
+	*/
+	disassembledInstruction = fmt.Sprintf("ADC ($%02X),Y", operand1())
+	disassembleOpcode()
+	ADC("indirecty")
+}
+func AND_IY() {
+	/*
+		AND - "AND" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("AND ($%02X),Y", operand1())
+	disassembleOpcode()
+	AND("indirecty")
+}
+func CMP_IY() {
+	/*
+		CMP - Compare Memory and Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("CMP ($%02X),Y", operand1())
+	disassembleOpcode()
+	CMP("indirecty")
+}
+func EOR_IY() {
+	/*
+		EOR - "Exclusive OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("EOR ($%02X),Y", operand1())
+	disassembleOpcode()
+	EOR("indirecty")
+}
+func LDA_IY() {
+	/*
+		LDA - Load Accumulator with Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDA ($%02X),Y", operand1())
+	disassembleOpcode()
+	LDA("indirecty")
+}
+func ORA_IY() {
+	/*
+		ORA - "OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("ORA ($%02X),Y", operand1())
+	disassembleOpcode()
+	ORA("indirecty")
+}
+func SBC_IY() {
+	/*
+		SBC - Subtract Memory from Accumulator with Borrow
+	*/
+	disassembledInstruction = fmt.Sprintf("SBC ($%02X),Y", operand1())
+	disassembleOpcode()
+	SBC("indirecty")
+}
+func STA_IY() {
+	/*
+		STA - Store Accumulator in Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STA ($%02X),Y", operand1())
+	disassembleOpcode()
+	STA("indirecty")
+}
