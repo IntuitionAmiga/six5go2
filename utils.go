@@ -168,7 +168,7 @@ func petsciiToAscii(petscii uint8) uint8 {
 	}
 	return petscii
 }
-func kernalRoutines() {
+func plus4KernalRoutines() {
 	// CHROUT routine is at $FFD2
 	switch PC {
 	case 0xFFB1:
