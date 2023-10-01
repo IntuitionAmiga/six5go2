@@ -3231,15 +3231,11 @@ func execute() {
 			previousOpcode = opcode()
 			previousOperand1 = operand1()
 			// Get offset from operand
-			lsb := uint8(operand1() & 0xFF)
-			offset := int8(lsb)
-			// If carry flag is unset, branch to address
+			offset := int8(operand1())
+			target := PC + 2 + int(offset)
+
 			if getSRBit(0) == 0 {
-				handleState(0)
-				// Branch
-				// Add offset to lower 8bits of PC
-				setPC(PC + int(offset))
-				//handleState(0)
+				setPC(target)
 			} else {
 				// Don't branch
 				handleState(2)
