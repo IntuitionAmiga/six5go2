@@ -2495,6 +2495,22 @@ func ROR_ZX() {
 	disassembleOpcode()
 	ROR("zeropagex")
 }
+func EOR_ZX() {
+	/*
+		EOR - "Exclusive OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("EOR $%02X,X", operand1())
+	disassembleOpcode()
+	EOR("zeropagex")
+}
+func INC_ZX() {
+	/*
+		INC - Increment Memory By One
+	*/
+	disassembledInstruction = fmt.Sprintf("INC $%02X,X", operand1())
+	disassembleOpcode()
+	INC("zeropagex")
+}
 func SBC_ZX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
@@ -2689,4 +2705,205 @@ func STA_IY() {
 	disassembledInstruction = fmt.Sprintf("STA ($%02X),Y", operand1())
 	disassembleOpcode()
 	STA("indirecty")
+}
+
+// Relative addressing mode instructions
+/*
+	$nnnn
+
+	Relative addressing is used only with branch instructions and establishes a destination for the conditional branch.
+
+	The second byte of-the instruction becomes the operand which is an “Offset" added to the contents of the lower eight bits of the program counter when the counter is set at the next instruction. The range of the offset is —128 to +127 bytes from the next instruction.
+
+	Bytes: 2
+*/
+func BPL_R() {
+	/*
+		BPL - Branch on Result Plus
+	*/
+	disassembledInstruction = fmt.Sprintf("BPL $%02X", (PC+2+int(operand1()))&0xFF)
+	disassembleOpcode()
+	offset := operand1()
+	signedOffset := int8(offset)
+	// Calculate the branch target address
+	targetAddress := PC + 2 + int(signedOffset)
+	// If N flag is not set, branch to address
+	if getSRBit(7) == 0 {
+		// Branch
+		setPC(targetAddress)
+		updateCycleCounter(1)
+		//handleState(0)
+		instructionCounter++
+	} else {
+		// Don't branch
+		// Increment the instruction counter by 2
+		updateCycleCounter(1)
+		handleState(2)
+	}
+}
+func BMI_R() {
+	/*
+		BMI - Branch on Result Minus
+	*/
+	disassembledInstruction = fmt.Sprintf("BMI $%02X", (PC+2+int(int8(operand1())))&0xFFFF)
+	disassembleOpcode()
+	// Get offset from operand
+	offset := int8(operand1())
+	// If N flag is set, branch to address
+	if getSRBit(7) == 1 {
+		// Branch
+		// Add offset to PC (already incremented by 2)
+		setPC(PC + 2 + int(offset))
+	} else {
+		// Don't branch
+		setPC(PC + 2)
+	}
+}
+func BVC_R() {
+	/*
+		BVC - Branch on Overflow Clear
+	*/
+	disassembledInstruction = fmt.Sprintf("BVC $%02X", PC+2+int(operand1()))
+	disassembleOpcode()
+	// Get offset from operand
+	offset := operand1()
+	// If overflow flag is not set, branch to address
+	if getSRBit(6) == 0 {
+		updateCycleCounter(1)
+		handleState(0)
+		// Branch
+		// Add offset to lower 8bits of PC
+		setPC(PC + 3 + int(offset)&0xFF)
+		// If the offset is negative, decrement the PC by 1
+		// If bit 7 is unset then it's negative
+		if readBit(7, offset) == 0 {
+			decPC(1)
+		}
+	} else {
+		// Don't branch
+		updateCycleCounter(1)
+		handleState(2)
+	}
+}
+func BVS_R() {
+	/*
+		BVS - Branch on Overflow Set
+	*/
+	disassembledInstruction = fmt.Sprintf("BVS $%02X", PC+2+int(operand1()))
+	disassembleOpcode()
+	// Get offset from operand
+	offset := operand1()
+	// If overflow flag is set, branch to address
+	if getSRBit(6) == 1 {
+		updateCycleCounter(1)
+		handleState(0)
+		// Branch
+		// Add offset to lower 8bits of PC
+		setPC(PC + 3 + int(offset)&0xFF)
+		// If the offset is negative, decrement the PC by 1
+		// If bit 7 is unset then it's negative
+		if readBit(7, offset) == 0 {
+			decPC(1)
+		}
+	} else {
+		// Don't branch
+		updateCycleCounter(1)
+		handleState(2)
+	}
+}
+func BCC_R() {
+	/*
+		BCC - Branch on Carry Clear
+	*/
+	disassembledInstruction = fmt.Sprintf("BCC $%02X", PC+2+int(operand1()))
+	disassembleOpcode()
+	previousPC = PC
+	previousOpcode = opcode()
+	previousOperand1 = operand1()
+	// Get offset from operand
+	offset := int8(operand1())
+	target := PC + 2 + int(offset)
+	if getSRBit(0) == 0 {
+		setPC(target)
+	} else {
+		// Don't branch
+		updateCycleCounter(1)
+		handleState(2)
+	}
+}
+func BCS_R() {
+	/*
+		BCS - Branch on Carry Set
+	*/
+	disassembledInstruction = fmt.Sprintf("BCS $%02X", (PC+2+int(operand1()))&0xFF)
+	disassembleOpcode()
+	// Get offset from operand
+	offset := operand1()
+	// If carry flag is set, branch to address
+	if getSRBit(0) == 1 {
+		updateCycleCounter(1)
+		handleState(0)
+		// Branch
+		// Add offset to lower 8bits of PC
+		setPC(PC + 3 + int(offset)&0xFF)
+		// If the offset is negative, decrement the PC by 1
+		// If bit 7 is unset then it's negative
+		if readBit(7, offset) == 0 {
+			decPC(1)
+		}
+	} else {
+		// Don't branch
+		updateCycleCounter(1)
+		handleState(2)
+	}
+}
+func BNE_R() {
+	/*
+		BNE - Branch on Result Not Zero
+	*/
+	disassembledInstruction = fmt.Sprintf("BNE $%04X", PC+2+int(int8(operand1())))
+	disassembleOpcode()
+	// Fetch offset from operand
+	offset := operand1()
+	// Check Z flag to determine if branching is needed
+	if getSRBit(1) == 0 {
+		// Calculate the branch target address
+		targetAddr := PC + 2 + int(int8(offset))
+		// Check if the branch crosses a page boundary
+		if (PC & 0xFF00) != (targetAddr & 0xFF00) {
+			updateCycleCounter(1)
+			handleState(2)
+		} else {
+			updateCycleCounter(1)
+			handleState(1)
+		}
+		// Update the program counter
+		setPC(targetAddr & 0xFFFF)
+	} else {
+		// If Z flag is set, don't branch
+		updateCycleCounter(1)
+		handleState(2)
+	}
+}
+func BEQ_R() {
+	/*
+	   BEQ - Branch on Result Zero
+	*/
+	disassembledInstruction = fmt.Sprintf("BEQ $%04X", PC+2+int(int8(operand1())))
+	disassembleOpcode()
+
+	// Get offset from address in operand
+	offset := int8(operand1()) // Cast to signed 8-bit integer to handle negative offsets
+
+	// If Z flag is set, branch to address
+	if getSRBit(1) == 1 {
+		updateCycleCounter(1)
+		handleState(0)
+		// Add 2 to PC (1 for opcode, 1 for operand) and then add offset
+		setPC(PC + 2 + int(offset))
+	} else {
+		// Don't branch
+		updateCycleCounter(1)
+		handleState(2)
+	}
 }

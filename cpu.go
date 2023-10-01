@@ -512,6 +512,14 @@ func startCPU() {
 			cycleStart()
 			ROR_ZX()
 			cycleEnd()
+		case 0x55: //EOR
+			cycleStart()
+			EOR_ZX()
+			cycleEnd()
+		case 0xF6:
+			cycleStart()
+			INC_ZX()
+			cycleEnd()
 		case 0xF5: //SBC
 			cycleStart()
 			SBC_ZX()
@@ -634,231 +642,37 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x10:
+		case 0x10: //BPL
 			cycleStart()
-			/*
-				BPL - Branch on Result Plus
-			*/
-			disassembledInstruction = fmt.Sprintf("BPL $%02X", (PC+2+int(operand1()))&0xFF)
-			disassembleOpcode()
-
-			offset := operand1()
-			signedOffset := int8(offset)
-			// Calculate the branch target address
-			targetAddress := PC + 2 + int(signedOffset)
-			// If N flag is not set, branch to address
-			if getSRBit(7) == 0 {
-				// Branch
-				setPC(targetAddress)
-				updateCycleCounter(1)
-				//handleState(0)
-				instructionCounter++
-			} else {
-				// Don't branch
-				// Increment the instruction counter by 2
-				updateCycleCounter(1)
-				handleState(2)
-			}
-		case 0x30:
-			cycleStart()
-			/*
-				BMI - Branch on Result Minus
-			*/
-			disassembledInstruction = fmt.Sprintf("BMI $%02X", (PC+2+int(int8(operand1())))&0xFFFF)
-			disassembleOpcode()
-
-			// Get offset from operand
-			offset := int8(operand1())
-			// If N flag is set, branch to address
-			if getSRBit(7) == 1 {
-				// Branch
-				// Add offset to PC (already incremented by 2)
-				setPC(PC + 2 + int(offset))
-			} else {
-				// Don't branch
-				setPC(PC + 2)
-			}
+			BPL_R()
 			cycleEnd()
-		case 0x50:
+		case 0x30: //BMI
 			cycleStart()
-			/*
-				BVC - Branch on Overflow Clear
-			*/
-			disassembledInstruction = fmt.Sprintf("BVC $%02X", PC+2+int(operand1()))
-			disassembleOpcode()
-
-			// Get offset from operand
-			offset := operand1()
-			// If overflow flag is not set, branch to address
-			if getSRBit(6) == 0 {
-				updateCycleCounter(1)
-				handleState(0)
-				// Branch
-				// Add offset to lower 8bits of PC
-				setPC(PC + 3 + int(offset)&0xFF)
-				// If the offset is negative, decrement the PC by 1
-				// If bit 7 is unset then it's negative
-				if readBit(7, offset) == 0 {
-					decPC(1)
-				}
-			} else {
-				// Don't branch
-				updateCycleCounter(1)
-				handleState(2)
-			}
+			BMI_R()
 			cycleEnd()
-		case 0x55:
+		case 0x50: //BVC
 			cycleStart()
-			/*
-				EOR - "Exclusive OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("EOR $%02X,X", operand1())
-			disassembleOpcode()
-
-			EOR("zeropagex")
+			BVC_R()
 			cycleEnd()
-		case 0x70:
+		case 0x70: //BVS
 			cycleStart()
-			/*
-				BVS - Branch on Overflow Set
-			*/
-			disassembledInstruction = fmt.Sprintf("BVS $%02X", PC+2+int(operand1()))
-			disassembleOpcode()
-
-			// Get offset from operand
-			offset := operand1()
-			// If overflow flag is set, branch to address
-			if getSRBit(6) == 1 {
-				updateCycleCounter(1)
-				handleState(0)
-				// Branch
-				// Add offset to lower 8bits of PC
-				setPC(PC + 3 + int(offset)&0xFF)
-				// If the offset is negative, decrement the PC by 1
-				// If bit 7 is unset then it's negative
-				if readBit(7, offset) == 0 {
-					decPC(1)
-				}
-			} else {
-				// Don't branch
-				updateCycleCounter(1)
-				handleState(2)
-			}
+			BVS_R()
 			cycleEnd()
-		case 0x90:
+		case 0x90: //BCC
 			cycleStart()
-			/*
-				BCC - Branch on Carry Clear
-			*/
-			disassembledInstruction = fmt.Sprintf("BCC $%02X", PC+2+int(operand1()))
-			disassembleOpcode()
-
-			previousPC = PC
-			previousOpcode = opcode()
-			previousOperand1 = operand1()
-			// Get offset from operand
-			offset := int8(operand1())
-			target := PC + 2 + int(offset)
-
-			if getSRBit(0) == 0 {
-				setPC(target)
-			} else {
-				// Don't branch
-				updateCycleCounter(1)
-				handleState(2)
-			}
+			BCC_R()
 			cycleEnd()
-		case 0xB0:
+		case 0xB0: //BCS
 			cycleStart()
-			/*
-				BCS - Branch on Carry Set
-			*/
-			disassembledInstruction = fmt.Sprintf("BCS $%02X", (PC+2+int(operand1()))&0xFF)
-			disassembleOpcode()
-			// Get offset from operand
-			offset := operand1()
-			// If carry flag is set, branch to address
-			if getSRBit(0) == 1 {
-				updateCycleCounter(1)
-				handleState(0)
-				// Branch
-				// Add offset to lower 8bits of PC
-				setPC(PC + 3 + int(offset)&0xFF)
-				// If the offset is negative, decrement the PC by 1
-				// If bit 7 is unset then it's negative
-				if readBit(7, offset) == 0 {
-					decPC(1)
-				}
-			} else {
-				// Don't branch
-				updateCycleCounter(1)
-				handleState(2)
-			}
+			BCS_R()
 			cycleEnd()
-		case 0xD0:
+		case 0xD0: //BNE
 			cycleStart()
-			/*
-				BNE - Branch on Result Not Zero
-			*/
-
-			disassembledInstruction = fmt.Sprintf("BNE $%04X", PC+2+int(int8(operand1())))
-			disassembleOpcode()
-
-			// Fetch offset from operand
-			offset := operand1()
-
-			// Check Z flag to determine if branching is needed
-			if getSRBit(1) == 0 {
-				// Calculate the branch target address
-				targetAddr := PC + 2 + int(int8(offset))
-				// Check if the branch crosses a page boundary
-				if (PC & 0xFF00) != (targetAddr & 0xFF00) {
-					updateCycleCounter(1)
-					handleState(2)
-				} else {
-					updateCycleCounter(1)
-					handleState(1)
-				}
-				// Update the program counter
-				setPC(targetAddr & 0xFFFF)
-			} else {
-				// If Z flag is set, don't branch
-				updateCycleCounter(1)
-				handleState(2)
-			}
+			BNE_R()
 			cycleEnd()
 		case 0xF0:
 			cycleStart()
-			/*
-			   BEQ - Branch on Result Zero
-			*/
-			disassembledInstruction = fmt.Sprintf("BEQ $%04X", PC+2+int(int8(operand1())))
-			disassembleOpcode()
-
-			// Get offset from address in operand
-			offset := int8(operand1()) // Cast to signed 8-bit integer to handle negative offsets
-
-			// If Z flag is set, branch to address
-			if getSRBit(1) == 1 {
-				updateCycleCounter(1)
-				handleState(0)
-				// Add 2 to PC (1 for opcode, 1 for operand) and then add offset
-				setPC(PC + 2 + int(offset))
-			} else {
-				// Don't branch
-				updateCycleCounter(1)
-				handleState(2)
-			}
-			cycleEnd()
-		case 0xF6:
-			cycleStart()
-			/*
-				INC - Increment Memory By One
-			*/
-			disassembledInstruction = fmt.Sprintf("INC $%02X,X", operand1())
-			disassembleOpcode()
-
-			INC("zeropagex")
+			BEQ_R()
 			cycleEnd()
 		}
 
