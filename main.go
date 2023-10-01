@@ -1265,6 +1265,8 @@ func BIT(addressingMode string) {
 		// Set Negative flag to bit 7 of the value
 		if readBit(7, value) == 1 {
 			setNegativeFlag()
+		} else {
+			unsetNegativeFlag()
 		}
 		// Set Overflow flag to bit 6 of the value
 		if readBit(6, value) == 1 {
