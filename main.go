@@ -85,9 +85,11 @@ var (
 	reset            bool
 	BRKtrue          bool = false
 
-	cycleCounter uint64        = 0
-	cpuSpeed     uint64        = 1000000                               // 1 MHz for a standard 6502
-	cycleTime    time.Duration = time.Second / time.Duration(cpuSpeed) // time per cycle in nanoseconds
+	cycleCounter   uint64        = 0
+	cpuSpeed       uint64        = 1000000                               // 1 MHz for a standard 6502
+	cycleTime      time.Duration = time.Second / time.Duration(cpuSpeed) // time per cycle in nanoseconds
+	cycleStartTime time.Time                                             // High-resolution timer
+
 )
 
 func main() {
@@ -585,10 +587,23 @@ func updateCycleCounter(amount uint64) {
 	cycleCounter += amount
 }
 
+func cycleStart() {
+	cycleStartTime = time.Now() // High-resolution timer
+}
+func cycleEnd() {
+	// Calculate the time we should wait
+	elapsedTime := time.Since(cycleStartTime)
+	expectedTime := time.Duration(cycleCounter) * cycleTime
+	remainingTime := expectedTime - elapsedTime
+
+	// Wait for the remaining time if needed
+	if remainingTime > 0 {
+		time.Sleep(remainingTime)
+	}
+}
+
 // 6502 mnemonics with multiple addressing modes
 func LDA(addressingMode string) {
-	var startTime time.Time = time.Now() // High-resolution timer
-
 	setFlags := func() {
 		// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
 		if A == 0 {
@@ -681,16 +696,6 @@ func LDA(addressingMode string) {
 		setFlags()
 		updateCycleCounter(5)
 		handleState(2)
-	}
-
-	// Calculate the time we should wait
-	elapsedTime := time.Since(startTime)
-	expectedTime := time.Duration(cycleCounter) * cycleTime
-	remainingTime := expectedTime - elapsedTime
-
-	// Wait for the remaining time if needed
-	if remainingTime > 0 {
-		time.Sleep(remainingTime)
 	}
 }
 func LDX(addressingMode string) {
@@ -2192,6 +2197,7 @@ func execute() {
 			Bytes: 1
 		*/
 		case 0x00:
+			cycleStart()
 			/*
 				BRK - Break Command
 			*/
@@ -2236,7 +2242,9 @@ func execute() {
 			setPC(int((uint16(readMemory(IRQVectorAddress+1)) << 8) | uint16(readMemory(IRQVectorAddress))))
 			updateCycleCounter(7)
 			handleState(0)
+			cycleEnd()
 		case 0x18:
+			cycleStart()
 			/*
 				CLC - Clear Carry Flag
 			*/
@@ -2247,7 +2255,9 @@ func execute() {
 			unsetCarryFlag()
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xD8:
+			cycleStart()
 			/*
 				CLD - Clear Decimal Mode
 			*/
@@ -2257,7 +2267,9 @@ func execute() {
 			unsetDecimalFlag()
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0x58:
+			cycleStart()
 			/*
 				CLI - Clear Interrupt Disable
 			*/
@@ -2267,7 +2279,9 @@ func execute() {
 			unsetInterruptFlag()
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xB8:
+			cycleStart()
 			/*
 				CLV - Clear Overflow Flag
 			*/
@@ -2277,7 +2291,9 @@ func execute() {
 			unsetOverflowFlag()
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xCA:
+			cycleStart()
 			// DEX - Decrement Index Register X By One
 			disassembledInstruction = fmt.Sprintf("DEX\t")
 			disassembleOpcode()
@@ -2300,7 +2316,9 @@ func execute() {
 			}
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0x88:
+			cycleStart()
 			/*
 				DEY - Decrement Index Register Y By One
 			*/
@@ -2323,7 +2341,9 @@ func execute() {
 			}
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xE8:
+			cycleStart()
 			/*
 				INX - Increment Index Register X By One
 			*/
@@ -2346,7 +2366,9 @@ func execute() {
 			}
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xC8:
+			cycleStart()
 			/*
 				INY - Increment Index Register Y By One
 			*/
@@ -2369,7 +2391,9 @@ func execute() {
 			}
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xEA:
+			cycleStart()
 			/*
 				NOP - No Operation
 			*/
@@ -2377,7 +2401,9 @@ func execute() {
 			disassembleOpcode()
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0x48:
+			cycleStart()
 			/*
 				PHA - Push Accumulator On Stack
 			*/
@@ -2389,7 +2415,9 @@ func execute() {
 			decSP()
 			updateCycleCounter(3)
 			handleState(1)
+			cycleEnd()
 		case 0x08:
+			cycleStart()
 			/*
 			   PHP - Push Processor Status On Stack
 			*/
@@ -2407,7 +2435,9 @@ func execute() {
 			decSP()
 			updateCycleCounter(3)
 			handleState(1)
+			cycleEnd()
 		case 0x68:
+			cycleStart()
 			/*
 			   PLA - Pull Accumulator From Stack
 			*/
@@ -2438,7 +2468,9 @@ func execute() {
 			}
 			updateCycleCounter(4)
 			handleState(1)
+			cycleEnd()
 		case 0x28:
+			cycleStart()
 			/*
 				PLP - Pull Processor Status From Stack
 			*/
@@ -2450,7 +2482,9 @@ func execute() {
 			incSP()
 			updateCycleCounter(4)
 			handleState(1)
+			cycleEnd()
 		case 0x40:
+			cycleStart()
 			/*
 			   RTI - Return From Interrupt
 			*/
@@ -2479,7 +2513,9 @@ func execute() {
 			handleState(0)
 			// Update PC with the value stored in memory at the address pointed to by SP
 			setPC(int((high << 8) | low))
+			cycleEnd()
 		case 0x60:
+			cycleStart()
 			/*
 				RTS - Return From Subroutine
 			*/
@@ -2497,7 +2533,9 @@ func execute() {
 			setPC(int((high<<8)|low) + 1)
 			updateCycleCounter(6)
 			handleState(0)
+			cycleEnd()
 		case 0x38:
+			cycleStart()
 			/*
 				SEC - Set Carry Flag
 			*/
@@ -2508,7 +2546,9 @@ func execute() {
 			setCarryFlag()
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xF8:
+			cycleStart()
 			/*
 				SED - Set Decimal Mode
 			*/
@@ -2519,7 +2559,9 @@ func execute() {
 			setDecimalFlag()
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0x78:
+			cycleStart()
 			/*
 				SEI - Set Interrupt Disable
 			*/
@@ -2530,7 +2572,9 @@ func execute() {
 			setInterruptFlag()
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xAA:
+			cycleStart()
 			/*
 				TAX - Transfer Accumulator To Index X
 			*/
@@ -2553,7 +2597,9 @@ func execute() {
 			}
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xA8:
+			cycleStart()
 			/*
 				TAY - Transfer Accumulator To Index Y
 			*/
@@ -2576,7 +2622,9 @@ func execute() {
 			}
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0xBA:
+			cycleStart()
 			/*
 				TSX - Transfer Stack Pointer To Index X
 			*/
@@ -2599,7 +2647,9 @@ func execute() {
 			}
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0x8A:
+			cycleStart()
 			/*
 				TXA - Transfer Index X To Accumulator
 			*/
@@ -2622,7 +2672,9 @@ func execute() {
 			}
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0x9A:
+			cycleStart()
 			/*
 				TXS - Transfer Index X To Stack Pointer
 			*/
@@ -2633,7 +2685,9 @@ func execute() {
 			SP = uint16(X)
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 		case 0x98:
+			cycleStart()
 			/*
 				TYA - Transfer Index Y To Accumulator
 			*/
@@ -2656,6 +2710,7 @@ func execute() {
 			}
 			updateCycleCounter(2)
 			handleState(1)
+			cycleEnd()
 
 		// Accumulator instructions
 		/*
@@ -2666,13 +2721,16 @@ func execute() {
 			Bytes: 1
 		*/
 		case 0x0A:
+			cycleStart()
 			/*
 				ASL - Arithmetic Shift Left
 			*/
 			disassembledInstruction = fmt.Sprintf("ASL\t")
 			disassembleOpcode()
 			ASL("accumulator")
+			cycleEnd()
 		case 0x4A:
+			cycleStart()
 			/*
 				LSR - Logical Shift Right
 			*/
@@ -2680,7 +2738,9 @@ func execute() {
 			disassembleOpcode()
 
 			LSR("accumulator")
+			cycleEnd()
 		case 0x2A:
+			cycleStart()
 			/*
 				ROL - Rotate Left
 			*/
@@ -2688,13 +2748,16 @@ func execute() {
 			disassembleOpcode()
 
 			ROL("accumulator")
+			cycleEnd()
 		case 0x6A:
+			cycleStart()
 			/*
 				ROR - Rotate Right
 			*/
 			disassembledInstruction = fmt.Sprintf("ROR\t")
 			disassembleOpcode()
 			ROR("accumulator")
+			cycleEnd()
 		}
 
 		// 2 byte instructions with 1 operand
@@ -2708,6 +2771,7 @@ func execute() {
 			Bytes: 2
 		*/
 		case 0x69:
+			cycleStart()
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
@@ -2715,7 +2779,9 @@ func execute() {
 			disassembleOpcode()
 
 			ADC("immediate")
+			cycleEnd()
 		case 0x29:
+			cycleStart()
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
@@ -2723,7 +2789,9 @@ func execute() {
 			disassembleOpcode()
 
 			AND("immediate")
+			cycleEnd()
 		case 0xC9:
+			cycleStart()
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
@@ -2731,7 +2799,9 @@ func execute() {
 			disassembleOpcode()
 
 			CMP("immediate")
+			cycleEnd()
 		case 0xE0:
+			cycleStart()
 			/*
 				CPX - Compare Index Register X To Memory
 			*/
@@ -2739,7 +2809,9 @@ func execute() {
 			disassembleOpcode()
 
 			CPX("immediate")
+			cycleEnd()
 		case 0xC0:
+			cycleStart()
 			/*
 				CPY - Compare Index Register Y To Memory
 			*/
@@ -2747,7 +2819,9 @@ func execute() {
 			disassembleOpcode()
 
 			CPY("immediate")
+			cycleEnd()
 		case 0x49:
+			cycleStart()
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
@@ -2755,14 +2829,18 @@ func execute() {
 			disassembleOpcode()
 
 			EOR("immediate")
+			cycleEnd()
 		case 0xA9:
+			cycleStart()
 			/*
 				LDA - Load Accumulator with Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDA #$%02X", operand1())
 			disassembleOpcode()
 			LDA("immediate")
+			cycleEnd()
 		case 0xA2:
+			cycleStart()
 			/*
 				LDX - Load Index Register X From Memory
 			*/
@@ -2770,7 +2848,9 @@ func execute() {
 			disassembleOpcode()
 
 			LDX("immediate")
+			cycleEnd()
 		case 0xA0:
+			cycleStart()
 			/*
 				LDY - Load Index Register Y From Memory
 			*/
@@ -2778,7 +2858,9 @@ func execute() {
 			disassembleOpcode()
 
 			LDY("immediate")
+			cycleEnd()
 		case 0x09:
+			cycleStart()
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
@@ -2786,13 +2868,16 @@ func execute() {
 			disassembleOpcode()
 
 			ORA("immediate")
+			cycleEnd()
 		case 0xE9:
+			cycleStart()
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
 			disassembledInstruction = fmt.Sprintf("SBC #$%02X", operand1())
 			disassembleOpcode()
 			SBC("immediate")
+			cycleEnd()
 
 		// Zero Page addressing mode instructions
 		/*
@@ -2803,6 +2888,7 @@ func execute() {
 			Bytes: 2
 		*/
 		case 0x65:
+			cycleStart()
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
@@ -2810,7 +2896,9 @@ func execute() {
 			disassembleOpcode()
 
 			ADC("zeropage")
+			cycleEnd()
 		case 0x25:
+			cycleStart()
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
@@ -2818,7 +2906,9 @@ func execute() {
 			disassembleOpcode()
 
 			AND("zeropage")
+			cycleEnd()
 		case 0x06:
+			cycleStart()
 			/*
 				ASL - Arithmetic Shift Left
 			*/
@@ -2826,7 +2916,9 @@ func execute() {
 			disassembleOpcode()
 
 			ASL("zeropage")
+			cycleEnd()
 		case 0x24:
+			cycleStart()
 			/*
 				BIT - Test Bits in Memory with Accumulator
 			*/
@@ -2834,14 +2926,18 @@ func execute() {
 			disassembleOpcode()
 
 			BIT("zeropage")
+			cycleEnd()
 		case 0xC5:
+			cycleStart()
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("CMP $%02X", operand1())
 			disassembleOpcode()
 			CMP("zeropage")
+			cycleEnd()
 		case 0xE4:
+			cycleStart()
 			/*
 				CPX - Compare Index Register X To Memory
 			*/
@@ -2849,14 +2945,18 @@ func execute() {
 			disassembleOpcode()
 
 			CPX("zeropage")
+			cycleEnd()
 		case 0xC4:
+			cycleStart()
 			/*
 				CPY - Compare Index Register Y To Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("CPY $%02X", operand1())
 			disassembleOpcode()
 			CPY("zeropage")
+			cycleEnd()
 		case 0xC6:
+			cycleStart()
 			/*
 				DEC - Decrement Memory By One
 			*/
@@ -2864,7 +2964,9 @@ func execute() {
 			disassembleOpcode()
 
 			DEC("zeropage")
+			cycleEnd()
 		case 0x45:
+			cycleStart()
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
@@ -2872,7 +2974,9 @@ func execute() {
 			disassembleOpcode()
 
 			EOR("zeropage")
+			cycleEnd()
 		case 0xE6:
+			cycleStart()
 			/*
 				INC - Increment Memory By One
 			*/
@@ -2880,7 +2984,9 @@ func execute() {
 			disassembleOpcode()
 
 			INC("zeropage")
+			cycleEnd()
 		case 0xA5:
+			cycleStart()
 			/*
 				LDA - Load Accumulator with Memory
 			*/
@@ -2888,14 +2994,18 @@ func execute() {
 			disassembleOpcode()
 
 			LDA("zeropage")
+			cycleEnd()
 		case 0xA6:
+			cycleStart()
 			/*
 				LDX - Load Index Register X From Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDX $%02X", operand1())
 			disassembleOpcode()
 			LDX("zeropage")
+			cycleEnd()
 		case 0xA4:
+			cycleStart()
 			/*
 				LDY - Load Index Register Y From Memory
 			*/
@@ -2903,7 +3013,9 @@ func execute() {
 			disassembleOpcode()
 
 			LDY("zeropage")
+			cycleEnd()
 		case 0x46:
+			cycleStart()
 			/*
 				LSR - Logical Shift Right
 			*/
@@ -2911,7 +3023,9 @@ func execute() {
 			disassembleOpcode()
 
 			LSR("zeropage")
+			cycleEnd()
 		case 0x05:
+			cycleStart()
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
@@ -2919,7 +3033,9 @@ func execute() {
 			disassembleOpcode()
 
 			ORA("zeropage")
+			cycleEnd()
 		case 0x26:
+			cycleStart()
 			/*
 				ROL - Rotate Left
 			*/
@@ -2927,7 +3043,9 @@ func execute() {
 			disassembleOpcode()
 
 			ROL("zeropage")
+			cycleEnd()
 		case 0x66:
+			cycleStart()
 			/*
 				ROR - Rotate Right
 			*/
@@ -2935,7 +3053,9 @@ func execute() {
 			disassembleOpcode()
 
 			ROR("zeropage")
+			cycleEnd()
 		case 0xE5:
+			cycleStart()
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
@@ -2943,7 +3063,9 @@ func execute() {
 			disassembleOpcode()
 
 			SBC("zeropage")
+			cycleEnd()
 		case 0x85:
+			cycleStart()
 			/*
 				STA - Store Accumulator in Memory
 			*/
@@ -2952,14 +3074,18 @@ func execute() {
 			disassembleOpcode()
 
 			STA("zeropage")
+			cycleEnd()
 		case 0x86:
+			cycleStart()
 			/*
 				STX - Store Index Register X In Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("STX $%02X", operand1())
 			disassembleOpcode()
 			STX("zeropage")
+			cycleEnd()
 		case 0x84:
+			cycleStart()
 			/*
 				STY - Store Index Register Y In Memory
 			*/
@@ -2967,6 +3093,7 @@ func execute() {
 			disassembleOpcode()
 
 			STY("zeropage")
+			cycleEnd()
 
 		// X Indexed Zero Page addressing mode instructions
 		/*
@@ -2977,6 +3104,7 @@ func execute() {
 			Bytes: 2
 		*/
 		case 0x75:
+			cycleStart()
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
@@ -2984,7 +3112,9 @@ func execute() {
 			disassembleOpcode()
 
 			ADC("zeropagex")
+			cycleEnd()
 		case 0x35:
+			cycleStart()
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
@@ -2992,7 +3122,9 @@ func execute() {
 			disassembleOpcode()
 
 			AND("zeropagex")
+			cycleEnd()
 		case 0x16:
+			cycleStart()
 			/*
 				ASL - Arithmetic Shift Left
 			*/
@@ -3000,7 +3132,9 @@ func execute() {
 			disassembleOpcode()
 
 			ASL("zeropagex")
+			cycleEnd()
 		case 0xD5:
+			cycleStart()
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
@@ -3008,7 +3142,9 @@ func execute() {
 			disassembleOpcode()
 
 			CMP("zeropagex")
+			cycleEnd()
 		case 0xD6:
+			cycleStart()
 			/*
 				DEC - Decrement Memory By One
 			*/
@@ -3016,7 +3152,9 @@ func execute() {
 			disassembleOpcode()
 
 			DEC("zeropagex")
+			cycleEnd()
 		case 0xB5:
+			cycleStart()
 			/*
 				LDA - Load Accumulator with Memory
 			*/
@@ -3024,7 +3162,9 @@ func execute() {
 			disassembleOpcode()
 
 			LDA("zeropagex")
+			cycleEnd()
 		case 0xB4:
+			cycleStart()
 			/*
 				LDY - Load Index Register Y From Memory
 			*/
@@ -3032,7 +3172,9 @@ func execute() {
 			disassembleOpcode()
 
 			LDY("zeropagex")
+			cycleEnd()
 		case 0x56:
+			cycleStart()
 			/*
 				LSR - Logical Shift Right
 			*/
@@ -3040,7 +3182,9 @@ func execute() {
 			disassembleOpcode()
 
 			LSR("zeropagex")
+			cycleEnd()
 		case 0x15:
+			cycleStart()
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
@@ -3048,35 +3192,45 @@ func execute() {
 			disassembleOpcode()
 
 			ORA("zeropagex")
+			cycleEnd()
 		case 0x36:
+			cycleStart()
 			/*
 				ROL - Rotate Left
 			*/
 			disassembledInstruction = fmt.Sprintf("ROL $%02X,X", operand1())
 			disassembleOpcode()
 			ROL("zeropagex")
+			cycleEnd()
 		case 0x76:
+			cycleStart()
 			/*
 				ROR - Rotate Right
 			*/
 			disassembledInstruction = fmt.Sprintf("ROR $%02X,X", operand1())
 			disassembleOpcode()
 			ROR("zeropagex")
+			cycleEnd()
 		case 0xF5:
+			cycleStart()
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
 			disassembledInstruction = fmt.Sprintf("SBC $%02X,X", operand1())
 			disassembleOpcode()
 			SBC("zeropagex")
+			cycleEnd()
 		case 0x95:
+			cycleStart()
 			/*
 				STA - Store Accumulator in Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("STA $%02X,X", operand1())
 			disassembleOpcode()
 			STA("zeropagex")
+			cycleEnd()
 		case 0x94:
+			cycleStart()
 			/*
 				STY - Store Index Register Y In Memory
 			*/
@@ -3084,6 +3238,7 @@ func execute() {
 			disassembleOpcode()
 
 			STY("zeropagex")
+			cycleEnd()
 
 		// Y Indexed Zero Page addressing mode instructions
 		/*
@@ -3094,13 +3249,16 @@ func execute() {
 			Bytes: 2
 		*/
 		case 0xB6:
+			cycleStart()
 			/*
 				LDX - Load Index Register X From Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDX $%02X,Y", operand1())
 			disassembleOpcode()
 			LDX("zeropagey")
+			cycleEnd()
 		case 0x96:
+			cycleStart()
 			/*
 				STX - Store Index Register X In Memory
 			*/
@@ -3108,6 +3266,7 @@ func execute() {
 			disassembleOpcode()
 
 			STX("zeropagey")
+			cycleEnd()
 
 		// X Indexed Zero Page Indirect addressing mode instructions
 		/*
@@ -3118,13 +3277,16 @@ func execute() {
 			Bytes: 2
 		*/
 		case 0x61:
+			cycleStart()
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
 			disassembledInstruction = fmt.Sprintf("ADC ($%02X,X)", operand1())
 			disassembleOpcode()
 			ADC("indirectx")
+			cycleEnd()
 		case 0x21:
+			cycleStart()
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
@@ -3132,7 +3294,9 @@ func execute() {
 			disassembleOpcode()
 
 			AND("indirectx")
+			cycleEnd()
 		case 0xC1:
+			cycleStart()
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
@@ -3140,7 +3304,9 @@ func execute() {
 			disassembleOpcode()
 
 			CMP("indirectx")
+			cycleEnd()
 		case 0x41:
+			cycleStart()
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
@@ -3148,7 +3314,9 @@ func execute() {
 			disassembleOpcode()
 
 			EOR("indirectx")
+			cycleEnd()
 		case 0xA1:
+			cycleStart()
 			/*
 				LDA - Load Accumulator with Memory
 			*/
@@ -3156,7 +3324,9 @@ func execute() {
 			disassembleOpcode()
 
 			LDA("indirectx")
+			cycleEnd()
 		case 0x01:
+			cycleStart()
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
@@ -3164,7 +3334,9 @@ func execute() {
 			disassembleOpcode()
 
 			ORA("indirectx")
+			cycleEnd()
 		case 0xE1:
+			cycleStart()
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
@@ -3172,13 +3344,16 @@ func execute() {
 			disassembleOpcode()
 
 			SBC("indirectx")
+			cycleEnd()
 		case 0x81:
+			cycleStart()
 			/*
 				STA - Store Accumulator in Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("STA ($%02X,X)", operand1())
 			disassembleOpcode()
 			STA("indirectx")
+			cycleEnd()
 
 		// Zero Page Indirect Y Indexed addressing mode instructions
 		/*
@@ -3189,6 +3364,7 @@ func execute() {
 			Bytes: 2
 		*/
 		case 0x71:
+			cycleStart()
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
@@ -3196,7 +3372,9 @@ func execute() {
 			disassembleOpcode()
 
 			ADC("indirecty")
+			cycleEnd()
 		case 0x31:
+			cycleStart()
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
@@ -3204,7 +3382,9 @@ func execute() {
 			disassembleOpcode()
 
 			AND("indirecty")
+			cycleEnd()
 		case 0xD1:
+			cycleStart()
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
@@ -3212,7 +3392,9 @@ func execute() {
 			disassembleOpcode()
 
 			CMP("indirecty")
+			cycleEnd()
 		case 0x51:
+			cycleStart()
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
@@ -3220,7 +3402,9 @@ func execute() {
 			disassembleOpcode()
 
 			EOR("indirecty")
+			cycleEnd()
 		case 0xB1:
+			cycleStart()
 			/*
 				LDA - Load Accumulator with Memory
 			*/
@@ -3228,15 +3412,18 @@ func execute() {
 			disassembleOpcode()
 
 			LDA("indirecty")
+			cycleEnd()
 		case 0x11:
+			cycleStart()
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("ORA ($%02X),Y", operand1())
 			disassembleOpcode()
 			ORA("indirecty")
-
+			cycleEnd()
 		case 0xF1:
+			cycleStart()
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
@@ -3244,7 +3431,9 @@ func execute() {
 			disassembleOpcode()
 
 			SBC("indirecty")
+			cycleEnd()
 		case 0x91:
+			cycleStart()
 			/*
 				STA - Store Accumulator in Memory
 			*/
@@ -3252,7 +3441,7 @@ func execute() {
 			disassembleOpcode()
 
 			STA("indirecty")
-
+			cycleEnd()
 		// Relative addressing mode instructions
 		/*
 			$nnnn
@@ -3264,6 +3453,7 @@ func execute() {
 			Bytes: 2
 		*/
 		case 0x10:
+			cycleStart()
 			/*
 				BPL - Branch on Result Plus
 			*/
@@ -3289,6 +3479,7 @@ func execute() {
 			}
 
 		case 0x30:
+			cycleStart()
 			/*
 				BMI - Branch on Result Minus
 			*/
@@ -3306,7 +3497,9 @@ func execute() {
 				// Don't branch
 				setPC(PC + 2)
 			}
+			cycleEnd()
 		case 0x50:
+			cycleStart()
 			/*
 				BVC - Branch on Overflow Clear
 			*/
@@ -3332,7 +3525,9 @@ func execute() {
 				updateCycleCounter(1)
 				handleState(2)
 			}
+			cycleEnd()
 		case 0x55:
+			cycleStart()
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
@@ -3340,7 +3535,9 @@ func execute() {
 			disassembleOpcode()
 
 			EOR("zeropagex")
+			cycleEnd()
 		case 0x70:
+			cycleStart()
 			/*
 				BVS - Branch on Overflow Set
 			*/
@@ -3366,7 +3563,9 @@ func execute() {
 				updateCycleCounter(1)
 				handleState(2)
 			}
+			cycleEnd()
 		case 0x90:
+			cycleStart()
 			/*
 				BCC - Branch on Carry Clear
 			*/
@@ -3387,7 +3586,9 @@ func execute() {
 				updateCycleCounter(1)
 				handleState(2)
 			}
+			cycleEnd()
 		case 0xB0:
+			cycleStart()
 			/*
 				BCS - Branch on Carry Set
 			*/
@@ -3412,8 +3613,9 @@ func execute() {
 				updateCycleCounter(1)
 				handleState(2)
 			}
-
+			cycleEnd()
 		case 0xD0:
+			cycleStart()
 			/*
 				BNE - Branch on Result Not Zero
 			*/
@@ -3443,8 +3645,9 @@ func execute() {
 				updateCycleCounter(1)
 				handleState(2)
 			}
-
+			cycleEnd()
 		case 0xF0:
+			cycleStart()
 			/*
 			   BEQ - Branch on Result Zero
 			*/
@@ -3465,8 +3668,9 @@ func execute() {
 				updateCycleCounter(1)
 				handleState(2)
 			}
-
+			cycleEnd()
 		case 0xF6:
+			cycleStart()
 			/*
 				INC - Increment Memory By One
 			*/
@@ -3474,6 +3678,7 @@ func execute() {
 			disassembleOpcode()
 
 			INC("zeropagex")
+			cycleEnd()
 		}
 
 		// 3 byte instructions with 2 operands
@@ -3487,13 +3692,16 @@ func execute() {
 			Bytes: 3
 		*/
 		case 0x6D:
+			cycleStart()
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
 			disassembledInstruction = fmt.Sprintf("ADC $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			ADC("absolute")
+			cycleEnd()
 		case 0x2D:
+			cycleStart()
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
@@ -3501,63 +3709,81 @@ func execute() {
 			disassembleOpcode()
 
 			AND("absolute")
+			cycleEnd()
 		case 0x0E:
+			cycleStart()
 			/*
 				ASL - Arithmetic Shift Left
 			*/
 			disassembledInstruction = fmt.Sprintf("ASL $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			ASL("absolute")
+			cycleEnd()
 		case 0x2C:
+			cycleStart()
 			/*
 				BIT - Test Bits in Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("BIT $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			BIT("absolute")
+			cycleEnd()
 		case 0xCD:
+			cycleStart()
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("CMP $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			CMP("absolute")
+			cycleEnd()
 		case 0xEC:
+			cycleStart()
 			/*
 				CPX - Compare Index Register X To Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("CPX $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			CPX("absolute")
+			cycleEnd()
 		case 0xCC:
+			cycleStart()
 			/*
 				CPY - Compare Index Register Y To Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("CPY $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			CPY("absolute")
+			cycleEnd()
 		case 0xCE:
+			cycleStart()
 			/*
 				DEC - Decrement Memory By One
 			*/
 			disassembledInstruction = fmt.Sprintf("DEC $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			DEC("absolute")
+			cycleEnd()
 		case 0x4D:
+			cycleStart()
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("EOR $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			EOR("absolute")
+			cycleEnd()
 		case 0xEE:
+			cycleStart()
 			/*
 				INC - Increment Memory By One
 			*/
 			disassembledInstruction = fmt.Sprintf("INC $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			INC("absolute")
+			cycleEnd()
 		case 0x4C:
+			cycleStart()
 			/*
 				JMP - JMP Absolute
 			*/
@@ -3569,7 +3795,9 @@ func execute() {
 				os.Exit(0)
 			}
 			JMP("absolute")
+			cycleEnd()
 		case 0x20:
+			cycleStart()
 			/*
 				JSR - Jump To Subroutine
 			*/
@@ -3589,83 +3817,106 @@ func execute() {
 			setPC(int(operand2())<<8 | int(operand1()))
 			updateCycleCounter(1)
 			handleState(0)
+			cycleEnd()
 		case 0xAD:
+			cycleStart()
 			/*
 				LDA - Load Accumulator with Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDA $%04X", uint16(operand2())<<8|uint16(operand1()))
 			disassembleOpcode()
 			LDA("absolute")
+			cycleEnd()
 		case 0xAE:
+			cycleStart()
 			/*
 				LDX - Load Index Register X From Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDX $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			LDX("absolute")
+			cycleEnd()
 		case 0xAC:
+			cycleStart()
 			/*
 				LDY - Load Index Register Y From Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDY $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			LDY("absolute")
+			cycleEnd()
 		case 0x4E:
+			cycleStart()
 			/*
 				LSR - Logical Shift Right
 			*/
 			disassembledInstruction = fmt.Sprintf("LSR $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			LSR("absolute")
+			cycleEnd()
 		case 0x0D:
+			cycleStart()
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("ORA $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			ORA("absolute")
+			cycleEnd()
 		case 0x2E:
+			cycleStart()
 			/*
 				ROL - Rotate Left
 			*/
 			disassembledInstruction = fmt.Sprintf("ROL $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			ROL("absolute")
+			cycleEnd()
 		case 0x6E:
+			cycleStart()
 			/*
 				ROR - Rotate Right
 			*/
 			disassembledInstruction = fmt.Sprintf("ROR $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			ROR("absolute")
+			cycleEnd()
 		case 0xED:
+			cycleStart()
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
 			disassembledInstruction = fmt.Sprintf("SBC $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			SBC("absolute")
+			cycleEnd()
 		case 0x8D:
+			cycleStart()
 			/*
 				STA - Store Accumulator in Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("STA $%04X", uint16(operand2())<<8|uint16(operand1()))
 			disassembleOpcode()
 			STA("absolute")
+			cycleEnd()
 		case 0x8E:
+			cycleStart()
 			/*
 				STX - Store Index Register X In Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("STX $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			STX("absolute")
+			cycleEnd()
 		case 0x8C:
+			cycleStart()
 			/*
 				STY - Store Index Register Y In Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("STY $%02X%02X", operand2(), operand1())
 			disassembleOpcode()
 			STY("absolute")
+			cycleEnd()
 
 		// X Indexed Absolute addressing mode instructions
 		/*
@@ -3681,34 +3932,43 @@ func execute() {
 			Bytes: 3
 		*/
 		case 0x7D:
+			cycleStart()
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
 			disassembledInstruction = fmt.Sprintf("ADC $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			ADC("absolutex")
+			cycleEnd()
 		case 0x3D:
+			cycleStart()
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("AND $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			AND("absolutex")
+			cycleEnd()
 		case 0x1E:
+			cycleStart()
 			/*
 				ASL - Arithmetic Shift Left
 			*/
 			disassembledInstruction = fmt.Sprintf("ASL $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			ASL("absolutex")
+			cycleEnd()
 		case 0xDD:
+			cycleStart()
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("CMP $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			CMP("absolutex")
+			cycleEnd()
 		case 0xDE:
+			cycleStart()
 			/*
 				DEC - Decrement Memory By One
 			*/
@@ -3716,75 +3976,96 @@ func execute() {
 			disassembleOpcode()
 
 			DEC("absolutex")
+			cycleEnd()
 		case 0x5D:
+			cycleStart()
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("EOR $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			EOR("absolutex")
+			cycleEnd()
 		case 0xFE:
+			cycleStart()
 			/*
 				INC - Increment Memory By One
 			*/
 			disassembledInstruction = fmt.Sprintf("INC $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			INC("absolutex")
+			cycleEnd()
 		case 0xBD:
+			cycleStart()
 			/*
 				LDA - Load Accumulator with Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDA $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			LDA("absolutex")
+			cycleEnd()
 		case 0xBC:
+			cycleStart()
 			/*
 				LDY - Load Index Register Y From Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDY $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			LDY("absolutex")
+			cycleEnd()
 		case 0x5E:
+			cycleStart()
 			/*
 				LSR - Logical Shift Right
 			*/
 			disassembledInstruction = fmt.Sprintf("LSR $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			LSR("absolutex")
+			cycleEnd()
 		case 0x1D:
+			cycleStart()
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("ORA $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			ORA("absolutex")
+			cycleEnd()
 		case 0x3E:
+			cycleStart()
 			/*
 			 */
 			disassembledInstruction = fmt.Sprintf("ROL $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			ROL("absolutex")
+			cycleEnd()
 		case 0x7E:
+			cycleStart()
 			/*
 				ROR - Rotate Right
 			*/
 			disassembledInstruction = fmt.Sprintf("ROR $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			ROR("absolutex")
+			cycleEnd()
 		case 0xFD:
+			cycleStart()
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
 			disassembledInstruction = fmt.Sprintf("SBC $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			SBC("absolutex")
+			cycleEnd()
 		case 0x9D:
+			cycleStart()
 			/*
 				STA - Store Accumulator in Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("STA $%02X%02X,X", operand2(), operand1())
 			disassembleOpcode()
 			STA("absolutex")
+			cycleEnd()
 
 		// Y Indexed Absolute addressing mode instructions
 		/*
@@ -3799,76 +4080,96 @@ func execute() {
 			Bytes: 3
 		*/
 		case 0x79:
+			cycleStart()
 			/*
 				ADC - Add Memory to Accumulator with Carry
 			*/
 			disassembledInstruction = fmt.Sprintf("ADC $%04X,Y", int(operand2())<<8|int(operand1()))
 			disassembleOpcode()
 			ADC("absolutey")
+			cycleEnd()
 		case 0x39:
+			cycleStart()
 			/*
 				AND - "AND" Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("AND $%02X%02X,Y", operand2(), operand1())
 			disassembleOpcode()
 			AND("absolutey")
+			cycleEnd()
 		case 0xD9:
+			cycleStart()
 			/*
 				CMP - Compare Memory and Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("CMP $%02X%02X,Y", operand2(), operand1())
 			disassembleOpcode()
 			CMP("absolutey")
+			cycleEnd()
 		case 0x59:
+			cycleStart()
 			/*
 				EOR - "Exclusive OR" Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("EOR $%02X%02X,Y", operand2(), operand1())
 			disassembleOpcode()
 			EOR("absolutey")
+			cycleEnd()
 		case 0xB9:
+			cycleStart()
 			/*
 				LDA - Load Accumulator with Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDA $%02X%02X,Y", operand2(), operand1())
 			disassembleOpcode()
 			LDA("absolutey")
+			cycleEnd()
 		case 0xBE:
+			cycleStart()
 			/*
 				LDX - Load Index Register X From Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("LDX $%02X%02X,Y", operand2(), operand1())
 			disassembleOpcode()
 			LDX("absolutey")
+			cycleEnd()
 		case 0x19:
+			cycleStart()
 			/*
 				ORA - "OR" Memory with Accumulator
 			*/
 			disassembledInstruction = fmt.Sprintf("ORA $%02X%02X,Y", operand2(), operand1())
 			disassembleOpcode()
 			ORA("absolutey")
+			cycleEnd()
 		case 0xF9:
+			cycleStart()
 			/*
 				SBC - Subtract Memory from Accumulator with Borrow
 			*/
 			disassembledInstruction = fmt.Sprintf("SBC $%02X%02X,Y", operand2(), operand1())
 			disassembleOpcode()
 			SBC("absolutey")
+			cycleEnd()
 		case 0x99:
+			cycleStart()
 			/*
 				STA - Store Accumulator in Memory
 			*/
 			disassembledInstruction = fmt.Sprintf("STA $%02X%02X,Y", operand2(), operand1())
 			disassembleOpcode()
 			STA("absolutey")
+			cycleEnd()
 		// Absolute Indirect addressing mode instructions
 		case 0x6C:
+			cycleStart()
 			/*
 				JMP - JMP Indirect
 			*/
 			disassembledInstruction = fmt.Sprintf("JMP ($%02X%02X)", operand2(), operand1())
 			disassembleOpcode()
 			JMP("indirect")
+			cycleEnd()
 		}
 		if *plus4 {
 			kernalRoutines()
