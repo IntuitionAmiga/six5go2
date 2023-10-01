@@ -2087,7 +2087,7 @@ func TYA() {
 
 	Bytes: 1
 */
-func ASLx() {
+func ASL_A() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
@@ -2095,7 +2095,7 @@ func ASLx() {
 	disassembleOpcode()
 	ASL("accumulator")
 }
-func LSRx() {
+func LSR_A() {
 	/*
 		LSR - Logical Shift Right
 	*/
@@ -2103,7 +2103,7 @@ func LSRx() {
 	disassembleOpcode()
 	LSR("accumulator")
 }
-func ROLx() {
+func ROL_A() {
 	/*
 		ROL - Rotate Left
 	*/
@@ -2111,7 +2111,7 @@ func ROLx() {
 	disassembleOpcode()
 	ROL("accumulator")
 }
-func RORx() {
+func ROR_A() {
 	/*
 		ROR - Rotate Right
 	*/
@@ -2129,3 +2129,272 @@ func RORx() {
 
 	Bytes: 2
 */
+func ADC_I() {
+	/*
+		ADC - Add Memory to Accumulator with Carry
+	*/
+	disassembledInstruction = fmt.Sprintf("ADC #$%02X", operand1())
+	disassembleOpcode()
+
+	ADC("immediate")
+}
+func AND_I() {
+	/*
+		AND - "AND" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("AND #$%02X", operand1())
+	disassembleOpcode()
+	AND("immediate")
+}
+func CMP_I() {
+	/*
+		CMP - Compare Memory and Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("CMP #$%02X", operand1())
+	disassembleOpcode()
+	CMP("immediate")
+}
+func CPX_I() {
+	/*
+		CPX - Compare Index Register X To Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("CPX #$%02X", operand1())
+	disassembleOpcode()
+
+	CPX("immediate")
+}
+func CPY_I() {
+	/*
+		CPY - Compare Index Register Y To Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("CPY #$%02X", operand1())
+	disassembleOpcode()
+	CPY("immediate")
+}
+func EOR_I() {
+	/*
+		EOR - "Exclusive OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("EOR #$%02X", operand1())
+	disassembleOpcode()
+	EOR("immediate")
+}
+func LDA_I() {
+	/*
+		LDA - Load Accumulator with Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDA #$%02X", operand1())
+	disassembleOpcode()
+	LDA("immediate")
+}
+func LDX_I() {
+	/*
+		LDX - Load Index Register X From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDX #$%02X", operand1())
+	disassembleOpcode()
+	LDX("immediate")
+}
+func LDY_I() {
+	/*
+		LDY - Load Index Register Y From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDY #$%02X", operand1())
+	disassembleOpcode()
+	LDY("immediate")
+}
+func ORA_I() {
+	/*
+		ORA - "OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("ORA #$%02X", operand1())
+	disassembleOpcode()
+	ORA("immediate")
+}
+func SBC_I() {
+	/*
+		SBC - Subtract Memory from Accumulator with Borrow
+	*/
+	disassembledInstruction = fmt.Sprintf("SBC #$%02X", operand1())
+	disassembleOpcode()
+	SBC("immediate")
+}
+
+// Zero Page addressing mode instructions
+/*
+	$nn
+
+	The zero page instructions allow for shorter code and execution times by only fetching the second byte of the instruction and assuming a zero low address byte. Careful use of the zero page can result in significant increase in code efficiency.
+
+	Bytes: 2
+*/
+func ADC_Z() {
+	/*
+		ADC - Add Memory to Accumulator with Carry
+	*/
+	disassembledInstruction = fmt.Sprintf("ADC $%02X", operand1())
+	disassembleOpcode()
+	ADC("zeropage")
+}
+func AND_Z() {
+	/*
+		AND - "AND" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("AND $%02X", operand1())
+	disassembleOpcode()
+	AND("zeropage")
+}
+func ASL_Z() {
+	/*
+		ASL - Arithmetic Shift Left
+	*/
+	disassembledInstruction = fmt.Sprintf("ASL $%02X", operand1())
+	disassembleOpcode()
+
+	ASL("zeropage")
+}
+func BIT_Z() {
+	/*
+		BIT - Test Bits in Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("BIT $%02X", operand1())
+	disassembleOpcode()
+	BIT("zeropage")
+}
+func CMP_Z() {
+	/*
+		CMP - Compare Memory and Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("CMP $%02X", operand1())
+	disassembleOpcode()
+	CMP("zeropage")
+}
+func CPX_Z() {
+	/*
+		CPX - Compare Index Register X To Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("CPX $%02X", operand1())
+	disassembleOpcode()
+	CPX("zeropage")
+}
+func CPY_Z() {
+	/*
+		CPY - Compare Index Register Y To Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("CPY $%02X", operand1())
+	disassembleOpcode()
+	CPY("zeropage")
+}
+func DEC_Z() {
+	/*
+		DEC - Decrement Memory By One
+	*/
+	disassembledInstruction = fmt.Sprintf("DEC $%02X", operand1())
+	disassembleOpcode()
+	DEC("zeropage")
+}
+func EOR_Z() {
+	/*
+		EOR - "Exclusive OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("EOR $%02X", operand1())
+	disassembleOpcode()
+	EOR("zeropage")
+}
+func INC_Z() {
+	/*
+		INC - Increment Memory By One
+	*/
+	disassembledInstruction = fmt.Sprintf("INC $%02X", operand1())
+	disassembleOpcode()
+	INC("zeropage")
+}
+func LDA_Z() {
+	/*
+		LDA - Load Accumulator with Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDA $%02X", operand1())
+	disassembleOpcode()
+	LDA("zeropage")
+}
+func LDX_Z() {
+	/*
+		LDX - Load Index Register X From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDX $%02X", operand1())
+	disassembleOpcode()
+	LDX("zeropage")
+}
+func LDY_Z() {
+	/*
+		LDY - Load Index Register Y From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDY $%02X", operand1())
+	disassembleOpcode()
+	LDY("zeropage")
+}
+func LSR_Z() {
+	/*
+		LSR - Logical Shift Right
+	*/
+	disassembledInstruction = fmt.Sprintf("LSR $%02X", operand1())
+	disassembleOpcode()
+	LSR("zeropage")
+}
+func ORA_Z() {
+	/*
+		ORA - "OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("ORA $%02X", operand1())
+	disassembleOpcode()
+	ORA("zeropage")
+}
+func ROL_Z() {
+	/*
+		ROL - Rotate Left
+	*/
+	disassembledInstruction = fmt.Sprintf("ROL $%02X", operand1())
+	disassembleOpcode()
+	ROL("zeropage")
+}
+func ROR_Z() {
+	/*
+		ROR - Rotate Right
+	*/
+	disassembledInstruction = fmt.Sprintf("ROR $%02X", operand1())
+	disassembleOpcode()
+
+	ROR("zeropage")
+}
+func SBC_Z() {
+	/*
+		SBC - Subtract Memory from Accumulator with Borrow
+	*/
+	disassembledInstruction = fmt.Sprintf("SBC $%02X", operand1())
+	disassembleOpcode()
+	SBC("zeropage")
+}
+func STA_Z() {
+	/*
+		STA - Store Accumulator in Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STA $%02X", operand1())
+	disassembleOpcode()
+	STA("zeropage")
+}
+func STX_Z() {
+	/*
+		STX - Store Index Register X In Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STX $%02X", operand1())
+	disassembleOpcode()
+	STX("zeropage")
+}
+func STY_Z() {
+	/*
+		STY - Store Index Register Y In Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STY $%02X", operand1())
+	disassembleOpcode()
+	STY("zeropage")
+}
