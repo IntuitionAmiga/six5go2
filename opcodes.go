@@ -3252,3 +3252,88 @@ func STA_ABX() {
 	disassembleOpcode()
 	STA("absolutex")
 }
+
+// Y Indexed Absolute addressing mode instructions
+/*
+	$nnnn,Y
+
+	This form of addressing is used in conjunction with the Y index register. The effective address is formed by adding the contents of Y to the address contained in the second and third bytes of the instruction. This mode allows the index register to contain the index or count value and the instruction to contain the base address. This type of indexing allows any location referencing and the index to modify multiple fields resulting in reduced coding and execution time.
+
+	Note on the MOS 6502:
+
+	The value at the specified address, ignoring the the addressing mode's Y offset, is read (and discarded) before the final address is read. This may cause side effects in I/O registers.
+
+	Bytes: 3
+*/
+func ADC_ABY() {
+	/*
+		ADC - Add Memory to Accumulator with Carry
+	*/
+	disassembledInstruction = fmt.Sprintf("ADC $%04X,Y", int(operand2())<<8|int(operand1()))
+	disassembleOpcode()
+	ADC("absolutey")
+}
+func AND_ABY() {
+	/*
+		AND - "AND" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("AND $%02X%02X,Y", operand2(), operand1())
+	disassembleOpcode()
+	AND("absolutey")
+}
+func CMP_ABY() {
+	/*
+		CMP - Compare Memory and Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("CMP $%02X%02X,Y", operand2(), operand1())
+	disassembleOpcode()
+	CMP("absolutey")
+}
+func EOR_ABY() {
+	/*
+		EOR - "Exclusive OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("EOR $%02X%02X,Y", operand2(), operand1())
+	disassembleOpcode()
+	EOR("absolutey")
+}
+func LDA_ABY() {
+	/*
+		LDA - Load Accumulator with Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDA $%02X%02X,Y", operand2(), operand1())
+	disassembleOpcode()
+	LDA("absolutey")
+}
+func LDX_ABY() {
+	/*
+		LDX - Load Index Register X From Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("LDX $%02X%02X,Y", operand2(), operand1())
+	disassembleOpcode()
+	LDX("absolutey")
+}
+func ORA_ABY() {
+	/*
+		ORA - "OR" Memory with Accumulator
+	*/
+	disassembledInstruction = fmt.Sprintf("ORA $%02X%02X,Y", operand2(), operand1())
+	disassembleOpcode()
+	ORA("absolutey")
+}
+func SBC_ABY() {
+	/*
+		SBC - Subtract Memory from Accumulator with Borrow
+	*/
+	disassembledInstruction = fmt.Sprintf("SBC $%02X%02X,Y", operand2(), operand1())
+	disassembleOpcode()
+	SBC("absolutey")
+}
+func STA_ABY() {
+	/*
+		STA - Store Accumulator in Memory
+	*/
+	disassembledInstruction = fmt.Sprintf("STA $%02X%02X,Y", operand2(), operand1())
+	disassembleOpcode()
+	STA("absolutey")
+}

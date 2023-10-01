@@ -864,86 +864,41 @@ func startCPU() {
 
 			Bytes: 3
 		*/
-		case 0x79:
+		case 0x79: //ADC
 			cycleStart()
-			/*
-				ADC - Add Memory to Accumulator with Carry
-			*/
-			disassembledInstruction = fmt.Sprintf("ADC $%04X,Y", int(operand2())<<8|int(operand1()))
-			disassembleOpcode()
-			ADC("absolutey")
+			ADC_ABY()
 			cycleEnd()
-		case 0x39:
+		case 0x39: //AND
 			cycleStart()
-			/*
-				AND - "AND" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("AND $%02X%02X,Y", operand2(), operand1())
-			disassembleOpcode()
-			AND("absolutey")
+			AND_ABY()
 			cycleEnd()
-		case 0xD9:
+		case 0xD9: //CMP
 			cycleStart()
-			/*
-				CMP - Compare Memory and Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("CMP $%02X%02X,Y", operand2(), operand1())
-			disassembleOpcode()
-			CMP("absolutey")
+			CMP_ABY()
 			cycleEnd()
-		case 0x59:
+		case 0x59: //EOR
 			cycleStart()
-			/*
-				EOR - "Exclusive OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("EOR $%02X%02X,Y", operand2(), operand1())
-			disassembleOpcode()
-			EOR("absolutey")
+			EOR_ABY()
 			cycleEnd()
-		case 0xB9:
+		case 0xB9: //LDA
 			cycleStart()
-			/*
-				LDA - Load Accumulator with Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDA $%02X%02X,Y", operand2(), operand1())
-			disassembleOpcode()
-			LDA("absolutey")
+			LDA_ABY()
 			cycleEnd()
-		case 0xBE:
+		case 0xBE: //LDX
 			cycleStart()
-			/*
-				LDX - Load Index Register X From Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("LDX $%02X%02X,Y", operand2(), operand1())
-			disassembleOpcode()
-			LDX("absolutey")
+			LDX_ABY()
 			cycleEnd()
-		case 0x19:
+		case 0x19: //ORA
 			cycleStart()
-			/*
-				ORA - "OR" Memory with Accumulator
-			*/
-			disassembledInstruction = fmt.Sprintf("ORA $%02X%02X,Y", operand2(), operand1())
-			disassembleOpcode()
-			ORA("absolutey")
+			ORA_ABY()
 			cycleEnd()
 		case 0xF9:
 			cycleStart()
-			/*
-				SBC - Subtract Memory from Accumulator with Borrow
-			*/
-			disassembledInstruction = fmt.Sprintf("SBC $%02X%02X,Y", operand2(), operand1())
-			disassembleOpcode()
-			SBC("absolutey")
+			SBC_ABY()
 			cycleEnd()
 		case 0x99:
 			cycleStart()
-			/*
-				STA - Store Accumulator in Memory
-			*/
-			disassembledInstruction = fmt.Sprintf("STA $%02X%02X,Y", operand2(), operand1())
-			disassembleOpcode()
-			STA("absolutey")
+			STA_ABY()
 			cycleEnd()
 		// Absolute Indirect addressing mode instructions
 		case 0x6C:
