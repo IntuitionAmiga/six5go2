@@ -1478,8 +1478,6 @@ func CPX(addressingMode string) {
 		// If X >= value then set carry flag bit 0 to 1 set carry flag bit 0 to 0
 		if X >= value {
 			setCarryFlag()
-		} else {
-			unsetCarryFlag()
 		}
 		// If value> X then reset carry flag
 		if value > X {
@@ -1493,8 +1491,8 @@ func CPX(addressingMode string) {
 			unsetNegativeFlag()
 		}
 		// If value == X then set zero flag else unset zero flag
-		//if value == X {
-		if result == 0 {
+		if value == X {
+			//if result == 0 {
 			setZeroFlag()
 		} else {
 			unsetZeroFlag()
@@ -1536,8 +1534,6 @@ func CPY(addressingMode string) {
 		// If Y>value then set carry flag to 1 else set carry flag to 0
 		if Y >= value {
 			setCarryFlag()
-		} else {
-			unsetCarryFlag()
 		}
 		// If bit 7 of result is set, set N flag to 1 else reset it
 		if readBit(7, result) == 1 {
