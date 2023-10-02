@@ -1220,14 +1220,14 @@ func ROL(addressingMode string) {
 		}
 
 		// Update the zero flag
-		if A == 0 {
+		if result == 0 {
 			setZeroFlag()
 		} else {
 			unsetZeroFlag()
 		}
 
 		// Update the negative flag
-		if readBit(7, A) == 1 {
+		if readBit(7, result) == 1 {
 			setNegativeFlag()
 		} else {
 			unsetNegativeFlag()
