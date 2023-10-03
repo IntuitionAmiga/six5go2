@@ -31,9 +31,7 @@ const (
 	KlausDInfiniteLoopAddress = 0x062B
 	RuudBTestROMAddress       = 0xE000
 
-	SPBaseAddress      uint16 = 0x0100
-	NMIVectorAddress          = 0xFFFA
-	RESETVectorAddress        = 0xFFFC
+	SPBaseAddress uint16 = 0x0100
 )
 
 var (
@@ -52,13 +50,13 @@ var (
 	irq              bool
 	nmi              bool
 	reset            bool
-	BRKtrue          bool          = false
-	IRQVectorAddress uint16        = 0xFFFE
-	cycleCounter     uint64        = 0
-	cpuSpeedHz       uint64        = 985248                                  // 985248 Hz for a standard 6502
-	cycleTime        time.Duration = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
-	cycleStartTime   time.Time                                               // High-resolution timer
-	timeSpent        time.Duration                                           // Time spent executing instructions
+	BRKtrue          bool = false
+
+	cycleCounter   uint64        = 0
+	cpuSpeedHz     uint64        = 985248                                  // 985248 Hz for a standard 6502
+	cycleTime      time.Duration = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
+	cycleStartTime time.Time                                               // High-resolution timer
+	timeSpent      time.Duration                                           // Time spent executing instructions
 
 )
 

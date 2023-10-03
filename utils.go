@@ -302,6 +302,9 @@ func printMachineState() {
 		fmt.Printf("%v\t|\n", timeSpent)
 
 	}
+	// Move cursor back to beginning of previous line
+	// Comment this line out to get full disassembly and machine state
+	fmt.Printf("\033[1A")
 }
 func disassembleOpcode() {
 	if *disassemble {
