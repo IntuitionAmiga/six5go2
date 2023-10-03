@@ -399,8 +399,10 @@ func JMP(addressingMode string) {
 		address := uint16(operand2())<<8 | uint16(operand1())
 		// Handle 6502 page boundary bug
 		loByteAddress := address
-		hiByteAddress := (address & 0xFF00) | ((address + 1) & 0xFF) // Ensure it wraps within the page
-		indirectAddress := uint16(readMemory(hiByteAddress))<<8 | uint16(readMemory(loByteAddress))
+		//hiByteAddress := (address & 0xFF00) | ((address + 1) & 0xFF) // Ensure it wraps within the page
+		hiByteAddress := (address & 0xFF00) | (address & 0x00FF) + 1
+		//indirectAddress := uint16(readMemory(hiByteAddress))<<8 | uint16(readMemory(loByteAddress))
+		indirectAddress := uint16(readMemory(loByteAddress)) | uint16(readMemory(hiByteAddress))<<8
 		// Set the program counter to the indirect address
 		setPC(int(indirectAddress))
 	}

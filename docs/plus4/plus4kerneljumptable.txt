@@ -1,0 +1,50 @@
+A short list of KERNAL jump table in a format that can be copy&pasted to your source code:
+
+
+; 264 series only
+defkey   = $ff49
+print    = $ff4c
+primm    = $ff4f
+monitor  = $ff52
+
+; 264 series and C64 (probably VIC-20 and other platforms too)
+VIDINIT  = $FF81
+IOINIT   = $FF84
+RAMTEST  = $FF87
+RESTORIO = $FF8A
+VECTOR   = $FF8D
+SETMSG   = $FF90
+SECOND   = $FF93
+TKSA     = $FF96
+MEMTOP   = $FF99
+MEMBOT   = $FF9C
+SCNKEY   = $FF9F
+SETTMO   = $FFA2
+IECIN    = $FFA5
+IECOUT   = $FFA8
+UNTALK   = $FFAB
+UNLISTEN = $FFAE
+LISTEN   = $FFB1
+TALK     = $FFB4
+READST   = $FFB7
+SETLFS   = $FFBA (Set file parameters. Input: A = Logical number; X = Device number; Y = Secondary address.)
+SETNAM   = $FFBD
+OPEN     = $FFC0
+CLOSE    = $FFC3
+CHKIN    = $FFC6
+CHKOUT   = $FFC9
+CLRCHANS = $FFCC
+CHRIN    = $FFCF
+CHROUT   = $FFD2
+LOAD     = $FFD5
+SAVE     = $FFD8 (Save file. (Must call SETLFS and SETNAM beforehands.) Input: A = Address of zero page register holding start address of memory area to save; X/Y = End address of memory area plus 1.)
+SETTIME  = $FFDB
+READTIM  = $FFDE
+STOP     = $FFE1
+GETCHAR  = $FFE4
+CLOSEALL = $FFE7
+UDTIME   = $FFEA
+SCRNSIZE = $FFED
+PLOT     = $FFF0
+IOBASE   = $FFF3
+RESET    = $FFF6

@@ -171,7 +171,7 @@ func petsciiToAscii(petscii uint8) uint8 {
 func plus4KernalRoutines() {
 	// CHROUT routine is at $FFD2
 	switch PC {
-	case 0xFFB1:
+	case 0xFFD2:
 		// This is a CHROUT call
 		fmt.Printf("Call to CHROUT!!!!\n")
 		ch := petsciiToAscii(A) // Convert PETSCII to ASCII
