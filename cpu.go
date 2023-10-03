@@ -33,6 +33,184 @@ const (
 
 	SPBaseAddress uint16 = 0x0100
 )
+const (
+	LDA_IMMEDIATE_OPCODE   = 0xA9
+	LDA_ZERO_PAGE_OPCODE   = 0xA5
+	LDA_ZERO_PAGE_X_OPCODE = 0xB5
+	LDA_ABSOLUTE_OPCODE    = 0xAD
+	LDA_ABSOLUTE_X_OPCODE  = 0xBD
+	LDA_ABSOLUTE_Y_OPCODE  = 0xB9
+	LDA_INDIRECT_X_OPCODE  = 0xA1
+	LDA_INDIRECT_Y_OPCODE  = 0xB1
+
+	LDX_IMMEDIATE_OPCODE   = 0xA2
+	LDX_ZERO_PAGE_OPCODE   = 0xA6
+	LDX_ZERO_PAGE_Y_OPCODE = 0xB6
+	LDX_ABSOLUTE_OPCODE    = 0xAE
+	LDX_ABSOLUTE_Y_OPCODE  = 0xBE
+
+	LDY_IMMEDIATE_OPCODE   = 0xA0
+	LDY_ZERO_PAGE_OPCODE   = 0xA4
+	LDY_ZERO_PAGE_X_OPCODE = 0xB4
+	LDY_ABSOLUTE_OPCODE    = 0xAC
+	LDY_ABSOLUTE_X_OPCODE  = 0xBC
+
+	STA_ZERO_PAGE_OPCODE   = 0x85
+	STA_ZERO_PAGE_X_OPCODE = 0x95
+	STA_ABSOLUTE_OPCODE    = 0x8D
+	STA_ABSOLUTE_X_OPCODE  = 0x9D
+	STA_ABSOLUTE_Y_OPCODE  = 0x99
+	STA_INDIRECT_X_OPCODE  = 0x81
+	STA_INDIRECT_Y_OPCODE  = 0x91
+
+	STX_ZERO_PAGE_OPCODE   = 0x86
+	STX_ZERO_PAGE_Y_OPCODE = 0x96
+	STX_ABSOLUTE_OPCODE    = 0x8E
+
+	STY_ZERO_PAGE_OPCODE   = 0x84
+	STY_ZERO_PAGE_X_OPCODE = 0x94
+	STY_ABSOLUTE_OPCODE    = 0x8C
+
+	CMP_IMMEDIATE_OPCODE   = 0xC9
+	CMP_ZERO_PAGE_OPCODE   = 0xC5
+	CMP_ZERO_PAGE_X_OPCODE = 0xD5
+	CMP_ABSOLUTE_OPCODE    = 0xCD
+	CMP_ABSOLUTE_X_OPCODE  = 0xDD
+	CMP_ABSOLUTE_Y_OPCODE  = 0xD9
+	CMP_INDIRECT_X_OPCODE  = 0xC1
+	CMP_INDIRECT_Y_OPCODE  = 0xD1
+
+	CPX_IMMEDIATE_OPCODE = 0xE0
+	CPX_ZERO_PAGE_OPCODE = 0xE4
+	CPX_ABSOLUTE_OPCODE  = 0xEC
+
+	CPY_IMMEDIATE_OPCODE = 0xC0
+	CPY_ZERO_PAGE_OPCODE = 0xC4
+	CPY_ABSOLUTE_OPCODE  = 0xCC
+
+	DEC_ZERO_PAGE_OPCODE   = 0xC6
+	DEC_ZERO_PAGE_X_OPCODE = 0xD6
+	DEC_ABSOLUTE_OPCODE    = 0xCE
+	DEC_ABSOLUTE_X_OPCODE  = 0xDE
+
+	INC_ZERO_PAGE_OPCODE   = 0xE6
+	INC_ZERO_PAGE_X_OPCODE = 0xF6
+	INC_ABSOLUTE_OPCODE    = 0xEE
+	INC_ABSOLUTE_X_OPCODE  = 0xFE
+
+	JMP_ABSOLUTE_OPCODE = 0x4C
+	JMP_INDIRECT_OPCODE = 0x6C
+
+	JSR_ABSOLUTE_OPCODE = 0x20
+
+	AND_IMMEDIATE_OPCODE   = 0x29
+	AND_ZERO_PAGE_OPCODE   = 0x25
+	AND_ZERO_PAGE_X_OPCODE = 0x35
+	AND_ABSOLUTE_OPCODE    = 0x2D
+	AND_ABSOLUTE_X_OPCODE  = 0x3D
+	AND_ABSOLUTE_Y_OPCODE  = 0x39
+	AND_INDIRECT_X_OPCODE  = 0x21
+	AND_INDIRECT_Y_OPCODE  = 0x31
+
+	EOR_IMMEDIATE_OPCODE   = 0x49
+	EOR_ZERO_PAGE_OPCODE   = 0x45
+	EOR_ZERO_PAGE_X_OPCODE = 0x55
+	EOR_ABSOLUTE_OPCODE    = 0x4D
+	EOR_ABSOLUTE_X_OPCODE  = 0x5D
+	EOR_ABSOLUTE_Y_OPCODE  = 0x59
+	EOR_INDIRECT_X_OPCODE  = 0x41
+	EOR_INDIRECT_Y_OPCODE  = 0x51
+
+	ORA_IMMEDIATE_OPCODE   = 0x09
+	ORA_ZERO_PAGE_OPCODE   = 0x05
+	ORA_ZERO_PAGE_X_OPCODE = 0x15
+	ORA_ABSOLUTE_OPCODE    = 0x0D
+	ORA_ABSOLUTE_X_OPCODE  = 0x1D
+	ORA_ABSOLUTE_Y_OPCODE  = 0x19
+	ORA_INDIRECT_X_OPCODE  = 0x01
+	ORA_INDIRECT_Y_OPCODE  = 0x11
+
+	ADC_IMMEDIATE_OPCODE   = 0x69
+	ADC_ZERO_PAGE_OPCODE   = 0x65
+	ADC_ZERO_PAGE_X_OPCODE = 0x75
+	ADC_ABSOLUTE_OPCODE    = 0x6D
+	ADC_ABSOLUTE_X_OPCODE  = 0x7D
+	ADC_ABSOLUTE_Y_OPCODE  = 0x79
+	ADC_INDIRECT_X_OPCODE  = 0x61
+	ADC_INDIRECT_Y_OPCODE  = 0x71
+
+	SBC_IMMEDIATE_OPCODE   = 0xE9
+	SBC_ZERO_PAGE_OPCODE   = 0xE5
+	SBC_ZERO_PAGE_X_OPCODE = 0xF5
+	SBC_ABSOLUTE_OPCODE    = 0xED
+	SBC_ABSOLUTE_X_OPCODE  = 0xFD
+	SBC_ABSOLUTE_Y_OPCODE  = 0xF9
+	SBC_INDIRECT_X_OPCODE  = 0xE1
+	SBC_INDIRECT_Y_OPCODE  = 0xF1
+
+	BIT_ZERO_PAGE_OPCODE = 0x24
+	BIT_ABSOLUTE_OPCODE  = 0x2C
+
+	ROL_ACCUMULATOR_OPCODE = 0x2A
+	ROL_ZERO_PAGE_OPCODE   = 0x26
+	ROL_ZERO_PAGE_X_OPCODE = 0x36
+	ROL_ABSOLUTE_OPCODE    = 0x2E
+	ROL_ABSOLUTE_X_OPCODE  = 0x3E
+
+	ROR_ACCUMULATOR_OPCODE = 0x6A
+	ROR_ZERO_PAGE_OPCODE   = 0x66
+	ROR_ZERO_PAGE_X_OPCODE = 0x76
+	ROR_ABSOLUTE_OPCODE    = 0x6E
+	ROR_ABSOLUTE_X_OPCODE  = 0x7E
+
+	LSR_ACCUMULATOR_OPCODE = 0x4A
+	LSR_ZERO_PAGE_OPCODE   = 0x46
+	LSR_ZERO_PAGE_X_OPCODE = 0x56
+	LSR_ABSOLUTE_OPCODE    = 0x4E
+	LSR_ABSOLUTE_X_OPCODE  = 0x5E
+
+	ASL_ACCUMULATOR_OPCODE = 0x0A
+	ASL_ZERO_PAGE_OPCODE   = 0x06
+	ASL_ZERO_PAGE_X_OPCODE = 0x16
+	ASL_ABSOLUTE_OPCODE    = 0x0E
+	ASL_ABSOLUTE_X_OPCODE  = 0x1E
+
+	BCC_RELATIVE_OPCODE = 0x90
+	BCS_RELATIVE_OPCODE = 0xB0
+	BEQ_RELATIVE_OPCODE = 0xF0
+	BNE_RELATIVE_OPCODE = 0xD0
+	BMI_RELATIVE_OPCODE = 0x30
+	BPL_RELATIVE_OPCODE = 0x10
+	BVC_RELATIVE_OPCODE = 0x50
+	BVS_RELATIVE_OPCODE = 0x70
+
+	CLC_OPCODE = 0x18
+	CLD_OPCODE = 0xD8
+	CLI_OPCODE = 0x58
+	CLV_OPCODE = 0xB8
+	DEX_OPCODE = 0xCA
+	DEY_OPCODE = 0x88
+	INX_OPCODE = 0xE8
+	INY_OPCODE = 0xC8
+	NOP_OPCODE = 0xEA
+	PHA_OPCODE = 0x48
+	PHP_OPCODE = 0x08
+	PLA_OPCODE = 0x68
+	PLP_OPCODE = 0x28
+	RTI_OPCODE = 0x40
+	RTS_OPCODE = 0x60
+	SEC_OPCODE = 0x38
+	SED_OPCODE = 0xF8
+	SEI_OPCODE = 0x78
+	TAX_OPCODE = 0xAA
+	TAY_OPCODE = 0xA8
+	TSX_OPCODE = 0xBA
+	TXA_OPCODE = 0x8A
+	TXS_OPCODE = 0x9A
+	TYA_OPCODE = 0x98
+
+	BRK_OPCODE = 0x00
+)
 
 var (
 	// CPURegisters and RAM
@@ -181,103 +359,103 @@ func startCPU() {
 
 			Bytes: 1
 		*/
-		case 0x00: //BRK
+		case BRK_OPCODE:
 			cycleStart()
 			BRK()
 			cycleEnd()
-		case 0x18: //CLC
+		case CLC_OPCODE:
 			cycleStart()
 			CLC()
 			cycleEnd()
-		case 0xD8: //CLD
+		case CLD_OPCODE:
 			cycleStart()
 			CLD()
 			cycleEnd()
-		case 0x58: //CLI
+		case CLI_OPCODE:
 			cycleStart()
 			CLI()
 			cycleEnd()
-		case 0xB8: //CLV
+		case CLV_OPCODE:
 			cycleStart()
 			CLV()
 			cycleEnd()
-		case 0xCA: //DEX
+		case DEX_OPCODE:
 			cycleStart()
 			DEX()
 			cycleEnd()
-		case 0x88: //DEY
+		case DEY_OPCODE:
 			cycleStart()
 			DEY()
 			cycleEnd()
-		case 0xE8: //INX
+		case INX_OPCODE:
 			cycleStart()
 			INX()
 			cycleEnd()
-		case 0xC8:
+		case INY_OPCODE:
 			cycleStart()
 			INY()
 			cycleEnd()
-		case 0xEA: //NOP
+		case NOP_OPCODE:
 			cycleStart()
 			NOP()
 			cycleEnd()
-		case 0x48: //PHA
+		case PHA_OPCODE:
 			cycleStart()
 			PHA()
 			cycleEnd()
-		case 0x08: //PHP
+		case PHP_OPCODE:
 			cycleStart()
 			PHP()
 			cycleEnd()
-		case 0x68: //PLA
+		case PLA_OPCODE:
 			cycleStart()
 			PLA()
 			cycleEnd()
-		case 0x28: //PLP
+		case PLP_OPCODE:
 			cycleStart()
 			PLP()
 			cycleEnd()
-		case 0x40: //RTI
+		case RTI_OPCODE:
 			cycleStart()
 			RTI()
 			cycleEnd()
-		case 0x60: //RTS
+		case RTS_OPCODE:
 			cycleStart()
 			RTS()
 			cycleEnd()
-		case 0x38: //SEC
+		case SEC_OPCODE:
 			cycleStart()
 			SEC()
 			cycleEnd()
-		case 0xF8: //SED
+		case SED_OPCODE:
 			cycleStart()
 			SED()
 			cycleEnd()
-		case 0x78: //SEI
+		case SEI_OPCODE:
 			cycleStart()
 			SEI()
 			cycleEnd()
-		case 0xAA: //TAX
+		case TAX_OPCODE:
 			cycleStart()
 			TAX()
 			cycleEnd()
-		case 0xA8: //TAY
+		case TAY_OPCODE:
 			cycleStart()
 			TAY()
 			cycleEnd()
-		case 0xBA: //TSX
+		case TSX_OPCODE:
 			cycleStart()
 			TSX()
 			cycleEnd()
-		case 0x8A: //TXA
+		case TXA_OPCODE:
 			cycleStart()
 			TXA()
 			cycleEnd()
-		case 0x9A: //TXS
+		case TXS_OPCODE:
 			cycleStart()
 			TXS()
 			cycleEnd()
-		case 0x98: //TYA
+		case TYA_OPCODE:
 			cycleStart()
 			TYA()
 			cycleEnd()
@@ -290,19 +468,19 @@ func startCPU() {
 
 			Bytes: 1
 		*/
-		case 0x0A: //ASL
+		case ASL_ACCUMULATOR_OPCODE:
 			cycleStart()
 			ASL_A()
 			cycleEnd()
-		case 0x4A: //LSR
+		case LSR_ACCUMULATOR_OPCODE:
 			cycleStart()
 			LSR_A()
 			cycleEnd()
-		case 0x2A: //ROL
+		case ROL_ACCUMULATOR_OPCODE:
 			cycleStart()
 			ROL_A()
 			cycleEnd()
-		case 0x6A: //ROR
+		case ROR_ACCUMULATOR_OPCODE:
 			cycleStart()
 			ROR_A()
 			cycleEnd()
@@ -318,47 +496,47 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x69: //ADC
+		case ADC_IMMEDIATE_OPCODE:
 			cycleStart()
 			ADC_I()
 			cycleEnd()
-		case 0x29: //AND
+		case AND_IMMEDIATE_OPCODE:
 			cycleStart()
 			AND_I()
 			cycleEnd()
-		case 0xC9: //CMP
+		case CMP_IMMEDIATE_OPCODE:
 			cycleStart()
 			CMP_I()
 			cycleEnd()
-		case 0xE0: //CPX
+		case CPX_IMMEDIATE_OPCODE:
 			cycleStart()
 			CPX_I()
 			cycleEnd()
-		case 0xC0: //CPY
+		case CPY_IMMEDIATE_OPCODE:
 			cycleStart()
 			CPY_I()
 			cycleEnd()
-		case 0x49: //EOR
+		case EOR_IMMEDIATE_OPCODE:
 			cycleStart()
 			EOR_I()
 			cycleEnd()
-		case 0xA9: //LDA
+		case LDA_IMMEDIATE_OPCODE:
 			cycleStart()
 			LDA_I()
 			cycleEnd()
-		case 0xA2: //LDX
+		case LDX_IMMEDIATE_OPCODE:
 			cycleStart()
 			LDX_I()
 			cycleEnd()
-		case 0xA0: //LDY
+		case LDY_IMMEDIATE_OPCODE:
 			cycleStart()
 			LDY_I()
 			cycleEnd()
-		case 0x09: //ORA
+		case ORA_IMMEDIATE_OPCODE:
 			cycleStart()
 			ORA_I()
 			cycleEnd()
-		case 0xE9: //SBC
+		case SBC_IMMEDIATE_OPCODE:
 			cycleStart()
 			SBC_I()
 			cycleEnd()
@@ -371,87 +549,87 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x65: //ADC
+		case ADC_ZERO_PAGE_OPCODE:
 			cycleStart()
 			ADC_Z()
 			cycleEnd()
-		case 0x25: //AND
+		case AND_ZERO_PAGE_OPCODE:
 			cycleStart()
 			AND_Z()
 			cycleEnd()
-		case 0x06: //ASL
+		case ASL_ZERO_PAGE_OPCODE:
 			cycleStart()
 			ASL_Z()
 			cycleEnd()
-		case 0x24: //BIT
+		case BIT_ZERO_PAGE_OPCODE:
 			cycleStart()
 			BIT_Z()
 			cycleEnd()
-		case 0xC5: //CMP
+		case CMP_ZERO_PAGE_OPCODE:
 			cycleStart()
 			CMP_Z()
 			cycleEnd()
-		case 0xE4: //CPX
+		case CPX_ZERO_PAGE_OPCODE:
 			cycleStart()
 			CPX_Z()
 			cycleEnd()
-		case 0xC4: //CPY
+		case CPY_ZERO_PAGE_OPCODE:
 			cycleStart()
 			CPY_Z()
 			cycleEnd()
-		case 0xC6: //DEC
+		case DEC_ZERO_PAGE_OPCODE:
 			cycleStart()
 			DEC_Z()
 			cycleEnd()
-		case 0x45: //EOR
+		case EOR_ZERO_PAGE_OPCODE:
 			cycleStart()
 			EOR_Z()
 			cycleEnd()
-		case 0xE6: //INC
+		case INC_ZERO_PAGE_OPCODE:
 			cycleStart()
 			INC_Z()
 			cycleEnd()
-		case 0xA5: //LDA
+		case LDA_ZERO_PAGE_OPCODE:
 			cycleStart()
 			LDA_Z()
 			cycleEnd()
-		case 0xA6: //LDX
+		case LDX_ZERO_PAGE_OPCODE:
 			cycleStart()
 			LDX_Z()
 			cycleEnd()
-		case 0xA4: //LDY
+		case LDY_ZERO_PAGE_OPCODE:
 			cycleStart()
 			LDY_Z()
 			cycleEnd()
-		case 0x46: //LSR
+		case LSR_ZERO_PAGE_OPCODE:
 			cycleStart()
 			LSR_Z()
 			cycleEnd()
-		case 0x05: //ORA
+		case ORA_ZERO_PAGE_OPCODE:
 			cycleStart()
 			ORA_Z()
 			cycleEnd()
-		case 0x26: //ROL
+		case ROL_ZERO_PAGE_OPCODE:
 			cycleStart()
 			ROL_Z()
 			cycleEnd()
-		case 0x66: //ROR
+		case ROR_ZERO_PAGE_OPCODE:
 			cycleStart()
 			ROR_Z()
 			cycleEnd()
-		case 0xE5: //SBC
+		case SBC_ZERO_PAGE_OPCODE:
 			cycleStart()
 			SBC_Z()
 			cycleEnd()
-		case 0x85: //STA
+		case STA_ZERO_PAGE_OPCODE:
 			cycleStart()
 			STA_Z()
 			cycleEnd()
-		case 0x86: //STX
+		case STX_ZERO_PAGE_OPCODE:
 			cycleStart()
 			STX_Z()
 			cycleEnd()
-		case 0x84: //STY
+		case STY_ZERO_PAGE_OPCODE:
 			cycleStart()
 			STY_Z()
 			cycleEnd()
@@ -464,67 +642,67 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x75: //ADC
+		case ADC_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			ADC_ZX()
 			cycleEnd()
-		case 0x35: //AND
+		case AND_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			AND_ZX()
 			cycleEnd()
-		case 0x16: //ASL
+		case ASL_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			ASL_ZX()
 			cycleEnd()
-		case 0xD5: //CMP
+		case CMP_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			CMP_ZX()
 			cycleEnd()
-		case 0xD6: //DEC
+		case DEC_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			DEC_ZX()
 			cycleEnd()
-		case 0xB5: //LDA
+		case LDA_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			LDA_ZX()
 			cycleEnd()
-		case 0xB4: //LDY
+		case LDY_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			LDY_ZX()
 			cycleEnd()
-		case 0x56: //LSR
+		case LSR_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			LSR_ZX()
 			cycleEnd()
-		case 0x15: //ORA
+		case ORA_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			ORA_ZX()
 			cycleEnd()
-		case 0x36: //ROL
+		case ROL_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			ROL_ZX()
 			cycleEnd()
-		case 0x76: //ROR
+		case ROR_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			ROR_ZX()
 			cycleEnd()
-		case 0x55: //EOR
+		case EOR_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			EOR_ZX()
 			cycleEnd()
-		case 0xF6:
+		case INC_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			INC_ZX()
 			cycleEnd()
-		case 0xF5: //SBC
+		case SBC_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			SBC_ZX()
 			cycleEnd()
-		case 0x95: //STA
+		case STA_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			STA_ZX()
 			cycleEnd()
-		case 0x94: //STY
+		case STY_ZERO_PAGE_X_OPCODE:
 			cycleStart()
 			STY_ZX()
 			cycleEnd()
@@ -537,11 +715,11 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0xB6: //LDX
+		case LDX_ZERO_PAGE_Y_OPCODE:
 			cycleStart()
 			LDX_ZY()
 			cycleEnd()
-		case 0x96: //STX
+		case STX_ZERO_PAGE_Y_OPCODE:
 			cycleStart()
 			STX_ZY()
 			cycleEnd()
@@ -554,35 +732,35 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x61: //ADC
+		case ADC_INDIRECT_X_OPCODE:
 			cycleStart()
 			ADC_IX()
 			cycleEnd()
-		case 0x21: //AND
+		case AND_INDIRECT_X_OPCODE:
 			cycleStart()
 			AND_IX()
 			cycleEnd()
-		case 0xC1: //CMP
+		case CMP_INDIRECT_X_OPCODE:
 			cycleStart()
 			CMP_IX()
 			cycleEnd()
-		case 0x41: //EOR
+		case EOR_INDIRECT_X_OPCODE:
 			cycleStart()
 			EOR_IX()
 			cycleEnd()
-		case 0xA1: //LDA
+		case LDA_INDIRECT_X_OPCODE:
 			cycleStart()
 			LDA_IX()
 			cycleEnd()
-		case 0x01: //ORA
+		case ORA_INDIRECT_X_OPCODE:
 			cycleStart()
 			ORA_IX()
 			cycleEnd()
-		case 0xE1: //SBC
+		case SBC_INDIRECT_X_OPCODE:
 			cycleStart()
 			SBC_IX()
 			cycleEnd()
-		case 0x81: //STA
+		case STA_INDIRECT_X_OPCODE:
 			cycleStart()
 			STA_IX()
 			cycleEnd()
@@ -595,35 +773,35 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x71: //ADC
+		case ADC_INDIRECT_Y_OPCODE:
 			cycleStart()
 			ADC_IY()
 			cycleEnd()
-		case 0x31: //AND
+		case AND_INDIRECT_Y_OPCODE:
 			cycleStart()
 			AND_IY()
 			cycleEnd()
-		case 0xD1: //CMP
+		case CMP_INDIRECT_Y_OPCODE:
 			cycleStart()
 			CMP_IY()
 			cycleEnd()
-		case 0x51: //EOR
+		case EOR_INDIRECT_Y_OPCODE:
 			cycleStart()
 			EOR_IY()
 			cycleEnd()
-		case 0xB1: //LDA
+		case LDA_INDIRECT_Y_OPCODE:
 			cycleStart()
 			LDA_IY()
 			cycleEnd()
-		case 0x11: //ORA
+		case ORA_INDIRECT_Y_OPCODE:
 			cycleStart()
 			ORA_IY()
 			cycleEnd()
-		case 0xF1: //SBC
+		case SBC_INDIRECT_Y_OPCODE:
 			cycleStart()
 			SBC_IY()
 			cycleEnd()
-		case 0x91: //STA
+		case STA_INDIRECT_Y_OPCODE:
 			cycleStart()
 			STA_IY()
 			cycleEnd()
@@ -638,35 +816,35 @@ func startCPU() {
 
 			Bytes: 2
 		*/
-		case 0x10: //BPL
+		case BPL_RELATIVE_OPCODE:
 			cycleStart()
 			BPL_R()
 			cycleEnd()
-		case 0x30: //BMI
+		case BMI_RELATIVE_OPCODE:
 			cycleStart()
 			BMI_R()
 			cycleEnd()
-		case 0x50: //BVC
+		case BVC_RELATIVE_OPCODE:
 			cycleStart()
 			BVC_R()
 			cycleEnd()
-		case 0x70: //BVS
+		case BVS_RELATIVE_OPCODE:
 			cycleStart()
 			BVS_R()
 			cycleEnd()
-		case 0x90: //BCC
+		case BCC_RELATIVE_OPCODE:
 			cycleStart()
 			BCC_R()
 			cycleEnd()
-		case 0xB0: //BCS
+		case BCS_RELATIVE_OPCODE:
 			cycleStart()
 			BCS_R()
 			cycleEnd()
-		case 0xD0: //BNE
+		case BNE_RELATIVE_OPCODE:
 			cycleStart()
 			BNE_R()
 			cycleEnd()
-		case 0xF0:
+		case BEQ_RELATIVE_OPCODE:
 			cycleStart()
 			BEQ_R()
 			cycleEnd()
@@ -682,95 +860,95 @@ func startCPU() {
 
 			Bytes: 3
 		*/
-		case 0x6D: //ADC
+		case ADC_ABSOLUTE_OPCODE:
 			cycleStart()
 			ADC_ABS()
 			cycleEnd()
-		case 0x2D: //AND
+		case AND_ABSOLUTE_OPCODE:
 			cycleStart()
 			AND_ABS()
 			cycleEnd()
-		case 0x0E: //ASL
+		case ASL_ABSOLUTE_OPCODE:
 			cycleStart()
 			ASL_ABS()
 			cycleEnd()
-		case 0x2C: //BIT
+		case BIT_ABSOLUTE_OPCODE:
 			cycleStart()
 			BIT_ABS()
 			cycleEnd()
-		case 0xCD: //CMP
+		case CMP_ABSOLUTE_OPCODE:
 			cycleStart()
 			CMP_ABS()
 			cycleEnd()
-		case 0xEC: //CPX
+		case CPX_ABSOLUTE_OPCODE:
 			cycleStart()
 			CPX_ABS()
 			cycleEnd()
-		case 0xCC:
+		case CPY_ABSOLUTE_OPCODE:
 			cycleStart()
 			CPY_ABS()
 			cycleEnd()
-		case 0xCE: //DEC
+		case DEC_ABSOLUTE_OPCODE:
 			cycleStart()
 			DEC_ABS()
 			cycleEnd()
-		case 0x4D: //EOR
+		case EOR_ABSOLUTE_OPCODE:
 			cycleStart()
 			EOR_ABS()
 			cycleEnd()
-		case 0xEE: //INC
+		case INC_ABSOLUTE_OPCODE:
 			cycleStart()
 			INC_ABS()
 			cycleEnd()
-		case 0x4C: //JMP
+		case JMP_ABSOLUTE_OPCODE:
 			cycleStart()
 			JMP_ABS()
 			cycleEnd()
-		case 0x20: //JSR
+		case JSR_ABSOLUTE_OPCODE:
 			cycleStart()
 			JSR_ABS()
 			cycleEnd()
-		case 0xAD: //LDA
+		case LDA_ABSOLUTE_OPCODE:
 			cycleStart()
 			LDA_ABS()
 			cycleEnd()
-		case 0xAE: //LDX
+		case LDX_ABSOLUTE_OPCODE:
 			cycleStart()
 			LDX_ABS()
 			cycleEnd()
-		case 0xAC: //LDY
+		case LDY_ABSOLUTE_OPCODE:
 			cycleStart()
 			LDY_ABS()
 			cycleEnd()
-		case 0x4E: //LSR
+		case LSR_ABSOLUTE_OPCODE:
 			cycleStart()
 			LSR_ABS()
 			cycleEnd()
-		case 0x0D: //ORA
+		case ORA_ABSOLUTE_OPCODE:
 			cycleStart()
 			ORA_ABS()
 			cycleEnd()
-		case 0x2E: //ROL
+		case ROL_ABSOLUTE_OPCODE:
 			cycleStart()
 			ROL_ABS()
 			cycleEnd()
-		case 0x6E: //ROR
+		case ROR_ABSOLUTE_OPCODE:
 			cycleStart()
 			ROR_ABS()
 			cycleEnd()
-		case 0xED: //SBC
+		case SBC_ABSOLUTE_OPCODE:
 			cycleStart()
 			SBC_ABS()
 			cycleEnd()
-		case 0x8D: //STA
+		case STA_ABSOLUTE_OPCODE:
 			cycleStart()
 			STA_ABS()
 			cycleEnd()
-		case 0x8E:
+		case STX_ABSOLUTE_OPCODE:
 			cycleStart()
 			STX_ABS()
 			cycleEnd()
-		case 0x8C: //STY
+		case STY_ABSOLUTE_OPCODE:
 			cycleStart()
 			STY_ABS()
 			cycleEnd()
@@ -788,63 +966,63 @@ func startCPU() {
 
 			Bytes: 3
 		*/
-		case 0x7D: //ADC
+		case ADC_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			ADC_ABX()
 			cycleEnd()
-		case 0x3D: //AND
+		case AND_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			AND_ABX()
 			cycleEnd()
-		case 0x1E: //ASL
+		case ASL_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			ASL_ABX()
 			cycleEnd()
-		case 0xDD: //CMP
+		case CMP_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			CMP_ABX()
 			cycleEnd()
-		case 0xDE: //DEC
+		case DEC_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			DEC_ABX()
 			cycleEnd()
-		case 0x5D: //EOR
+		case EOR_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			EOR_ABX()
 			cycleEnd()
-		case 0xFE: //INC
+		case INC_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			INC_ABX()
 			cycleEnd()
-		case 0xBD: //LDA
+		case LDA_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			LDA_ABX()
 			cycleEnd()
-		case 0xBC: //LDY
+		case LDY_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			LDY_ABX()
 			cycleEnd()
-		case 0x5E: //LSR
+		case LSR_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			LSR_ABX()
 			cycleEnd()
-		case 0x1D: //ORA
+		case ORA_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			ORA_ABX()
 			cycleEnd()
-		case 0x3E: //ROL
+		case ROL_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			ROL_ABX()
 			cycleEnd()
-		case 0x7E: //ROR
+		case ROR_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			ROR_ABX()
 			cycleEnd()
-		case 0xFD: //SBC
+		case SBC_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			SBC_ABX()
 			cycleEnd()
-		case 0x9D: //STA
+		case STA_ABSOLUTE_X_OPCODE:
 			cycleStart()
 			STA_ABX()
 			cycleEnd()
@@ -861,45 +1039,45 @@ func startCPU() {
 
 			Bytes: 3
 		*/
-		case 0x79: //ADC
+		case ADC_ABSOLUTE_Y_OPCODE:
 			cycleStart()
 			ADC_ABY()
 			cycleEnd()
-		case 0x39: //AND
+		case AND_ABSOLUTE_Y_OPCODE:
 			cycleStart()
 			AND_ABY()
 			cycleEnd()
-		case 0xD9: //CMP
+		case CMP_ABSOLUTE_Y_OPCODE:
 			cycleStart()
 			CMP_ABY()
 			cycleEnd()
-		case 0x59: //EOR
+		case EOR_ABSOLUTE_Y_OPCODE:
 			cycleStart()
 			EOR_ABY()
 			cycleEnd()
-		case 0xB9: //LDA
+		case LDA_ABSOLUTE_Y_OPCODE:
 			cycleStart()
 			LDA_ABY()
 			cycleEnd()
-		case 0xBE: //LDX
+		case LDX_ABSOLUTE_Y_OPCODE:
 			cycleStart()
 			LDX_ABY()
 			cycleEnd()
-		case 0x19: //ORA
+		case ORA_ABSOLUTE_Y_OPCODE:
 			cycleStart()
 			ORA_ABY()
 			cycleEnd()
-		case 0xF9:
+		case SBC_ABSOLUTE_Y_OPCODE:
 			cycleStart()
 			SBC_ABY()
 			cycleEnd()
-		case 0x99:
+		case STA_ABSOLUTE_Y_OPCODE:
 			cycleStart()
 			STA_ABY()
 			cycleEnd()
 
 		// Absolute Indirect addressing mode instructions
-		case 0x6C: //JMP
+		case JMP_INDIRECT_OPCODE:
 			cycleStart()
 			JMP_IND()
 			cycleEnd()

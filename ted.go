@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 // Constants for TED registers
 const (
 	TED_CTRL_REG_0     = 0xFD00
@@ -32,6 +34,7 @@ const (
 
 // Handle TED specific registers
 func readTEDReg(address uint16) byte {
+	fmt.Printf("Reading TED register %04X\n", address)
 	switch address {
 	case TED_CTRL_REG_0:
 		return 0
@@ -91,6 +94,7 @@ func readTEDReg(address uint16) byte {
 }
 
 func writeTEDReg(address uint16, value byte) {
+	fmt.Printf("Writing %02X to TED register %04X\n", value, address)
 	switch address {
 	case TED_CTRL_REG_0:
 	case TED_CTRL_REG_1:
