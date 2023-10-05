@@ -26,5 +26,6 @@ func main() {
 	// Start emulation
 	loadROMs()
 	resetCPU()
+	resetTED()
 	startCPU()
 }

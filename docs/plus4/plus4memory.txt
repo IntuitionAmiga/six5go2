@@ -1,0 +1,574 @@
+Graphics Chip Register Map
+The graphics chip is located at $FF00-$FF1F (65280 - 65311). The usage of each register is described as completely as possible.
+
+$FF00   0-7 Low byte of reload value for Timer 1
+$FF01   0-7 High byte of reload value for Timer 1
+$FF02   0-7 Low byte of start value for Timer 2
+$FF03   0-7 High byte of start value for Timer 2
+$FF04   0-7 Low byte of start value for Timer 3
+$FF05   0-7 High byte of start value for Timer 3
+$FF06   0-2 Vertical screen scroll position
+        3   0 = 24 rows, 1 = 25 rows
+        4   0 = blank screen, 1 = display screen
+        5   Bit map mode: 0 = off, 1 = on
+        6   Extended color mode: 0 = off, 1 = on
+        7   TEST (Should always be cleared to 0)
+        0-2 Horizontal screen scroll position
+        0 = 38 colums, 1 = 40 columns
+        Multicolour mode: 0 = off, 1 = on
+$FF07   0-2 Horizontal screen scroll position
+        3   0 = 38 columns, 1 = 40 columns
+        4   Multicolor mode: 0 = off, 1 = on
+        5   Flashing: 0 = yes, 1 = no
+        6   TV standard: 0 = pal, 1 = NTSC
+        7   Reverse characters through hardware: 0 = yes, 1 = no
+$FF08   0-7 Latch register for keyboard
+$FF09   0   Not connected
+        1   Raster interrupt flag
+        2   Light pen interrupt flag
+        3   Timer 1 interrupt flag
+        4   Timer 2 interrupt flag
+        5   Not connected
+        6   Timer 3 interrupt flag
+        7   interrupt occured flag
+$FF0A   0   High bit for raster interrupt value
+        1   Raster interrupt enable
+        2   Light pen interrupt
+        3   Timer 1 interrupt enable
+        4   Timer 2 interrupt enable
+        5   Not connected
+        6   Timer 3 interrupt enable
+        7   Not connected
+$FF0B   0-7 Low byte for raster interrupt value
+$FF0C   0-1 High bits for hardware cursor position
+$FF0D   0-7 Low byte for hardware cursor position
+$FF0E   0-7 Low byte of frequency for voice 1
+$FF0F   0-7 Low byte of frequency for voice 2
+$FF10   0-1 High byte of frequency for voice 2
+        2-7 Not connected
+$FF11   0-3 Volume: 0 = off, F = highest
+        4   Select voice 1
+        5   Select tone noise generator for voice 2
+        6   Select noise generator for voice 2
+        7   Sound reload switch: 0 = on, 1 = off
+$FF12   0-1 High bits of frequency for voice 1
+        2   0 = get data from RAM, 1 = get data from ROM
+$FF13   0   Status of clock
+        1   Single clock set
+        2-7 Base address for character data
+$FF14   0-2 Not connected
+$FF15   0-3 Background Color
+        4-6 Background Luminance
+        7   Not connected
+$FF16   0-3 Color for color 1
+        4-6 Color for color 1
+        7   Not connected
+$FF17   0-3 Color for color 2
+        4-6 Luminance for color 2
+        7   Not connected
+$FF18   0-3 Color for color 3
+        4-6 Luminance for color 3
+        7   Not connected
+$FF19   0-3 Border color
+        4-6 Border luminance
+        7 Not connected
+$FF1A   0-1 High bits for bit map reload
+        2-7 Not connected
+$FF1B   0-7 Low byte for bit map reload
+$FF1C   0   High bit of current vertical raster
+        1-7 Not connected
+$FF1D   0-7 Current horizontal raster position
+$FF1F   0-2 Vertical sub address
+        3-6 Blink address
+        7   Not connected
+
+Memory Usage on the Plus/4
+$0000-$0001 Processor on-chip data registers
+$0002-$00CF System zero page storage
+$00D0-$00D7 Zero page area reserved for speech software
+$00D8-$00E8 Free zero page area for applications
+$00E9-$00FF System zero page storage
+$0100-$0122 System storage
+$0123-$01FF Processor stack
+$0200-$0258 Input buffer for BASIC and the Monitor
+$0259-$025C BASIC storage
+$025D-$02AC Storage for DOS information
+$02AD-$02CB BASIC graphics storage
+$02CC-$02E3 BASIC work area
+$02E4-$02F1 BASIC graphics storage
+$02F2-$02F5 BASIC pointers
+$02F6-$02FD Free
+$02FE-$0331 System vectors
+$0332-$03F2 Cassette buffer
+$03F3-$03F6 Storage for cassette information
+$03F7-$0436 RS232 buffer
+$0437-$0472 Storage for cassette information
+$0473-$04E6 BASIC RAM subroutines
+$04E7-$0508 BASIC storage
+$0509-$054A System storage
+$054B-$055C Monitor storage
+$055D-$05E6 Function key area
+$05E7-$05EB Storage for DMA information
+$05EC-$05EF Cartridge address table
+$05F0-$05F4 Long jump routine and storage
+$05F5-$06EB RAM for speech and cartridges
+$06EC-$07AF BASIC stack
+$07B0-$07F1 System I/O storage
+$07F2-$07FF System storage
+$0800-$0BE7 Color memory
+$0BE8-$0BFF Free
+$0C00-$0FE7 Screen memory
+$0FE8-$0FFF Free
+$1000-$3FFF RAM used by BASIC (in text mode)
+$1000-$17FF Free (in BASIC graphics mode)
+$1800-$1BE7 Luminance memory (in BASIC graphics mode)
+$1BE8-$1BFF Free (in BASIC graphics mode)
+$1C00-$1FE7 Color memory (in BASIC graphics mode)
+$1FE8-$1FFF Free (in BASIC graphics mode)
+$2000-$3F3F Graphics screen (in BASIC graphics mode)
+$3F40-$3FFF Free (in BASIC graphics mode)
+$4000-$7FFF RAM used by BASIC
+$8000-$FCFF RAM sued by BASIC (under ROM)
+$8000-$CDFF BASIC and Monitor ROM
+$CE00-$CFFF Operating System ROM
+$D000-$D7FF Character ROM
+$D800-$FBFF Operating System ROM
+$FC00-$FCFF Banking routines ROM (in all ROM maps)
+$FD00-$FD0F ACIA chip (used for RS232, in all maps)
+$FD10-$FD1F Parallel port (6529, in all maps)
+$FD20-$FDCF Unknown (in all maps)
+$FDD0-$FDDF Cartridge banking port (in all maps)
+$FDE0-$FEFF Direct Memory Access disk (in all maps)
+$FF00-$FF3F Graphics chip (in all maps)
+$FF40-$FFFF RAM (under ROM)
+$FF40-$FFFF Operating System from
+
+
+Detailed Memory Map of the Plus/4
+$0000       Processor on-chip data direction register
+$0001       Processor on-chip data register
+$0002       BASIC token to search for in BASIC stack
+$0003-$0006 Storage for RENUMBER
+$0007       Start character to search for in BASIC text
+$0008       End character to search for in BASIC text
+$0009       Save last TAB column
+$000A       Flag for load ($00) or verify ($01)
+$000B       Buffer pointer for input/number of subscripts
+$000C       Flag for default array dimension
+$000D       Flag for data type ($00=numeric, $FF=string)
+$000E       Flag for data type ($00=floating, $80=integer)
+$000F       Flag for garbage collect/ DATA scan/LIST quote
+$0010       Flag for subscript/FNx function
+$0011       Flag for input (SO0=INPUT, $40=GET, $98=READ)
+$0012       Sign of TAN/comparison flag
+$0013       Flag for I/O prompt
+$0014-$0015 Integer value
+$0016       Pointer to temporary string stack
+$0017-$0018 Address of last temporary string
+$0019-$0021 Stack for temporary strings
+$0022-$0025 Utility pointers
+$0026-$002A Floating point result of multiply
+$002B-$002C Pointer to start of BASIC text
+$002D-$002E Pointer to start of variables in BASIC RAM
+$002F-$0030 Pointer to start of arrays in BASIC RAM
+$0031-$0032 Pointer to end of arrays in BASIC RAM
+$0033-$0034 Pointer to bottom of strings in BASIC RAM
+$0035-$0036 Pointer to current string
+$0037-$0038 Pointer to top of BASIC RAM (+1)
+$0039-$003A Current BASIC line number
+$003B-$003C Pointer to current BASIC text
+$003D-$003E Pointer to BASIC stack for CONT
+$003F-$0040 Current line number in DATA
+$0041-$0042 Current address of DATA item
+$0043-$0044 Vector to INPUT
+$0045-$0046 Name of current variable
+$0047-$0048 Address of current variable
+$0049-$004A Pointer to FOR/ NEXT index
+$004B-$0060 Temporary storage area
+$0061       Floating point accumulator 1, exponent
+$0062-$0065 Floating point accumulator 1, mantissa
+$0066       Floating point accumulator 1, sign
+$0067       Series evaluation constant pointer
+$0068       Floating point accumulator 1, overflow
+$0069       Floating point accumulator 2, exponent
+$006A-$006D Floating point accumulator 2, mantissa
+$006E       Floating point accumulator 2, sign
+$006F       Sign comparison of FPA 1 and FPA 2/ pointer
+$0070       Floating point accumulator 2, overflow
+$0071-$0072 Cassette buffer/series pointer
+$0073-$0074 Increment for AUTO ($00=none)
+$0075       Flag for graphics area ($00=no, $FF=yes)
+$0076-$0077 Key work area
+$0078       Temporary storage for indirect load
+$0079-$007B Disk error message descriptor
+$007C-$007D BASIC stack pointer
+$007E-$007F Temporary storage for sounds
+$0080       Temporary parameter storage
+$0081       Flag for RUNning ($00=no, $80=yes)
+$0082       Flag used for DOS commands
+$0083       Graphic mode ($00=text, $20=high-res, $60=split high-res, $A0=multicolor, $EO=split multicolor)
+$0084       Current color source for drawing
+$0085       Current color/luminance for COLOR 2
+$0086       Current color/luminance for COLOR 1
+$0087       Maximum number of screen columns
+$0088       Maximum number of screen rows
+$0089       Flag for PAINT (left)
+$008A       Flag for PAINT (right)
+$008B       Flag for PAINT border ($00=same color, $80=nonbackground color)
+$008C-$008D Pointer to bit map color information
+$008E       Temporary storage
+$008F       Temporary storage
+$0090       I/O status word (ST)
+$0091       STOP key flag
+$0092       Temporary storage
+$0093       Flag for load ($00) or verify ($01)
+$0094       Flag for buffered serial output ($00=no, $80=yes)
+$0095       Buffered serial output byte
+$0096       Save .X for BASIN
+$0097       Count of open logical files
+$0098       Current input device
+$0099       Current output device
+$009A       Flag for message output ($00=program, $80=BASIC direct mode, $C0=monitor)
+$009B-$009C Current SAVE address
+$009D-$009E End SAVE address (+1)/ LOAD
+$009F-$00A0 Temporary storage
+$00A1-$00A2 Vector for monitor
+$00A3-$00A5 System clock
+$00A6       Part of serial bus EOI count
+$00A7       Buffered tape I/O byte
+$00A8       Buffered serial input byte
+$00A9-$00AA Color vector for scrolling/temporary storage
+$00AB       Current file name length
+$00AC       Number of current logical file
+$00AD       Secondary address of current logical file
+$00AE       Device number of current logical file
+$00AF-$00B0 Pointer to name of current logical file
+$00B1       Count of tape errors
+$00B2-$00B3 Begin SAVE address
+$00B4-$00B5 Relocated LOAD address
+$00B6-$00B7 Pointer for cassette buffer
+$00B8-$00B9 Address for VECTOR
+$00BA-$00BB Temporary storage for cassette I/O
+$00BC-$00BD Pointer for tape messages
+$O0BE-$00BF Pointer to fetch byte for ROM banking
+$00C0-$00C1 Text vector for scrolling/temporary storage
+$00C2       Flag for reversed text ($00=off, $12=on)
+$00C3       Last cursor column for input
+$00C4       Temporary cursor line pointer
+$00C5       Temporary cursor column pointer
+$00C6       Flag for shift/control key input
+$00C7       Flag for input from keyboard ($00) or screen ($03)
+$00C8-$00C9 Address of current screen line
+$00CA       Current cursor column
+$00CB       Flag for quote mode ($00=no, $01=yes)
+$00CC       Temporary storage for editor
+$00CD       Current cursor line
+$00CE       Last character input
+$00CF       Counter for insert mode characters
+$00DO-$00D7 Zero page area reserved for speech software
+$00D8-$00E8 Free zero page area for applications
+$00E9       Segment size for CIRCLE
+$0OEA-$00EB Address of current color line
+$00EC-$00ED Indirect for key scan table
+$00EE       Temporary storage for key scan
+$00EF       Keyboard queue index
+$00FO       Flag for screen I/O pause (CTRL S/T)
+$00F1-$00F4 Zero page area for monitor
+$00FS       Cassette I/O checksum
+$00F6       Zero page location for monitor
+$00F7       Pass number for cassette I/O
+$00F8       Type of cassette block
+$00F9       Flag for DMA disk ($00=not present, $80=present)
+$O0FA       Temporary storage for .X during stop key check
+$O0FB       Number of ROM bank currently enabled
+$00FC       X-on character for RS232 1/O
+$00FD       X-off character for RS232 I/O
+$00FE       Temporary storage for cursor line in editor
+$00FF       Used as base address for indexing forward
+$0100-$010F Floating point operation buffer
+$0110-$0112 Temporary storage for .A, .X, .Y during I/O
+$0113-$0122 RAM color/luminance table for color keys
+$0123-$01FF Processor stack
+$0200-$0258 Input buffer
+$0259-$025A Last BASIC line number
+$025B-$025C Last BASIC text pointer
+$025D       Loop counter for DOS
+$025E-$026D Buffer for disk file name
+$026E       Length of disk file name 1
+$026F       Drive for disk file 1
+$0270-$0271 Address of disk file name 1
+$0272       Length of disk file name 2
+$0273       Drive for disk file 2
+$0274-$0275 Address of disk file name 2
+$0276       Logical address for DOS
+$0277       Physical address for DOS
+$0278       Secondary address for DOS
+$0279-$027A Disk identifier
+$027B       Flag for disk id specified
+$027C       Buffer for disk output string
+$027D-$02AC Disk output string area
+$02AD-$02AE Graphics current x-coordinate
+$02AF-$02B0 Graphics current y-coordinate
+$02B1-$02B2 Final x-coordinate
+$02B3-$02B4 Final y-coordinate
+$02B5-$02C4 Graphics calculation area
+$02C5       Current angle’s sign
+$02C6-$02C7 Current angle’s sine
+$02C8-$02C9 Current angle’s cosine
+$02CA-$02CB Temporary storage for distance routines
+$02CC-$02E3 PRINT USING/CIRCLE/SHAPE work
+$02E4       CHAR command character ROM address
+$02ES       Temporary storage for GSHAPE
+$02E6       Flag for SCALE ($00=off, $01=on)
+$02E7       Flag for double width
+$02E8       Flag for BOX fill
+$02E9       Temporary storage of bit mask
+$02EA       Length of string
+$02EB       Flag for TRON ($00=off, $FF=on)
+$02EC-$02EE Temporary storage for DIRECTORY
+$O2EF       Temporary storage for graphics
+$02FO       Count of graphics parameters
+$02F1       Flag for relative or absolute
+$02F2-$02F3 Vector for floating point to integer conversion
+$02F4-$02F5 Vector for integer to floating point conversion
+$02F6-$02FD Free
+$02FE-$02FF Vector for cartridge software startup
+$0300-$0301 Vector for error routine
+$0302-$0303 Vector for BASIC warm start
+$0304-$0305 Vector for tokenization routine
+$0306-$0307 Vector for token PRINT
+$0308-$0309 Vector to execute BASIC code
+$030A-$030B Vector for arithmetic symbol evaluation
+$030C-$030D Vector to escape token crunch routine
+$030E-$030F Vector to escape token PRINT routine
+$0310-$0311 Vector to escape execute routine
+$0312-$0313 Vector for vertical blank IRQ routine
+$0314-$0315 Vector for IRQ routine
+$0316-$0317 Vector for BRK instruction processing
+$0318-$0319 Vector for OPEN
+$031A-$031B Vector for CLOSE
+$031C-$031D Vector for CHKIN
+$031E-$031F Vector for CHOUT
+$0320-$0321 Vector for CLRCH
+$0322-$0323 Vector for BASIN
+$0324-$0325 Vector for BSOUT
+$0326-$0327 Vector for STOP
+$0328-$0329 Vector for GETIN
+$032A-$032B Vector for CLALL
+$032C-$032D Free vector
+$032E-$032F Vector for LOADSP
+$0330-$0331 Vector for SAVESP
+$0332-$03F2 Buffer for cassette I/O
+$03F3-$03F4 Number of characters to write to tape
+$03F5-$03F6 Number of characters to read from tape
+$03F7-$0436 RS232 buffer
+$0437-$0454 Cassette I/O error stack (low bytes)
+$0455-$0472 Cassette I/O error stack (high bytes)
+$0473-$0478 Entry to get next character from BASIC text RAM
+$0479-$0484 Entry to get same character from BASIC text RAM
+$0485-$0493 Entry to check for numeric input
+$0494-$04A1 Self-modifying routine to fetch RAM data via (.A),Y
+$04A2-$04A4 Zeroes
+$04A5-$04AF Fetch RAM via BASIC text pointer ($3B),Y
+$04B0-$04BA Fetch RAM from ($22), Y
+$04BB-$04C5 Fetch RAM from ($24), Y
+$04C6-$04D0 Fetch RAM from ($6F),Y
+$04D1-$04DB Fetch RAM from ($5F),Y
+$04DC-$04E6 Fetch RAM from ($64), Y
+$04E7       PRINT USING symbol for blank
+$04E8       PRINT USING symbol for comma
+$04E9       PRINT USING symbol for decimal point
+$04EA       PRINT USING symbol for dollar sign
+$04EB-$04EE Temporary storage for string functions
+$04EF       Number of latest error
+$04F0-$04F1 Line number of latest error
+$04F2-$04F3 TRAP line
+$04F4       Temporary storage for TRAP
+$04F5-$04F6 BASIC text pointer at latest error
+$04F7       BASIC stack pointer at latest error
+$04F8-$04F9 DO storage of BASIC text pointer
+$04FA-$04FB DO storage of line number
+$04FC       Low byte of sound 1 duration
+$04FD       Low byte of sound 2 duration
+$04FE       High byte of sound 1 duration
+$04FF       High byte of sound 2 duration
+$0500-$0502 USR function jump instruction
+$0503-$0507 Random number registers
+$0508       Checked for cold/warm start ($A5=warm)
+$0509-$0512 Table of OPEN logical file numbers
+$0513-$051C Table of OPEN device numbers
+$051D-$0526 Table of OPEN secondary addresses
+$0527-$0530 Keyboard queue
+$0531-$0532 Bottom of memory
+$0533-$0534 Top of memory
+$0535       Timeout flag (DMA)
+$0536       EOF flag (DMA)
+$0537       Number of bytes in buffer
+$0538       Valid bytes in buffer
+$0539       Pointer to buffer
+$053A       Type of current tape file
+$053B       Current character color/luminance
+$053C       Current character flash flag ($00=no, $80=yes)
+$053D       Free
+$053E       Screen memory start (high byte)
+$053F       Length of keyboard queue
+$0540       Flag for key repeat ($80=all keys repeat, $40=no keys repeat, $00=space,INST/DEL, and cursor keys repeat)
+$0541-$0542 Counters for key repeats
+$0543       Flag for shift key
+$0544       Pattern of last shift
+$0545-$0546 Vector for keyboard table
+$0547       Commodore SHIFT enable ($00=enabled, $80=disabled)
+$0548       Flag for scrolling (not used)
+$0549-$054A Temporary storage during screen output
+$054B-$0551 Storage for monitor
+$0552-$0558 Register storage for monitor (PC,SR,A,X,Y,SP)
+$0559-$055C Storage for monitor
+$055D       Number of characters left to get from function key definition
+$055E       Pointer to current character in function key definition
+$055F-$0566 Table of lengths of function key definitions
+$0567-$05E6 Function key definitions
+$05E7       Temporary storage for data write (DMA)
+$05E8       Read or write (DMA)
+$05E9       Device number (DMA)
+$05EA       Presence flag (DMA)
+$05EB       Temporary storage for open type (DMA)
+$05EC-$05EF Table of physical addresses for cartridge ROMs
+$05FO-$05F1 Long jump for banking routines
+$05F2       .A for long jump
+$05F3       .X for long jump
+$05F4       .Y for long jump
+$05F5-$065D Banking RAM area
+$065E-$06EB RAM reserved for speech software
+$06EC-$07AF BASIC stack
+$07B0       Tape byte to write
+$07B1       Temporary parity calculation byte
+$07B2-$07B3 Temporary storage for tape header write
+$07B4       Free
+$07B5       Temporary index for reading bytes
+$07B6       Pointer to error stack
+$07B7       Count of errors on initial pass
+$07B8-$07BD Constants for timing
+$07BE       Pointer to stack for STOP recover
+$07BF       Pointer to stack for drop key recover
+$07C0-$07C3 Read block parameters
+$07C4       Temporary status for read block
+$07C5       Count of leader shorts to find
+$07C6       Count of read errors fatal
+$07C7       Temporary storage for VERIFY
+$07C8-$07CC Temporary storage for tape I/O
+$07CD       RS232 data character to send buffer
+$07CE       RS232 flag for data character to send ($00=no, $80=yes)
+$07CF       RS232 control character to send buffer
+$07D0       RS232 flag for control character to send ($00=no, $80=yes)
+$07D1       RS232 pointer to current start of input queue
+$07D2       RS232 pointer to current end of input queue
+$07D3       RS232 current count of input queue
+$07D4       RS232 status
+$07D5       RS232 temporary storage of character input
+$07D6       RS232 flag for local hold off
+$07D7       RS232 flag for remote hold off
+$07D8       RS232 flag for presence of ACIA
+$07D9-$07E4 Indirect indexed RAM fetch routine via contents of $07DF
+$07E5       Bottom screen line of current window
+$07E6       Top screen line of current window
+$07E7       Left screen column of current window
+$07E8       Right screen column of current window
+$07E9       Flag to disable scrolling ($00=scroll, $80=don’t)
+$07EA       Auto insert flag ($00=off, $FF=on)
+$07EB       Latest character printed
+$07EC       Storage for screen line management
+$07ED       Color under cursor
+$07EE-$07F1 Line link table for screen
+$07F2       .A to send to SYS
+$07F3       .X to send to SYS
+$07F4       .Y to send to SYS
+$07F5       Status register to send to SYS
+$07F6       Index for key scan
+$07F7       Flag for control S/T ($00=enabled, else disabled)
+$07F8       Bank for monitor fetches ($00=ROM, $80=RAM)
+$07F9       Bank for color key color/luminance value table (S00=RAM ($0113-$0122), $80=ROM)
+$07FA       Bit map mask for split screen
+$07FB       Screen memory mask for split screen
+$07FC       Cassette motor lock signal
+$07FD       Time-of-day for PAL (not used)
+$07FE-$07FF Free
+$0800-$0BE7 Color memory
+$OBE8-$0BFF Free
+$0C00-$0FE7 Screen Memory
+$0FE8-$0FFF Free
+$1000-$3FFF RAM used by BASIC (in text mode)
+$1000-$17FF Free (in BASIC graphics mode)
+$1800-$1BE7 Luminance memory (in BASIC graphics mode)
+$1BE8-$1BFF Free (in BASIC graphics mode)
+$1C00-$1FE7 Color memory (in BASIC graphics mode)
+$1FE8-$1FFF Free (in BASIC graphics mode)
+$2000-$3F3F Graphics screen (in BASIC graphics mode)
+$3F40-$3FFF Free (in BASIC graphics mode)
+$4000-$7FFF RAM used by BASIC
+$8000-$FCFF RAM used by BASIC (under ROM)
+$8000-$CDFF BASIC and monitor ROM
+$CEO0-$CFFF Operating system ROM
+$D000-$D7FF Character ROM
+$D800-$FBFF Operating system ROM
+$FCOO-$FCFF Banking routines ROM (in all ROM maps)
+$FCF1-SFCF3 Jump to interrupt routine for cartridge
+$FCF4-$FCF6 Jump to cartridge reenable routine
+$FCF7-$FCF9 Jump to long fetch routine
+SFCFA-$FCFC Jump to long jump routine
+SFCFD-$FCFF Jump to long interrupt routine
+$FD00-$FDOF ACIA chip (used for RS232, in all maps)
+$FD10-$FDIF Parallel port (6529, in all maps)
+$FD20-$FDCF Unknown (in all maps)
+$FDD0-$FDDF Cartridge banking port (in all maps)
+$FDEO-$FEFF Direct Memory Access disk (in all maps)
+$FFOO-$FF3F Graphics chip (in all maps)
+$FF40—$FFFF RAM (under ROM)
+$FF40-$FFFF Operating system ROM
+$FF49-$FF4B Jump to function key definition routine
+$FF4C-$FF4E Jump to PRINT routine
+$FF4F-$FF51 Jump to print message routine
+$FF52-$FF55 Jump to monitor
+$FF80       Version number of operating system ROM (most significant bit O=>NTSC, 1=PAL)
+$FF81-$FF83 Jump to CINT
+$FF84-$FF86 Jump to IOINIT
+$FF87-$FF89 Jump to RAMTAS
+$FF8A-$FF8C Jump to RESTOR
+$FF8D-$FF8F Jump to VECTOR
+$FF90-SFF92 Jump to SETMSG
+$FF93-$FF95 Jump to SECND
+$FF96-$FF98 Jump to TKSA
+$FF99-$FFIB Jump to MEMTOP
+$FF9C-$FF9E Jump to MEMBOT
+$FF9F-$FFA1 Jump to SCNKEY
+$FFA2-$FFA4 Jump to SETTMO
+$FFAS-$FFA7 Jump to ACPTR
+$FFA8-$FFAA Jump to CIOUT
+$FFAB-$FFAD Jump to UNTLK
+$FFAE-$FFBO Jump to UNLSN
+$FFB1-$FFB3 Jump to LISTN
+$FFB4-$FFB6 Jump to TALK
+$FFB7-$FFB9 Jump to READSS
+$FFBA-$FFBC Jump to SETLFS
+$FFBD-$FFBF Jump to SETNAM
+$FFCO-SFFC2 Jump to OPEN
+$FFC3-$FFC5 Jump to CLOSE
+$FFC6-$FFC8 Jump to CHKIN
+$FFC9-$FFCB Jump to CHOUT
+$FFCC-$FFCE Jump to CLRCH
+$FFCF-$FFD1 Jump to BASIN
+$FFD2-$FFD4 Jump to BSOUT
+$FFDS-$FFD7 Jump to LOADSP
+$FFD8-$FFDA Jump to SAVESP
+$FFDB-$FFDD Jump to SETTIM
+$FFDE-$FFE0 Jump to RDTIM
+$FFE1-$FFE3 Jump to STOP
+$FFE4-$FFE6 Jump to GETIN
+SERE7-SFEE9 Jump to CLALL
+$FFEA-$FFEC Jump to UDTIM
+$FFED-$FFEF Jump to SCRORG
+$FFFO-$FFF2 Jump to PLOT
+SEEPS SFERS Jump to IOBASE
+$FFF6-$FFF8 Bank in ROM
+$FFFA-$FFFB Jump opcode
+$FFFC-$FFFD RESET vector
+$FFFE-$FFFF IRQ vector

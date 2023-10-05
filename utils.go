@@ -31,6 +31,20 @@ var (
 	AllSuiteAROM  = make([]byte, 16384)
 	KlausDTestROM = make([]byte, 65536)
 	RuudBTestROM  = make([]byte, 8192)
+
+	c64basicROMAddress  = 0xA000
+	c64kernalROMAddress = 0xE000
+	c64charROMAddress   = 0xD000
+
+	plus4basicROMAddress  = 0x8000
+	plus4kernalROMAddress = 0xC000
+	plus4charROMAddress   = 0xC000
+	threePlus1ROMAddress  = 0x8000
+
+	AllSuiteAROMAddress       = 0x4000
+	KlausDTestROMAddress      = 0x0000
+	KlausDInfiniteLoopAddress = 0x062B
+	RuudBTestROMAddress       = 0xE000
 )
 
 func loadROMs() {

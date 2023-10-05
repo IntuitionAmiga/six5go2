@@ -1,31 +1,39 @@
 package main
 
+import "fmt"
+
 // Constants for MMIO address ranges and TED specific addresses
 const (
 	NMIVectorAddress   = 0xFFFA
 	RESETVectorAddress = 0xFFFC
 
-	MMIO_START = 0xFD00
-	MMIO_END   = 0xFFF3
-
 	TED_REG_START = 0xFD00
 	TED_REG_END   = 0xFD19
 )
 
-var IRQVectorAddress uint16 = 0xFFFE
+const IRQVectorAddress uint16 = 0xFFFE
 
 func readMemory(address uint16) byte {
-	if address >= MMIO_START && address <= MMIO_END {
-		return readMMIO(address)
+	if address >= TED_REG_START && address <= TED_REG_END {
+		return readTEDReg(address)
 	}
 	return memory[address]
 }
 func writeMemory(address uint16, value byte) {
-	if address >= MMIO_START && address <= MMIO_END {
-		// Just log for now
-		//fmt.Printf("MMIO Write to: %X\n", address)
-		writeMMIO(address, value)
-		return
+	fmt.Printf("IRQVectorAddress: %04X\n", IRQVectorAddress)
+	fmt.Printf("Content of memory at IRQVectorAddress: %04X\n", memory[IRQVectorAddress])
+	fmt.Printf("Content of memory at IRQVectorAddress+1: %04X\n", memory[IRQVectorAddress+1])
+
+	if address == IRQVectorAddress {
+		fmt.Println("Interrupt vector %04X written to with value: %04X", address, value)
+		irq = true
+		fmt.Println("IRQ request!")
+		// or breakpoint()
+	}
+	if address >= TED_REG_START && address <= TED_REG_END {
+		writeTEDReg(address, value)
+	} else {
+		memory[address] = value
 	}
 	// Existing special address checks
 	if address == IRQVectorAddress {
@@ -38,23 +46,6 @@ func writeMemory(address uint16, value byte) {
 		reset = true // Signal a RESET
 	}
 	memory[address] = value
-}
-
-func readMMIO(address uint16) byte {
-	//fmt.Printf("\nMMIO Read from: %X\n", address) // Log MMIO read
-	switch {
-	case address >= TED_REG_START && address <= TED_REG_END:
-		return readTEDReg(address)
-	}
-	return 0
-}
-
-func writeMMIO(address uint16, value byte) {
-	//fmt.Printf("\nMMIO Write to: $%04X\n", address)
-	switch {
-	case address >= TED_REG_START && address <= TED_REG_END:
-		writeTEDReg(address, value)
-	}
 }
 
 func readBit(bit byte, value byte) int {

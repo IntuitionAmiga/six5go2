@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -16,20 +17,6 @@ const (
 	INDIRECT    = "indirect"
 	INDIRECTX   = "indirectx"
 	INDIRECTY   = "indirecty"
-
-	c64basicROMAddress  = 0xA000
-	c64kernalROMAddress = 0xE000
-	c64charROMAddress   = 0xD000
-
-	plus4basicROMAddress  = 0x8000
-	plus4kernalROMAddress = 0xC000
-	plus4charROMAddress   = 0xC000
-	threePlus1ROMAddress  = 0x8000
-
-	AllSuiteAROMAddress       = 0x4000
-	KlausDTestROMAddress      = 0x0000
-	KlausDInfiniteLoopAddress = 0x062B
-	RuudBTestROMAddress       = 0xE000
 
 	SPBaseAddress uint16 = 0x0100
 )
@@ -295,22 +282,30 @@ func setPC(newAddress int) {
 }
 
 func handleIRQ() {
+	fmt.Println("Debug: Entering handleIRQ()")
 	if getSRBit(2) == 1 {
+		fmt.Println("Debug: Interrupt disabled. Exiting handleIRQ()")
 		return
 	}
+	fmt.Println("Debug: Interrupt enabled. Continuing...")
 	// Push PC onto stack
 	updateStack(byte(PC >> 8)) // high byte
 	decSP()
 	updateStack(byte(PC & 0xFF)) // low byte
 	decSP()
+	fmt.Printf("Debug: PC pushed to stack. SP: %X\n", SP)
 	// Push SR onto stack
 	updateStack(SR)
 	decSP()
+	fmt.Printf("Debug: PC pushed to stack. SP: %X\n", SP)
 	// Set interrupt flag
 	setInterruptFlag()
+	fmt.Printf("Debug: PC pushed to stack. SP: %X\n", SP)
 	// Set PC to IRQ Service Routine address
 	setPC(int(readMemory(IRQVectorAddress)) | int(readMemory(IRQVectorAddress+1))<<8)
+	fmt.Printf("Debug: Jumping to IRQ Service Routine at %X\n", PC)
 	irq = false
+	fmt.Println("Debug: Exiting handleIRQ()")
 }
 func handleNMI() {
 	// Push PC onto stack
