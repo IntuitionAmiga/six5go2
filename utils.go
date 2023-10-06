@@ -215,8 +215,8 @@ func plus4KernalRoutines() {
 	//fmt.Printf("\n\u001B[32;5mKernal ROM call address: $%04X\u001B[0m\n", PC)
 }
 func printMachineState() {
-	if BRKtrue || (cpu.previousOpcode != 0x20 && cpu.previousOpcode != 0x4C && cpu.previousOpcode != 0x6C) {
-		if cpu.previousOpcode == 0x60 || (cpu.previousOpcode == 0x00 && BRKtrue || cpu.previousOpcode == 0x40) {
+	if BRKtrue || (cpu.previousOpcode != JSR_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_INDIRECT_OPCODE) {
+		if cpu.previousOpcode == RTS_OPCODE || (cpu.previousOpcode == BRK_OPCODE && BRKtrue || cpu.previousOpcode == RTI_OPCODE) {
 			fmt.Printf("| %04X | ", cpu.previousPC)
 			fmt.Printf("%02X |        |", cpu.previousOpcode)
 			cpu.previousOpcode = 0x00
@@ -227,24 +227,24 @@ func printMachineState() {
 		} else {
 			fmt.Printf("| %04X | ", cpu.PC)
 			// If cpu.opcode() is a 1 byte instruction, print opcode
-			if cpu.opcode() == 0x08 || cpu.opcode() == 0x18 || cpu.opcode() == 0x28 || cpu.opcode() == 0x30 || cpu.opcode() == 0x38 || cpu.opcode() == 0x48 || cpu.opcode() == 0x58 || cpu.opcode() == 0x68 || cpu.opcode() == 0x78 || cpu.opcode() == 0x88 || cpu.opcode() == 0x8A || cpu.opcode() == 0x98 || cpu.opcode() == 0x9A || cpu.opcode() == 0xA8 || cpu.opcode() == 0xAA || cpu.opcode() == 0xB8 || cpu.opcode() == 0xBA || cpu.opcode() == 0xC8 || cpu.opcode() == 0xCA || cpu.opcode() == 0xD8 || cpu.opcode() == 0xDA || cpu.opcode() == 0xE8 || cpu.opcode() == 0xEA || cpu.opcode() == 0xF8 || cpu.opcode() == 0xFA || cpu.opcode() == 0x2A || cpu.opcode() == 0x6A {
+			if cpu.opcode() == CLC_OPCODE || cpu.opcode() == CLD_OPCODE || cpu.opcode() == CLI_OPCODE || cpu.opcode() == CLV_OPCODE || cpu.opcode() == DEX_OPCODE || cpu.opcode() == DEY_OPCODE || cpu.opcode() == INX_OPCODE || cpu.opcode() == INY_OPCODE || cpu.opcode() == NOP_OPCODE || cpu.opcode() == PHA_OPCODE || cpu.opcode() == PHP_OPCODE || cpu.opcode() == PLA_OPCODE || cpu.opcode() == PLP_OPCODE || cpu.opcode() == RTI_OPCODE || cpu.opcode() == RTS_OPCODE || cpu.opcode() == SEC_OPCODE || cpu.opcode() == SED_OPCODE || cpu.opcode() == SEI_OPCODE || cpu.opcode() == TAX_OPCODE || cpu.opcode() == TAY_OPCODE || cpu.opcode() == TSX_OPCODE || cpu.opcode() == TXA_OPCODE || cpu.opcode() == TXS_OPCODE || cpu.opcode() == TYA_OPCODE || cpu.opcode() == BRK_OPCODE {
 				fmt.Printf("%02X |        |", cpu.opcode())
 			}
 
 			// If opcode() is a 2 byte instruction, print opcode and operand1
 			// 		fmt.Printf("%02X %02X ", opcode(), operand1())
 			// The 0x hex opcodes for the 2 byte instructions on the 6502 are
-			if cpu.opcode() == 0x69 || cpu.opcode() == 0x29 || cpu.opcode() == 0xC9 || cpu.opcode() == 0xE0 || cpu.opcode() == 0xC0 || cpu.opcode() == 0x49 || cpu.opcode() == 0xA9 || cpu.opcode() == 0xA2 || cpu.opcode() == 0xA0 || cpu.opcode() == 0x09 || cpu.opcode() == 0xE9 || cpu.opcode() == 0x65 || cpu.opcode() == 0x25 || cpu.opcode() == 0x06 || cpu.opcode() == 0x24 || cpu.opcode() == 0xC5 || cpu.opcode() == 0xE4 || cpu.opcode() == 0xC4 || cpu.opcode() == 0xC6 || cpu.opcode() == 0x45 || cpu.opcode() == 0xE6 || cpu.opcode() == 0xA5 || cpu.opcode() == 0xA6 || cpu.opcode() == 0xA4 || cpu.opcode() == 0x46 || cpu.opcode() == 0x05 || cpu.opcode() == 0x26 || cpu.opcode() == 0x66 || cpu.opcode() == 0xE5 || cpu.opcode() == 0x85 || cpu.opcode() == 0x86 || cpu.opcode() == 0x84 || cpu.opcode() == 0x90 || cpu.opcode() == 0xB0 || cpu.opcode() == 0xF0 || cpu.opcode() == 0x30 || cpu.opcode() == 0xD0 || cpu.opcode() == 0x10 || cpu.opcode() == 0x50 || cpu.opcode() == 0x70 {
+			if cpu.opcode() == ADC_IMMEDIATE_OPCODE || cpu.opcode() == AND_IMMEDIATE_OPCODE || cpu.opcode() == CMP_IMMEDIATE_OPCODE || cpu.opcode() == CPX_IMMEDIATE_OPCODE || cpu.opcode() == CPY_IMMEDIATE_OPCODE || cpu.opcode() == EOR_IMMEDIATE_OPCODE || cpu.opcode() == LDA_IMMEDIATE_OPCODE || cpu.opcode() == LDX_IMMEDIATE_OPCODE || cpu.opcode() == LDY_IMMEDIATE_OPCODE || cpu.opcode() == ORA_IMMEDIATE_OPCODE || cpu.opcode() == SBC_IMMEDIATE_OPCODE {
 				fmt.Printf("%02X | %02X     |", cpu.opcode(), cpu.operand1())
 			}
 
 			// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
 			// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
-			if cpu.opcode() == 0x6D || cpu.opcode() == 0x2D || cpu.opcode() == 0x0E || cpu.opcode() == 0x2C || cpu.opcode() == 0xCD || cpu.opcode() == 0xEC || cpu.opcode() == 0xCC || cpu.opcode() == 0xCE || cpu.opcode() == 0x4D || cpu.opcode() == 0xEE || cpu.opcode() == 0xAD || cpu.opcode() == 0xAC || cpu.opcode() == 0xAE || cpu.opcode() == 0x4E || cpu.opcode() == 0x0D || cpu.opcode() == 0x2E || cpu.opcode() == 0x6E || cpu.opcode() == 0xED || cpu.opcode() == 0x8D || cpu.opcode() == 0x8E || cpu.opcode() == 0x8C || cpu.opcode() == 0x7D || cpu.opcode() == 0x79 || cpu.opcode() == 0x3D || cpu.opcode() == 0x39 || cpu.opcode() == 0x1E || cpu.opcode() == 0xDD || cpu.opcode() == 0xD9 || cpu.opcode() == 0xDE || cpu.opcode() == 0x5D || cpu.opcode() == 0x59 || cpu.opcode() == 0xFE || cpu.opcode() == 0xBD || cpu.opcode() == 0xB9 || cpu.opcode() == 0xBC || cpu.opcode() == 0xBE || cpu.opcode() == 0x5E || cpu.opcode() == 0x1D || cpu.opcode() == 0x19 || cpu.opcode() == 0x3E || cpu.opcode() == 0x7E || cpu.opcode() == 0xFD || cpu.opcode() == 0xF9 || cpu.opcode() == 0x9D || cpu.opcode() == 0x95 || cpu.opcode() == 0x99 || cpu.opcode() == 0xB5 || cpu.opcode() == 0x91 || cpu.opcode() == 0xB1 || cpu.opcode() == 0x81 || cpu.opcode() == 0xA1 || cpu.opcode() == 0x94 || cpu.opcode() == 0x96 || cpu.opcode() == 0xB4 || cpu.opcode() == 0xB6 || cpu.opcode() == 0x35 || cpu.opcode() == 0x15 || cpu.opcode() == 0x55 || cpu.opcode() == 0x21 || cpu.opcode() == 0x01 || cpu.opcode() == 0x41 || cpu.opcode() == 0x31 || cpu.opcode() == 0x11 || cpu.opcode() == 0x51 || cpu.opcode() == 0xF6 || cpu.opcode() == 0xD6 || cpu.opcode() == 0x4A || cpu.opcode() == 0x0A || cpu.opcode() == 0x16 || cpu.opcode() == 0x56 || cpu.opcode() == 0x36 || cpu.opcode() == 0x76 || cpu.opcode() == 0x75 || cpu.opcode() == 0xF5 || cpu.opcode() == 0xD5 || cpu.opcode() == 0xC1 || cpu.opcode() == 0xD1 || cpu.opcode() == 0x61 || cpu.opcode() == 0xE1 || cpu.opcode() == 0x71 || cpu.opcode() == 0xF1 {
+			if cpu.opcode() != CLC_OPCODE && cpu.opcode() != CLD_OPCODE && cpu.opcode() != CLI_OPCODE && cpu.opcode() != CLV_OPCODE && cpu.opcode() != DEX_OPCODE && cpu.opcode() != DEY_OPCODE && cpu.opcode() != INX_OPCODE && cpu.opcode() != INY_OPCODE && cpu.opcode() != NOP_OPCODE && cpu.opcode() != PHA_OPCODE && cpu.opcode() != PHP_OPCODE && cpu.opcode() != PLA_OPCODE && cpu.opcode() != PLP_OPCODE && cpu.opcode() != RTI_OPCODE && cpu.opcode() != RTS_OPCODE && cpu.opcode() != SEC_OPCODE && cpu.opcode() != SED_OPCODE && cpu.opcode() != SEI_OPCODE && cpu.opcode() != TAX_OPCODE && cpu.opcode() != TAY_OPCODE && cpu.opcode() != TSX_OPCODE && cpu.opcode() != TXA_OPCODE && cpu.opcode() != TXS_OPCODE && cpu.opcode() != TYA_OPCODE && cpu.opcode() != BRK_OPCODE && cpu.opcode() != ADC_IMMEDIATE_OPCODE && cpu.opcode() != AND_IMMEDIATE_OPCODE && cpu.opcode() != CMP_IMMEDIATE_OPCODE && cpu.opcode() != CPX_IMMEDIATE_OPCODE && cpu.opcode() != CPY_IMMEDIATE_OPCODE && cpu.opcode() != EOR_IMMEDIATE_OPCODE && cpu.opcode() != LDA_IMMEDIATE_OPCODE && cpu.opcode() != LDX_IMMEDIATE_OPCODE && cpu.opcode() != LDY_IMMEDIATE_OPCODE && cpu.opcode() != ORA_IMMEDIATE_OPCODE && cpu.opcode() != SBC_IMMEDIATE_OPCODE {
 				fmt.Printf("%02X | %02X %02X  |", cpu.opcode(), cpu.operand1(), cpu.operand2())
 			}
 		}
-	} else if cpu.previousOpcode == 0x20 || cpu.previousOpcode == 0x4C || cpu.previousOpcode == 0x6C {
+	} else if cpu.previousOpcode == JSR_ABSOLUTE_OPCODE || cpu.previousOpcode == JMP_ABSOLUTE_OPCODE || cpu.previousOpcode == JMP_INDIRECT_OPCODE {
 		fmt.Printf("| %04X | %02X | %02X %02X  |", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
 		cpu.previousOpcode = 0x00
 		cpu.previousPC = 0x0000
