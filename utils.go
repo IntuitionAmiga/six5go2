@@ -41,10 +41,10 @@ var (
 	plus4charROMAddress   = 0xC000
 	threePlus1ROMAddress  = 0x8000
 
-	AllSuiteAROMAddress       = 0x4000
-	KlausDTestROMAddress      = 0x0000
-	KlausDInfiniteLoopAddress = 0x062B
-	RuudBTestROMAddress       = 0xE000
+	AllSuiteAROMAddress              = 0x4000
+	KlausDTestROMAddress             = 0x0000
+	KlausDInfiniteLoopAddress uint16 = 0x062B
+	RuudBTestROMAddress              = 0xE000
 )
 
 func loadROMs() {
@@ -184,11 +184,11 @@ func petsciiToAscii(petscii uint8) uint8 {
 }
 func plus4KernalRoutines() {
 	// CHROUT routine is at $FFD2
-	switch PC {
+	switch cpu.PC {
 	case 0xFFD2:
 		// This is a CHROUT call
 		fmt.Printf("Call to CHROUT!!!!\n")
-		ch := petsciiToAscii(A) // Convert PETSCII to ASCII
+		ch := petsciiToAscii(cpu.A) // Convert PETSCII to ASCII
 
 		// Handle control characters
 		switch ch {
@@ -209,69 +209,69 @@ func plus4KernalRoutines() {
 		}
 	case 0xFFF6:
 		// This is a RESET call
-		resetCPU()
+		cpu.resetCPU()
 	}
 	// print "kernal rom call address"
 	//fmt.Printf("\n\u001B[32;5mKernal ROM call address: $%04X\u001B[0m\n", PC)
 }
 func printMachineState() {
-	if BRKtrue || (previousOpcode != 0x20 && previousOpcode != 0x4C && previousOpcode != 0x6C) {
-		if previousOpcode == 0x60 || (previousOpcode == 0x00 && BRKtrue || previousOpcode == 0x40) {
-			fmt.Printf("| %04X | ", previousPC)
-			fmt.Printf("%02X |        |", previousOpcode)
-			previousOpcode = 0x00
-			previousPC = 0x0000
-			previousOperand1 = 0x00
-			previousOperand2 = 0x00
+	if BRKtrue || (cpu.previousOpcode != 0x20 && cpu.previousOpcode != 0x4C && cpu.previousOpcode != 0x6C) {
+		if cpu.previousOpcode == 0x60 || (cpu.previousOpcode == 0x00 && BRKtrue || cpu.previousOpcode == 0x40) {
+			fmt.Printf("| %04X | ", cpu.previousPC)
+			fmt.Printf("%02X |        |", cpu.previousOpcode)
+			cpu.previousOpcode = 0x00
+			cpu.previousPC = 0x0000
+			cpu.previousOperand1 = 0x00
+			cpu.previousOperand2 = 0x00
 			BRKtrue = false
 		} else {
-			fmt.Printf("| %04X | ", PC)
-			// If opcode() is a 1 byte instruction, print opcode
-			if opcode() == 0x08 || opcode() == 0x18 || opcode() == 0x28 || opcode() == 0x30 || opcode() == 0x38 || opcode() == 0x48 || opcode() == 0x58 || opcode() == 0x68 || opcode() == 0x78 || opcode() == 0x88 || opcode() == 0x8A || opcode() == 0x98 || opcode() == 0x9A || opcode() == 0xA8 || opcode() == 0xAA || opcode() == 0xB8 || opcode() == 0xBA || opcode() == 0xC8 || opcode() == 0xCA || opcode() == 0xD8 || opcode() == 0xDA || opcode() == 0xE8 || opcode() == 0xEA || opcode() == 0xF8 || opcode() == 0xFA || opcode() == 0x2A || opcode() == 0x6A {
-				fmt.Printf("%02X |        |", opcode())
+			fmt.Printf("| %04X | ", cpu.PC)
+			// If cpu.opcode() is a 1 byte instruction, print opcode
+			if cpu.opcode() == 0x08 || cpu.opcode() == 0x18 || cpu.opcode() == 0x28 || cpu.opcode() == 0x30 || cpu.opcode() == 0x38 || cpu.opcode() == 0x48 || cpu.opcode() == 0x58 || cpu.opcode() == 0x68 || cpu.opcode() == 0x78 || cpu.opcode() == 0x88 || cpu.opcode() == 0x8A || cpu.opcode() == 0x98 || cpu.opcode() == 0x9A || cpu.opcode() == 0xA8 || cpu.opcode() == 0xAA || cpu.opcode() == 0xB8 || cpu.opcode() == 0xBA || cpu.opcode() == 0xC8 || cpu.opcode() == 0xCA || cpu.opcode() == 0xD8 || cpu.opcode() == 0xDA || cpu.opcode() == 0xE8 || cpu.opcode() == 0xEA || cpu.opcode() == 0xF8 || cpu.opcode() == 0xFA || cpu.opcode() == 0x2A || cpu.opcode() == 0x6A {
+				fmt.Printf("%02X |        |", cpu.opcode())
 			}
 
 			// If opcode() is a 2 byte instruction, print opcode and operand1
 			// 		fmt.Printf("%02X %02X ", opcode(), operand1())
 			// The 0x hex opcodes for the 2 byte instructions on the 6502 are
-			if opcode() == 0x69 || opcode() == 0x29 || opcode() == 0xC9 || opcode() == 0xE0 || opcode() == 0xC0 || opcode() == 0x49 || opcode() == 0xA9 || opcode() == 0xA2 || opcode() == 0xA0 || opcode() == 0x09 || opcode() == 0xE9 || opcode() == 0x65 || opcode() == 0x25 || opcode() == 0x06 || opcode() == 0x24 || opcode() == 0xC5 || opcode() == 0xE4 || opcode() == 0xC4 || opcode() == 0xC6 || opcode() == 0x45 || opcode() == 0xE6 || opcode() == 0xA5 || opcode() == 0xA6 || opcode() == 0xA4 || opcode() == 0x46 || opcode() == 0x05 || opcode() == 0x26 || opcode() == 0x66 || opcode() == 0xE5 || opcode() == 0x85 || opcode() == 0x86 || opcode() == 0x84 || opcode() == 0x90 || opcode() == 0xB0 || opcode() == 0xF0 || opcode() == 0x30 || opcode() == 0xD0 || opcode() == 0x10 || opcode() == 0x50 || opcode() == 0x70 {
-				fmt.Printf("%02X | %02X     |", opcode(), operand1())
+			if cpu.opcode() == 0x69 || cpu.opcode() == 0x29 || cpu.opcode() == 0xC9 || cpu.opcode() == 0xE0 || cpu.opcode() == 0xC0 || cpu.opcode() == 0x49 || cpu.opcode() == 0xA9 || cpu.opcode() == 0xA2 || cpu.opcode() == 0xA0 || cpu.opcode() == 0x09 || cpu.opcode() == 0xE9 || cpu.opcode() == 0x65 || cpu.opcode() == 0x25 || cpu.opcode() == 0x06 || cpu.opcode() == 0x24 || cpu.opcode() == 0xC5 || cpu.opcode() == 0xE4 || cpu.opcode() == 0xC4 || cpu.opcode() == 0xC6 || cpu.opcode() == 0x45 || cpu.opcode() == 0xE6 || cpu.opcode() == 0xA5 || cpu.opcode() == 0xA6 || cpu.opcode() == 0xA4 || cpu.opcode() == 0x46 || cpu.opcode() == 0x05 || cpu.opcode() == 0x26 || cpu.opcode() == 0x66 || cpu.opcode() == 0xE5 || cpu.opcode() == 0x85 || cpu.opcode() == 0x86 || cpu.opcode() == 0x84 || cpu.opcode() == 0x90 || cpu.opcode() == 0xB0 || cpu.opcode() == 0xF0 || cpu.opcode() == 0x30 || cpu.opcode() == 0xD0 || cpu.opcode() == 0x10 || cpu.opcode() == 0x50 || cpu.opcode() == 0x70 {
+				fmt.Printf("%02X | %02X     |", cpu.opcode(), cpu.operand1())
 			}
 
 			// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
 			// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
-			if opcode() == 0x6D || opcode() == 0x2D || opcode() == 0x0E || opcode() == 0x2C || opcode() == 0xCD || opcode() == 0xEC || opcode() == 0xCC || opcode() == 0xCE || opcode() == 0x4D || opcode() == 0xEE || opcode() == 0xAD || opcode() == 0xAC || opcode() == 0xAE || opcode() == 0x4E || opcode() == 0x0D || opcode() == 0x2E || opcode() == 0x6E || opcode() == 0xED || opcode() == 0x8D || opcode() == 0x8E || opcode() == 0x8C || opcode() == 0x7D || opcode() == 0x79 || opcode() == 0x3D || opcode() == 0x39 || opcode() == 0x1E || opcode() == 0xDD || opcode() == 0xD9 || opcode() == 0xDE || opcode() == 0x5D || opcode() == 0x59 || opcode() == 0xFE || opcode() == 0xBD || opcode() == 0xB9 || opcode() == 0xBC || opcode() == 0xBE || opcode() == 0x5E || opcode() == 0x1D || opcode() == 0x19 || opcode() == 0x3E || opcode() == 0x7E || opcode() == 0xFD || opcode() == 0xF9 || opcode() == 0x9D || opcode() == 0x95 || opcode() == 0x99 || opcode() == 0xB5 || opcode() == 0x91 || opcode() == 0xB1 || opcode() == 0x81 || opcode() == 0xA1 || opcode() == 0x94 || opcode() == 0x96 || opcode() == 0xB4 || opcode() == 0xB6 || opcode() == 0x35 || opcode() == 0x15 || opcode() == 0x55 || opcode() == 0x21 || opcode() == 0x01 || opcode() == 0x41 || opcode() == 0x31 || opcode() == 0x11 || opcode() == 0x51 || opcode() == 0xF6 || opcode() == 0xD6 || opcode() == 0x4A || opcode() == 0x0A || opcode() == 0x16 || opcode() == 0x56 || opcode() == 0x36 || opcode() == 0x76 || opcode() == 0x75 || opcode() == 0xF5 || opcode() == 0xD5 || opcode() == 0xC1 || opcode() == 0xD1 || opcode() == 0x61 || opcode() == 0xE1 || opcode() == 0x71 || opcode() == 0xF1 {
-				fmt.Printf("%02X | %02X %02X  |", opcode(), operand1(), operand2())
+			if cpu.opcode() == 0x6D || cpu.opcode() == 0x2D || cpu.opcode() == 0x0E || cpu.opcode() == 0x2C || cpu.opcode() == 0xCD || cpu.opcode() == 0xEC || cpu.opcode() == 0xCC || cpu.opcode() == 0xCE || cpu.opcode() == 0x4D || cpu.opcode() == 0xEE || cpu.opcode() == 0xAD || cpu.opcode() == 0xAC || cpu.opcode() == 0xAE || cpu.opcode() == 0x4E || cpu.opcode() == 0x0D || cpu.opcode() == 0x2E || cpu.opcode() == 0x6E || cpu.opcode() == 0xED || cpu.opcode() == 0x8D || cpu.opcode() == 0x8E || cpu.opcode() == 0x8C || cpu.opcode() == 0x7D || cpu.opcode() == 0x79 || cpu.opcode() == 0x3D || cpu.opcode() == 0x39 || cpu.opcode() == 0x1E || cpu.opcode() == 0xDD || cpu.opcode() == 0xD9 || cpu.opcode() == 0xDE || cpu.opcode() == 0x5D || cpu.opcode() == 0x59 || cpu.opcode() == 0xFE || cpu.opcode() == 0xBD || cpu.opcode() == 0xB9 || cpu.opcode() == 0xBC || cpu.opcode() == 0xBE || cpu.opcode() == 0x5E || cpu.opcode() == 0x1D || cpu.opcode() == 0x19 || cpu.opcode() == 0x3E || cpu.opcode() == 0x7E || cpu.opcode() == 0xFD || cpu.opcode() == 0xF9 || cpu.opcode() == 0x9D || cpu.opcode() == 0x95 || cpu.opcode() == 0x99 || cpu.opcode() == 0xB5 || cpu.opcode() == 0x91 || cpu.opcode() == 0xB1 || cpu.opcode() == 0x81 || cpu.opcode() == 0xA1 || cpu.opcode() == 0x94 || cpu.opcode() == 0x96 || cpu.opcode() == 0xB4 || cpu.opcode() == 0xB6 || cpu.opcode() == 0x35 || cpu.opcode() == 0x15 || cpu.opcode() == 0x55 || cpu.opcode() == 0x21 || cpu.opcode() == 0x01 || cpu.opcode() == 0x41 || cpu.opcode() == 0x31 || cpu.opcode() == 0x11 || cpu.opcode() == 0x51 || cpu.opcode() == 0xF6 || cpu.opcode() == 0xD6 || cpu.opcode() == 0x4A || cpu.opcode() == 0x0A || cpu.opcode() == 0x16 || cpu.opcode() == 0x56 || cpu.opcode() == 0x36 || cpu.opcode() == 0x76 || cpu.opcode() == 0x75 || cpu.opcode() == 0xF5 || cpu.opcode() == 0xD5 || cpu.opcode() == 0xC1 || cpu.opcode() == 0xD1 || cpu.opcode() == 0x61 || cpu.opcode() == 0xE1 || cpu.opcode() == 0x71 || cpu.opcode() == 0xF1 {
+				fmt.Printf("%02X | %02X %02X  |", cpu.opcode(), cpu.operand1(), cpu.operand2())
 			}
 		}
-	} else if previousOpcode == 0x20 || previousOpcode == 0x4C || previousOpcode == 0x6C {
-		fmt.Printf("| %04X | %02X | %02X %02X  |", previousPC, previousOpcode, previousOperand1, previousOperand2)
-		previousOpcode = 0x00
-		previousPC = 0x0000
-		previousOperand1 = 0x00
-		previousOperand2 = 0x00
+	} else if cpu.previousOpcode == 0x20 || cpu.previousOpcode == 0x4C || cpu.previousOpcode == 0x6C {
+		fmt.Printf("| %04X | %02X | %02X %02X  |", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
+		cpu.previousOpcode = 0x00
+		cpu.previousPC = 0x0000
+		cpu.previousOperand1 = 0x00
+		cpu.previousOperand2 = 0x00
 	} else {
-		fmt.Printf("| %04X | ", previousPC)
-		fmt.Printf("%02X | %02X %02X  |", previousOpcode, previousOperand1, previousOperand2)
+		fmt.Printf("| %04X | ", cpu.previousPC)
+		fmt.Printf("%02X | %02X %02X  |", cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
 
 	}
 
 	// Print disassembled instruction
 	fmt.Printf("\t %s\t|", disassembledInstruction)
 	// Print A,X,Y,SP as hex values
-	fmt.Printf(" A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | ", A, X, Y, SPBaseAddress+SP, readStack())
+	fmt.Printf(" A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | ", cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.SP, readStack())
 
 	// Print full SR as binary digits with zero padding
 	//fmt.Printf("%08b | ", SR)
 
 	// Print N if SR bit 7 is 1 else print -
-	if getSRBit(7) == 1 {
+	if cpu.getSRBit(7) == 1 {
 		fmt.Printf("N")
 	} else {
 		fmt.Printf("-")
 	}
 	// Print V if SR bit 6 is 1 else print -
-	if getSRBit(6) == 1 {
+	if cpu.getSRBit(6) == 1 {
 		fmt.Printf("V")
 	} else {
 		fmt.Printf("-")
@@ -279,41 +279,41 @@ func printMachineState() {
 	// Print - for SR bit 5
 	fmt.Printf("-")
 	// Print B if SR bit 4 is 1 else print -
-	if getSRBit(4) == 1 {
+	if cpu.getSRBit(4) == 1 {
 		fmt.Printf("B")
 	} else {
 		fmt.Printf("-")
 	}
 	// Print D if SR bit 3 is 1 else print -
-	if getSRBit(3) == 1 {
+	if cpu.getSRBit(3) == 1 {
 		fmt.Printf("D")
 	} else {
 		fmt.Printf("-")
 	}
 	// Print I if SR bit 2 is 1 else print -
-	if getSRBit(2) == 1 {
+	if cpu.getSRBit(2) == 1 {
 		fmt.Printf("I")
 	} else {
 		fmt.Printf("-")
 	}
 	// Print Z if SR bit 1 is 1 else print -
-	if getSRBit(1) == 1 {
+	if cpu.getSRBit(1) == 1 {
 		fmt.Printf("Z")
 	} else {
 		fmt.Printf("-")
 	}
 	// Print C if SR bit 0 is 1 else print -
-	if getSRBit(0) == 1 {
+	if cpu.getSRBit(0) == 1 {
 		fmt.Printf("C")
 	} else {
 		fmt.Printf("-")
 	}
 	fmt.Printf(" | $%08X  | ", instructionCounter)
-	fmt.Printf(" $%08X  | ", cycleCounter)
-	if timeSpent == 0 {
-		fmt.Printf("%v\t\t|\n", timeSpent)
+	fmt.Printf(" $%08X  | ", cpu.cycleCounter)
+	if cpu.cpuTimeSpent == 0 {
+		fmt.Printf("%v\t\t|\n", cpu.cpuTimeSpent)
 	} else {
-		fmt.Printf("%v\t|\n", timeSpent)
+		fmt.Printf("%v\t|\n", cpu.cpuTimeSpent)
 
 	}
 	// Move cursor back to beginning of previous line
@@ -326,22 +326,20 @@ func disassembleOpcode() {
 	}
 }
 
-func handleState(amount int) {
-	if *stateMonitor {
-		printMachineState()
+func boilerPlate() {
+	// Clear the screen and move cursor to top left
+	fmt.Printf("\033[2J")
+	fmt.Printf("\033[0;0H")
+
+	fmt.Printf("Six5go2 v2.0 - 6502 Emulator and Disassembler in Golang (c) 2022-2023 Zayn Otley\n\n")
+	fmt.Printf("https://github.com/intuitionamiga/six5go2/tree/v2\n\n")
+	flag.Parse()
+
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s [options]\n", os.Args[0])
+		flag.PrintDefaults()
+		os.Exit(0)
 	}
-	incPC(amount)
-	// If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
-	if amount != 0 {
-		instructionCounter++
-	}
-	if irq {
-		handleIRQ()
-	}
-	if nmi {
-		handleNMI()
-	}
-	if reset {
-		handleRESET()
-	}
+
+	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory)-1)
 }

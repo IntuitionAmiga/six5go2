@@ -15,7 +15,7 @@ const IRQVectorAddress uint16 = 0xFFFE
 
 func readMemory(address uint16) byte {
 	if address >= TED_REG_START && address <= TED_REG_END {
-		return readTEDReg(address)
+		return ted.readTEDReg(address)
 	}
 	return memory[address]
 }
@@ -26,24 +26,24 @@ func writeMemory(address uint16, value byte) {
 
 	if address == IRQVectorAddress {
 		fmt.Println("Interrupt vector %04X written to with value: %04X", address, value)
-		irq = true
+		cpu.irq = true
 		fmt.Println("IRQ request!")
 		// or breakpoint()
 	}
 	if address >= TED_REG_START && address <= TED_REG_END {
-		writeTEDReg(address, value)
+		ted.writeTEDReg(address, value)
 	} else {
 		memory[address] = value
 	}
 	// Existing special address checks
 	if address == IRQVectorAddress {
-		irq = true // Signal an IRQ
+		cpu.irq = true // Signal an IRQ
 	}
 	if address == NMIVectorAddress {
-		nmi = true // Signal an NMI
+		cpu.nmi = true // Signal an NMI
 	}
 	if address == RESETVectorAddress {
-		reset = true // Signal a RESET
+		cpu.reset = true // Signal a RESET
 	}
 	memory[address] = value
 }
@@ -53,8 +53,8 @@ func readBit(bit byte, value byte) int {
 	return int((value >> bit) & 1)
 }
 func readStack() byte {
-	return readMemory(SPBaseAddress + SP)
+	return readMemory(SPBaseAddress + cpu.SP)
 }
 func updateStack(value byte) {
-	writeMemory(SPBaseAddress+SP, value)
+	writeMemory(SPBaseAddress+cpu.SP, value)
 }

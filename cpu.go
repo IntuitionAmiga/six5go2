@@ -199,155 +199,179 @@ const (
 	BRK_OPCODE = 0x00
 )
 
-var (
-	// CPURegisters and RAM
-	A                byte        = 0x0  // Accumulator
-	X                byte        = 0x0  // X register
-	Y                byte        = 0x0  // Y register		(76543210) SR Bit 5 is always set
-	SR               byte               // Status Register	(NVEBDIZC)
-	SP               uint16      = 0xFF // Stack Pointer
-	PC               int                // Program Counter
-	memory           [65536]byte        // Memory
-	previousPC       int
+type CPU struct {
+	A                byte   // Accumulator
+	X                byte   // X register
+	Y                byte   // Y register
+	PC               uint16 // Program Counter
+	SP               uint16 // Stack Pointer
+	SR               byte   // Status Register
+	previousPC       uint16
 	previousOpcode   byte
 	previousOperand1 byte
 	previousOperand2 byte
-	irq              bool
-	nmi              bool
-	reset            bool
-	BRKtrue          bool = false
+	cycleCounter     uint64
+	cycleStartTime   time.Time     // High-resolution timer
+	cpuTimeSpent     time.Duration // Time spent executing instructions
 
-	cycleCounter   uint64        = 0
-	cpuSpeedHz     uint64        = 985248                                  // 985248 Hz for a standard 6502
-	cycleTime      time.Duration = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
-	cycleStartTime time.Time                                               // High-resolution timer
-	timeSpent      time.Duration                                           // Time spent executing instructions
+	irq   bool
+	nmi   bool
+	reset bool
+}
 
+var (
+	cpu CPU
+
+	cpuSpeedHz uint64        = 985248                                  // 985248 Hz for a standard 6502
+	cycleTime  time.Duration = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
+
+	memory [65536]byte // Memory
+
+	BRKtrue bool = false
 )
 
-func resetCPU() {
-	cycleCounter = 0
-	SP = SPBaseAddress
-	// Set SR to 0b00110100
-	SR = 0b00110110
-	if *klausd {
-		setPC(0x400)
-	} else {
-		// Set PC to value stored at reset vector address
-		setPC(int(readMemory(RESETVectorAddress)) + int(readMemory(RESETVectorAddress+1))*256)
-	}
+func (cpu *CPU) opcode() byte {
+	return readMemory(cpu.PC)
+}
+func (cpu *CPU) operand1() byte {
+	return readMemory(cpu.PC + 1)
+}
+func (cpu *CPU) operand2() byte {
+	return readMemory(cpu.PC + 2)
 }
 
-func opcode() byte {
-	return readMemory(uint16(PC))
-}
-func operand1() byte {
-	return readMemory(uint16(PC + 1))
-}
-func operand2() byte {
-	return readMemory(uint16(PC + 2))
-}
-
-func incSP() {
-	if SP == 0xFF {
+func (cpu *CPU) incSP() {
+	if cpu.SP == 0xFF {
 		// Wrap around from 0xFF to 0x00
-		SP = 0x00
+		cpu.SP = 0x00
 	} else {
-		SP++
+		cpu.SP++
 	}
 }
-func decSP() {
-	if SP == 0x00 {
+func (cpu *CPU) decSP() {
+	if cpu.SP == 0x00 {
 		// Wrap around from 0x00 to 0xFF
-		SP = 0xFF
+		cpu.SP = 0xFF
 	} else {
-		SP--
+		cpu.SP--
 	}
 }
 
 func incPC(amount int) {
-	PC += amount
-	if PC > 0xFFFF {
-		PC = 0x0000 + (PC & 0xFFFF)
+	cpu.PC += uint16(amount)
+	if cpu.PC > 0xFFFF {
+		cpu.PC = 0x0000 + (cpu.PC & 0xFFFF)
 	}
 }
 func decPC(amount int) {
-	PC -= amount
-	if PC < 0 {
-		PC = 0xFFFF + (PC & 0xFFFF)
+	cpu.PC -= uint16(amount)
+	if cpu.PC < 0 {
+		cpu.PC = 0xFFFF + (cpu.PC & 0xFFFF)
 	}
 }
-func setPC(newAddress int) {
-	PC = newAddress & 0xFFFF
+func setPC(newAddress uint16) {
+	cpu.PC = uint16(newAddress) & 0xFFFF
 }
 
-func handleIRQ() {
+func (cpu *CPU) handleIRQ() {
 	fmt.Println("Debug: Entering handleIRQ()")
-	if getSRBit(2) == 1 {
+	if cpu.getSRBit(2) == 1 {
 		fmt.Println("Debug: Interrupt disabled. Exiting handleIRQ()")
 		return
 	}
 	fmt.Println("Debug: Interrupt enabled. Continuing...")
 	// Push PC onto stack
-	updateStack(byte(PC >> 8)) // high byte
-	decSP()
-	updateStack(byte(PC & 0xFF)) // low byte
-	decSP()
-	fmt.Printf("Debug: PC pushed to stack. SP: %X\n", SP)
+	updateStack(byte(cpu.PC >> 8)) // high byte
+	cpu.decSP()
+	updateStack(byte(cpu.PC & 0xFF)) // low byte
+	cpu.decSP()
+	fmt.Printf("Debug: PC pushed to stack. SP: %X\n", cpu.SP)
 	// Push SR onto stack
-	updateStack(SR)
-	decSP()
-	fmt.Printf("Debug: PC pushed to stack. SP: %X\n", SP)
+	updateStack(cpu.SR)
+	cpu.decSP()
+	fmt.Printf("Debug: PC pushed to stack. SP: %X\n", cpu.SP)
 	// Set interrupt flag
-	setInterruptFlag()
-	fmt.Printf("Debug: PC pushed to stack. SP: %X\n", SP)
+	cpu.setInterruptFlag()
+	fmt.Printf("Debug: PC pushed to stack. SP: %X\n", cpu.SP)
 	// Set PC to IRQ Service Routine address
-	setPC(int(readMemory(IRQVectorAddress)) | int(readMemory(IRQVectorAddress+1))<<8)
-	fmt.Printf("Debug: Jumping to IRQ Service Routine at %X\n", PC)
-	irq = false
+	setPC(uint16(readMemory(IRQVectorAddress)) | uint16(readMemory(IRQVectorAddress+1))<<8)
+	fmt.Printf("Debug: Jumping to IRQ Service Routine at %X\n", cpu.PC)
+	cpu.irq = false
 	fmt.Println("Debug: Exiting handleIRQ()")
 }
-func handleNMI() {
+func (cpu *CPU) handleNMI() {
 	// Push PC onto stack
-	updateStack(byte(PC >> 8)) // high byte
-	decSP()
-	updateStack(byte(PC & 0xFF)) // low byte
-	decSP()
+	updateStack(byte(cpu.PC >> 8)) // high byte
+	cpu.decSP()
+	updateStack(byte(cpu.PC & 0xFF)) // low byte
+	cpu.decSP()
 	// Push SR onto stack
-	updateStack(SR)
-	decSP()
+	updateStack(cpu.SR)
+	cpu.decSP()
 	// Set PC to NMI Service Routine address
-	setPC(int(readMemory(NMIVectorAddress)) | int(readMemory(NMIVectorAddress+1))<<8)
-	nmi = false // Clear the NMI flag
+	setPC(uint16(readMemory(NMIVectorAddress)) | uint16(readMemory(NMIVectorAddress+1))<<8)
+	cpu.nmi = false // Clear the NMI flag
 }
-func handleRESET() {
-	resetCPU()
-	reset = false // Clear the RESET flag
+func (cpu *CPU) handleRESET() {
+	cpu.resetCPU()
+	cpu.reset = false // Clear the RESET flag
+}
+func (cpu *CPU) handleState(amount int) {
+	if *stateMonitor {
+		printMachineState()
+	}
+	incPC(amount)
+	// If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
+	if amount != 0 {
+		instructionCounter++
+	}
+	if cpu.irq {
+		cpu.handleIRQ()
+	}
+	if cpu.nmi {
+		cpu.handleNMI()
+	}
+	if cpu.reset {
+		cpu.handleRESET()
+	}
 }
 
-func updateCycleCounter(amount uint64) {
-	cycleCounter += amount
+func (cpu *CPU) updateCycleCounter(amount uint64) {
+	cpu.cycleCounter += amount
 }
-func cycleStart() {
-	cycleStartTime = time.Now() // High-resolution timer
+func (cpu *CPU) cycleStart() {
+	cpu.cycleStartTime = time.Now() // High-resolution timer
 }
-func cycleEnd() {
+func (cpu *CPU) cycleEnd() {
 	// Calculate the time we should wait
-	elapsedTime := time.Since(cycleStartTime)
-	expectedTime := time.Duration(cycleCounter) * cycleTime
+	elapsedTime := time.Since(cpu.cycleStartTime)
+	expectedTime := time.Duration(cpu.cycleCounter) * cycleTime
 	remainingTime := expectedTime - elapsedTime
 
 	// Wait for the remaining time if needed
 	if remainingTime > 0 {
 		time.Sleep(remainingTime)
 	}
-	timeSpent = time.Now().Sub(cycleStartTime)
+	cpu.cpuTimeSpent = time.Now().Sub(cpu.cycleStartTime)
 }
 
-func startCPU() {
-	for PC < len(memory) {
+func (cpu *CPU) resetCPU() {
+	cpu.cycleCounter = 0
+	cpu.SP = SPBaseAddress
+	// Set SR to 0b00110100
+	cpu.SR = 0b00110110
+	if *klausd {
+		setPC(0x400)
+	} else {
+		// Set PC to value stored at reset vector address
+		setPC(uint16(readMemory(RESETVectorAddress)) + uint16(readMemory(RESETVectorAddress+1))*256)
+	}
+}
+func (cpu *CPU) startCPU() {
+	for uint(cpu.PC) < 0xFFFF {
+		//for cpu.PC {
 		//  1 byte instructions with no operands
-		switch opcode() {
+		switch cpu.opcode() {
 		// Implied addressing mode instructions
 		/*
 			In the implied addressing mode, the address containing the operand is implicitly stated in the operation code of the instruction.
@@ -355,105 +379,105 @@ func startCPU() {
 			Bytes: 1
 		*/
 		case BRK_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BRK()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CLC_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CLC()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CLD_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CLD()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CLI_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CLI()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CLV_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CLV()
-			cycleEnd()
+			cpu.cycleEnd()
 		case DEX_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			DEX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case DEY_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			DEY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case INX_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			INX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case INY_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			INY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case NOP_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			NOP()
-			cycleEnd()
+			cpu.cycleEnd()
 		case PHA_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			PHA()
-			cycleEnd()
+			cpu.cycleEnd()
 		case PHP_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			PHP()
-			cycleEnd()
+			cpu.cycleEnd()
 		case PLA_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			PLA()
-			cycleEnd()
+			cpu.cycleEnd()
 		case PLP_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			PLP()
-			cycleEnd()
+			cpu.cycleEnd()
 		case RTI_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			RTI()
-			cycleEnd()
+			cpu.cycleEnd()
 		case RTS_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			RTS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SEC_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SEC()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SED_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SED()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SEI_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SEI()
-			cycleEnd()
+			cpu.cycleEnd()
 		case TAX_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			TAX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case TAY_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			TAY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case TSX_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			TSX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case TXA_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			TXA()
-			cycleEnd()
+			cpu.cycleEnd()
 		case TXS_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			TXS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case TYA_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			TYA()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// Accumulator instructions
 		/*
@@ -464,25 +488,25 @@ func startCPU() {
 			Bytes: 1
 		*/
 		case ASL_ACCUMULATOR_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ASL_A()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LSR_ACCUMULATOR_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LSR_A()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROL_ACCUMULATOR_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROL_A()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROR_ACCUMULATOR_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROR_A()
-			cycleEnd()
+			cpu.cycleEnd()
 		}
 
 		// 2 byte instructions with 1 operand
-		switch opcode() {
+		switch cpu.opcode() {
 		// Immediate addressing mode instructions
 		/*
 			#$nn
@@ -492,49 +516,49 @@ func startCPU() {
 			Bytes: 2
 		*/
 		case ADC_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ADC_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case AND_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			AND_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CMP_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CMP_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CPX_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CPX_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CPY_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CPY_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case EOR_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			EOR_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDA_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDA_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDX_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDX_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDY_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDY_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ORA_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ORA_I()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SBC_IMMEDIATE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SBC_I()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// Zero Page addressing mode instructions
 		/*
@@ -545,89 +569,89 @@ func startCPU() {
 			Bytes: 2
 		*/
 		case ADC_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ADC_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case AND_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			AND_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ASL_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ASL_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case BIT_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BIT_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CMP_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CMP_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CPX_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CPX_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CPY_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CPY_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case DEC_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			DEC_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case EOR_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			EOR_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case INC_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			INC_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDA_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDA_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDX_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDX_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDY_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDY_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LSR_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LSR_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ORA_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ORA_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROL_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROL_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROR_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROR_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SBC_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SBC_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STA_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STA_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STX_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STX_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STY_ZERO_PAGE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STY_Z()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// X Indexed Zero Page addressing mode instructions
 		/*
@@ -638,69 +662,69 @@ func startCPU() {
 			Bytes: 2
 		*/
 		case ADC_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ADC_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case AND_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			AND_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ASL_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ASL_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CMP_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CMP_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case DEC_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			DEC_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDA_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDA_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDY_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDY_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LSR_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LSR_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ORA_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ORA_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROL_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROL_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROR_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROR_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case EOR_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			EOR_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case INC_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			INC_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SBC_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SBC_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STA_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STA_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STY_ZERO_PAGE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STY_ZX()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// Y Indexed Zero Page addressing mode instructions
 		/*
@@ -711,13 +735,13 @@ func startCPU() {
 			Bytes: 2
 		*/
 		case LDX_ZERO_PAGE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDX_ZY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STX_ZERO_PAGE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STX_ZY()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// X Indexed Zero Page Indirect addressing mode instructions
 		/*
@@ -728,37 +752,37 @@ func startCPU() {
 			Bytes: 2
 		*/
 		case ADC_INDIRECT_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ADC_IX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case AND_INDIRECT_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			AND_IX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CMP_INDIRECT_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CMP_IX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case EOR_INDIRECT_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			EOR_IX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDA_INDIRECT_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDA_IX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ORA_INDIRECT_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ORA_IX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SBC_INDIRECT_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SBC_IX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STA_INDIRECT_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STA_IX()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// Zero Page Indirect Y Indexed addressing mode instructions
 		/*
@@ -769,37 +793,37 @@ func startCPU() {
 			Bytes: 2
 		*/
 		case ADC_INDIRECT_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ADC_IY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case AND_INDIRECT_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			AND_IY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CMP_INDIRECT_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CMP_IY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case EOR_INDIRECT_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			EOR_IY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDA_INDIRECT_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDA_IY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ORA_INDIRECT_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ORA_IY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SBC_INDIRECT_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SBC_IY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STA_INDIRECT_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STA_IY()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// Relative addressing mode instructions
 		/*
@@ -812,41 +836,41 @@ func startCPU() {
 			Bytes: 2
 		*/
 		case BPL_RELATIVE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BPL_R()
-			cycleEnd()
+			cpu.cycleEnd()
 		case BMI_RELATIVE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BMI_R()
-			cycleEnd()
+			cpu.cycleEnd()
 		case BVC_RELATIVE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BVC_R()
-			cycleEnd()
+			cpu.cycleEnd()
 		case BVS_RELATIVE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BVS_R()
-			cycleEnd()
+			cpu.cycleEnd()
 		case BCC_RELATIVE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BCC_R()
-			cycleEnd()
+			cpu.cycleEnd()
 		case BCS_RELATIVE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BCS_R()
-			cycleEnd()
+			cpu.cycleEnd()
 		case BNE_RELATIVE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BNE_R()
-			cycleEnd()
+			cpu.cycleEnd()
 		case BEQ_RELATIVE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BEQ_R()
-			cycleEnd()
+			cpu.cycleEnd()
 		}
 
 		// 3 byte instructions with 2 operands
-		switch opcode() {
+		switch cpu.opcode() {
 		// Absolute addressing mode instructions
 		/*
 			$nnnn
@@ -856,97 +880,97 @@ func startCPU() {
 			Bytes: 3
 		*/
 		case ADC_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ADC_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case AND_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			AND_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ASL_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ASL_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case BIT_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			BIT_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CMP_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CMP_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CPX_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CPX_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CPY_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CPY_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case DEC_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			DEC_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case EOR_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			EOR_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case INC_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			INC_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case JMP_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			JMP_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case JSR_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			JSR_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDA_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDA_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDX_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDX_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDY_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDY_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LSR_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LSR_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ORA_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ORA_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROL_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROL_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROR_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROR_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SBC_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SBC_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STA_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STA_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STX_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STX_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STY_ABSOLUTE_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STY_ABS()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// X Indexed Absolute addressing mode instructions
 		/*
@@ -962,65 +986,65 @@ func startCPU() {
 			Bytes: 3
 		*/
 		case ADC_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ADC_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case AND_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			AND_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ASL_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ASL_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CMP_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CMP_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case DEC_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			DEC_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case EOR_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			EOR_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case INC_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			INC_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDA_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDA_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDY_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDY_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LSR_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LSR_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ORA_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ORA_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROL_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROL_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ROR_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ROR_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SBC_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SBC_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STA_ABSOLUTE_X_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STA_ABX()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// Y Indexed Absolute addressing mode instructions
 		/*
@@ -1035,50 +1059,109 @@ func startCPU() {
 			Bytes: 3
 		*/
 		case ADC_ABSOLUTE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ADC_ABY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case AND_ABSOLUTE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			AND_ABY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case CMP_ABSOLUTE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			CMP_ABY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case EOR_ABSOLUTE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			EOR_ABY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDA_ABSOLUTE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDA_ABY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case LDX_ABSOLUTE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			LDX_ABY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case ORA_ABSOLUTE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			ORA_ABY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case SBC_ABSOLUTE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			SBC_ABY()
-			cycleEnd()
+			cpu.cycleEnd()
 		case STA_ABSOLUTE_Y_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			STA_ABY()
-			cycleEnd()
+			cpu.cycleEnd()
 
 		// Absolute Indirect addressing mode instructions
 		case JMP_INDIRECT_OPCODE:
-			cycleStart()
+			cpu.cycleStart()
 			JMP_IND()
-			cycleEnd()
+			cpu.cycleEnd()
 		}
 		if *plus4 {
 			plus4KernalRoutines()
 		}
 	}
+}
+
+func (cpu *CPU) getSRBit(x byte) byte {
+	return (cpu.SR >> x) & 1
+}
+func (cpu *CPU) setSRBitOn(x byte) {
+	cpu.SR |= 1 << x
+}
+func (cpu *CPU) setSRBitOff(x byte) {
+	cpu.SR &= ^(1 << x)
+}
+func (cpu *CPU) getABit(x byte) byte {
+	return (cpu.A >> x) & 1
+}
+func (cpu *CPU) getXBit(x byte) byte {
+	return (cpu.X >> x) & 1
+}
+func (cpu *CPU) getYBit(x byte) byte {
+	return (cpu.Y >> x) & 1
+}
+
+func (cpu *CPU) setNegativeFlag() {
+	cpu.setSRBitOn(7)
+}
+func (cpu *CPU) unsetNegativeFlag() {
+	cpu.setSRBitOff(7)
+}
+func (cpu *CPU) setOverflowFlag() {
+	cpu.setSRBitOn(6)
+}
+func (cpu *CPU) unsetOverflowFlag() {
+	cpu.setSRBitOff(6)
+}
+func (cpu *CPU) setBreakFlag() {
+	cpu.setSRBitOn(4)
+}
+func (cpu *CPU) setDecimalFlag() {
+	cpu.setSRBitOn(3)
+}
+func (cpu *CPU) unsetDecimalFlag() {
+	cpu.setSRBitOff(3)
+}
+func (cpu *CPU) setInterruptFlag() {
+	cpu.setSRBitOn(2)
+}
+func (cpu *CPU) unsetInterruptFlag() {
+	cpu.setSRBitOff(2)
+}
+func (cpu *CPU) setZeroFlag() {
+	cpu.setSRBitOn(1)
+}
+func (cpu *CPU) unsetZeroFlag() {
+	cpu.setSRBitOff(1)
+}
+func (cpu *CPU) setCarryFlag() {
+	cpu.setSRBitOn(0)
+}
+func (cpu *CPU) unsetCarryFlag() {
+	cpu.setSRBitOff(0)
 }
