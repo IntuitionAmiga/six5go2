@@ -215,8 +215,10 @@ func plus4KernalRoutines() {
 	//fmt.Printf("\n\u001B[32;5mKernal ROM call address: $%04X\u001B[0m\n", PC)
 }
 func printMachineState() {
-	if BRKtrue || (cpu.previousOpcode != JSR_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_INDIRECT_OPCODE) {
-		if cpu.previousOpcode == RTS_OPCODE || (cpu.previousOpcode == BRK_OPCODE && BRKtrue || cpu.previousOpcode == RTI_OPCODE) {
+	switch {
+	case BRKtrue, cpu.previousOpcode != JSR_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_INDIRECT_OPCODE:
+		switch {
+		case cpu.previousOpcode == RTS_OPCODE, cpu.previousOpcode == BRK_OPCODE && BRKtrue, cpu.previousOpcode == RTI_OPCODE:
 			fmt.Printf("| %04X | ", cpu.previousPC)
 			fmt.Printf("%02X |        |", cpu.previousOpcode)
 			cpu.previousOpcode = 0x00
@@ -224,36 +226,26 @@ func printMachineState() {
 			cpu.previousOperand1 = 0x00
 			cpu.previousOperand2 = 0x00
 			BRKtrue = false
-		} else {
+		default:
 			fmt.Printf("| %04X | ", cpu.PC)
-			// If cpu.opcode() is a 1 byte instruction, print opcode
-			if cpu.opcode() == CLC_OPCODE || cpu.opcode() == CLD_OPCODE || cpu.opcode() == CLI_OPCODE || cpu.opcode() == CLV_OPCODE || cpu.opcode() == DEX_OPCODE || cpu.opcode() == DEY_OPCODE || cpu.opcode() == INX_OPCODE || cpu.opcode() == INY_OPCODE || cpu.opcode() == NOP_OPCODE || cpu.opcode() == PHA_OPCODE || cpu.opcode() == PHP_OPCODE || cpu.opcode() == PLA_OPCODE || cpu.opcode() == PLP_OPCODE || cpu.opcode() == RTI_OPCODE || cpu.opcode() == RTS_OPCODE || cpu.opcode() == SEC_OPCODE || cpu.opcode() == SED_OPCODE || cpu.opcode() == SEI_OPCODE || cpu.opcode() == TAX_OPCODE || cpu.opcode() == TAY_OPCODE || cpu.opcode() == TSX_OPCODE || cpu.opcode() == TXA_OPCODE || cpu.opcode() == TXS_OPCODE || cpu.opcode() == TYA_OPCODE || cpu.opcode() == BRK_OPCODE {
+			switch cpu.opcode() {
+			case CLC_OPCODE, CLD_OPCODE, CLI_OPCODE, CLV_OPCODE, DEX_OPCODE, DEY_OPCODE, INX_OPCODE, INY_OPCODE, NOP_OPCODE, PHA_OPCODE, PHP_OPCODE, PLA_OPCODE, PLP_OPCODE, RTI_OPCODE, RTS_OPCODE, SEC_OPCODE, SED_OPCODE, SEI_OPCODE, TAX_OPCODE, TAY_OPCODE, TSX_OPCODE, TXA_OPCODE, TXS_OPCODE, TYA_OPCODE, BRK_OPCODE:
 				fmt.Printf("%02X |        |", cpu.opcode())
-			}
-
-			// If opcode() is a 2 byte instruction, print opcode and operand1
-			// 		fmt.Printf("%02X %02X ", opcode(), operand1())
-			// The 0x hex opcodes for the 2 byte instructions on the 6502 are
-			if cpu.opcode() == ADC_IMMEDIATE_OPCODE || cpu.opcode() == AND_IMMEDIATE_OPCODE || cpu.opcode() == CMP_IMMEDIATE_OPCODE || cpu.opcode() == CPX_IMMEDIATE_OPCODE || cpu.opcode() == CPY_IMMEDIATE_OPCODE || cpu.opcode() == EOR_IMMEDIATE_OPCODE || cpu.opcode() == LDA_IMMEDIATE_OPCODE || cpu.opcode() == LDX_IMMEDIATE_OPCODE || cpu.opcode() == LDY_IMMEDIATE_OPCODE || cpu.opcode() == ORA_IMMEDIATE_OPCODE || cpu.opcode() == SBC_IMMEDIATE_OPCODE {
+			case ADC_IMMEDIATE_OPCODE, AND_IMMEDIATE_OPCODE, CMP_IMMEDIATE_OPCODE, CPX_IMMEDIATE_OPCODE, CPY_IMMEDIATE_OPCODE, EOR_IMMEDIATE_OPCODE, LDA_IMMEDIATE_OPCODE, LDX_IMMEDIATE_OPCODE, LDY_IMMEDIATE_OPCODE, ORA_IMMEDIATE_OPCODE, SBC_IMMEDIATE_OPCODE:
 				fmt.Printf("%02X | %02X     |", cpu.opcode(), cpu.operand1())
-			}
-
-			// If opcode() is a 3 byte instruction, print opcode, operand1 and operand2
-			// 			fmt.Printf("%02X %02X %02X ", opcode(), operand1(), operand2())
-			if cpu.opcode() != CLC_OPCODE && cpu.opcode() != CLD_OPCODE && cpu.opcode() != CLI_OPCODE && cpu.opcode() != CLV_OPCODE && cpu.opcode() != DEX_OPCODE && cpu.opcode() != DEY_OPCODE && cpu.opcode() != INX_OPCODE && cpu.opcode() != INY_OPCODE && cpu.opcode() != NOP_OPCODE && cpu.opcode() != PHA_OPCODE && cpu.opcode() != PHP_OPCODE && cpu.opcode() != PLA_OPCODE && cpu.opcode() != PLP_OPCODE && cpu.opcode() != RTI_OPCODE && cpu.opcode() != RTS_OPCODE && cpu.opcode() != SEC_OPCODE && cpu.opcode() != SED_OPCODE && cpu.opcode() != SEI_OPCODE && cpu.opcode() != TAX_OPCODE && cpu.opcode() != TAY_OPCODE && cpu.opcode() != TSX_OPCODE && cpu.opcode() != TXA_OPCODE && cpu.opcode() != TXS_OPCODE && cpu.opcode() != TYA_OPCODE && cpu.opcode() != BRK_OPCODE && cpu.opcode() != ADC_IMMEDIATE_OPCODE && cpu.opcode() != AND_IMMEDIATE_OPCODE && cpu.opcode() != CMP_IMMEDIATE_OPCODE && cpu.opcode() != CPX_IMMEDIATE_OPCODE && cpu.opcode() != CPY_IMMEDIATE_OPCODE && cpu.opcode() != EOR_IMMEDIATE_OPCODE && cpu.opcode() != LDA_IMMEDIATE_OPCODE && cpu.opcode() != LDX_IMMEDIATE_OPCODE && cpu.opcode() != LDY_IMMEDIATE_OPCODE && cpu.opcode() != ORA_IMMEDIATE_OPCODE && cpu.opcode() != SBC_IMMEDIATE_OPCODE {
+			default:
 				fmt.Printf("%02X | %02X %02X  |", cpu.opcode(), cpu.operand1(), cpu.operand2())
 			}
 		}
-	} else if cpu.previousOpcode == JSR_ABSOLUTE_OPCODE || cpu.previousOpcode == JMP_ABSOLUTE_OPCODE || cpu.previousOpcode == JMP_INDIRECT_OPCODE {
+	case cpu.previousOpcode == JSR_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_INDIRECT_OPCODE:
 		fmt.Printf("| %04X | %02X | %02X %02X  |", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
 		cpu.previousOpcode = 0x00
 		cpu.previousPC = 0x0000
 		cpu.previousOperand1 = 0x00
 		cpu.previousOperand2 = 0x00
-	} else {
+	default:
 		fmt.Printf("| %04X | ", cpu.previousPC)
 		fmt.Printf("%02X | %02X %02X  |", cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
-
 	}
 
 	// Print disassembled instruction
@@ -325,7 +317,6 @@ func disassembleOpcode() {
 		fmt.Printf("%s\n", disassembledInstruction)
 	}
 }
-
 func boilerPlate() {
 	// Clear the screen and move cursor to top left
 	fmt.Printf("\033[2J")
