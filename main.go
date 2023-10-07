@@ -3,7 +3,9 @@ package main
 func main() {
 	boilerPlate()
 	loadROMs()
+	//time.Sleep(2 * time.Second) //Uncomment when screenrecording
 	cpu.resetCPU()
 	ted.resetTED()
-	cpu.startCPU()
+	go cpu.startCPU()
+	userInterface()
 }

@@ -408,7 +408,7 @@ func JMP(addressingMode string) {
 	}
 	if *klausd && cpu.PC == KlausDInfiniteLoopAddress {
 		if readMemory(0x02) == 0xDE && readMemory(0x03) == 0xB0 {
-			fmt.Println("All tests passed!")
+			//fmt.println("All tests passed!")
 			os.Exit(0)
 		}
 	}
@@ -1594,7 +1594,7 @@ func BRK() {
 	*/
 	BRKtrue = true
 	if *klausd {
-		fmt.Printf("Test failed at PC: %04X\t", cpu.PC)
+		//fmt.Printf("Test failed at PC: %04X\t", cpu.PC)
 		// print opcode and disassembledInstruction at PC
 		fmt.Printf("Opcode: %02X\t", readMemory(cpu.PC))
 		fmt.Printf("Disassembled Instruction: %s\n", disassembledInstruction)

@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 // Constants for MMIO address ranges and TED specific addresses
 const (
 	NMIVectorAddress   = 0xFFFA
@@ -20,14 +18,14 @@ func readMemory(address uint16) byte {
 	return memory[address]
 }
 func writeMemory(address uint16, value byte) {
-	fmt.Printf("IRQVectorAddress: %04X\n", IRQVectorAddress)
-	fmt.Printf("Content of memory at IRQVectorAddress: %04X\n", memory[IRQVectorAddress])
-	fmt.Printf("Content of memory at IRQVectorAddress+1: %04X\n", memory[IRQVectorAddress+1])
+	//fmt.Printf("IRQVectorAddress: %04X\n", IRQVectorAddress)
+	//fmt.Printf("Content of memory at IRQVectorAddress: %04X\n", memory[IRQVectorAddress])
+	//fmt.Printf("Content of memory at IRQVectorAddress+1: %04X\n", memory[IRQVectorAddress+1])
 
 	if address == IRQVectorAddress {
-		fmt.Println("Interrupt vector %04X written to with value: %04X", address, value)
+		//fmt.println("Interrupt vector %04X written to with value: %04X", address, value)
 		cpu.irq = true
-		fmt.Println("IRQ request!")
+		//fmt.println("IRQ request!")
 		// or breakpoint()
 	}
 	if address >= TED_REG_START && address <= TED_REG_END {

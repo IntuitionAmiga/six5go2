@@ -153,7 +153,7 @@ func loadROMs() {
 func dumpMemoryToFile(memory [65536]byte) {
 	file, err := os.Create("memorydump.txt")
 	if err != nil {
-		fmt.Println("Error creating file:", err)
+		//fmt.println("Error creating file:", err)
 		return
 	}
 	defer func(file *os.File) {
@@ -169,7 +169,7 @@ func dumpMemoryToFile(memory [65536]byte) {
 			return
 		}
 	}
-	fmt.Println("Memory dump completed!")
+	//fmt.println("Memory dump completed!")
 }
 func petsciiToAscii(petscii uint8) uint8 {
 	// Convert PETSCII to ASCII
@@ -333,4 +333,112 @@ func boilerPlate() {
 	}
 
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory)-1)
+}
+
+func executionTrace() string {
+	var traceLine string
+	switch {
+	case BRKtrue, cpu.previousOpcode != JSR_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_INDIRECT_OPCODE:
+		switch {
+		case cpu.previousOpcode == RTS_OPCODE, cpu.previousOpcode == BRK_OPCODE && BRKtrue, cpu.previousOpcode == RTI_OPCODE:
+			traceLine = fmt.Sprintf("$%04X ", cpu.previousPC)
+			traceLine += fmt.Sprintf("%02X ", cpu.previousOpcode)
+			cpu.previousOpcode = 0x00
+			cpu.previousPC = 0x0000
+			cpu.previousOperand1 = 0x00
+			cpu.previousOperand2 = 0x00
+			BRKtrue = false
+		default:
+			traceLine += fmt.Sprintf("$%04X ", cpu.PC)
+			switch cpu.opcode() {
+			case CLC_OPCODE, CLD_OPCODE, CLI_OPCODE, CLV_OPCODE, DEX_OPCODE, DEY_OPCODE, INX_OPCODE, INY_OPCODE, NOP_OPCODE, PHA_OPCODE, PHP_OPCODE, PLA_OPCODE, PLP_OPCODE, RTI_OPCODE, RTS_OPCODE, SEC_OPCODE, SED_OPCODE, SEI_OPCODE, TAX_OPCODE, TAY_OPCODE, TSX_OPCODE, TXA_OPCODE, TXS_OPCODE, TYA_OPCODE, BRK_OPCODE:
+				traceLine += fmt.Sprintf("%02X ", cpu.opcode())
+			case ADC_IMMEDIATE_OPCODE, AND_IMMEDIATE_OPCODE, CMP_IMMEDIATE_OPCODE, CPX_IMMEDIATE_OPCODE, CPY_IMMEDIATE_OPCODE, EOR_IMMEDIATE_OPCODE, LDA_IMMEDIATE_OPCODE, LDX_IMMEDIATE_OPCODE, LDY_IMMEDIATE_OPCODE, ORA_IMMEDIATE_OPCODE, SBC_IMMEDIATE_OPCODE:
+				traceLine += fmt.Sprintf("%02X %02X ", cpu.opcode(), cpu.operand1())
+			default:
+				traceLine += fmt.Sprintf("%02X %02X %02X ", cpu.opcode(), cpu.operand1(), cpu.operand2())
+			}
+		}
+	case cpu.previousOpcode == JSR_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_INDIRECT_OPCODE:
+		traceLine += fmt.Sprintf("%04X %02X %02X %02X ", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
+		cpu.previousOpcode = 0x00
+		cpu.previousPC = 0x0000
+		cpu.previousOperand1 = 0x00
+		cpu.previousOperand2 = 0x00
+	default:
+		traceLine += fmt.Sprintf("%04X ", cpu.previousPC)
+		traceLine += fmt.Sprintf("%02X %02X %02X ", cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
+	}
+
+	return traceLine
+}
+
+func instructionCount() string {
+	var instructionCountLine string
+	instructionCountLine = fmt.Sprintf("Instructions:\t$%08X ", instructionCounter)
+	return instructionCountLine
+}
+
+func statusFlags() string {
+	var statusLine string
+	// Print N if SR bit 7 is 1 else print -
+	if cpu.getSRBit(7) == 1 {
+		//fmt.Printf("N")
+		statusLine += fmt.Sprintf("N")
+	} else {
+		//fmt.Printf("-")
+		statusLine += fmt.Sprintf("-")
+	}
+	// Print V if SR bit 6 is 1 else print -
+	if cpu.getSRBit(6) == 1 {
+		//fmt.Printf("V")
+		statusLine += fmt.Sprintf("V")
+	} else {
+		//fmt.Printf("-")
+		statusLine += fmt.Sprintf("-")
+	}
+	// Print - for SR bit 5
+	//fmt.Printf("-")
+	statusLine += fmt.Sprintf("-")
+	// Print B if SR bit 4 is 1 else print -
+	if cpu.getSRBit(4) == 1 {
+		//fmt.Printf("B")
+		statusLine += fmt.Sprintf("B")
+	} else {
+		//fmt.Printf("-")
+		statusLine += fmt.Sprintf("-")
+	}
+	// Print D if SR bit 3 is 1 else print -
+	if cpu.getSRBit(3) == 1 {
+		//fmt.Printf("D")
+		statusLine += fmt.Sprintf("D")
+	} else {
+		//fmt.Printf("-")
+		statusLine += fmt.Sprintf("-")
+	}
+	// Print I if SR bit 2 is 1 else print -
+	if cpu.getSRBit(2) == 1 {
+		//fmt.Printf("I")
+		statusLine += fmt.Sprintf("I")
+	} else {
+		//fmt.Printf("-")
+		statusLine += fmt.Sprintf("-")
+	}
+	// Print Z if SR bit 1 is 1 else print -
+	if cpu.getSRBit(1) == 1 {
+		//fmt.Printf("Z")
+		statusLine += fmt.Sprintf("Z")
+	} else {
+		//fmt.Printf("-")
+		statusLine += fmt.Sprintf("-")
+	}
+	// Print C if SR bit 0 is 1 else print -
+	if cpu.getSRBit(0) == 1 {
+		//fmt.Printf("C")
+		statusLine += fmt.Sprintf("C")
+	} else {
+		//fmt.Printf("-")
+		statusLine += fmt.Sprintf("-")
+	}
+	return statusLine
 }
