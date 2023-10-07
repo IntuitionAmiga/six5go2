@@ -112,7 +112,7 @@ func userInterface() {
 			app.Stop()
 			os.Exit(0)
 		case 'r':
-			fmt.println("Resetting...")
+			fmt.Printf("Resetting...\n")
 			// Reset logic here
 		}
 		return event
