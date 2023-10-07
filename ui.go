@@ -42,6 +42,12 @@ func userInterface() {
 
 	// Create Emulated Display Area
 	display := tview.NewTextView().SetText("\n\t\tCOMMODORE BASIC V3.5 60671 BYTES FREE\n\t\t3-PLUS-1 ON KEY F1\n\n\t\tREADY.\n\n")
+	go func() {
+		for {
+			renderASCII(&ted, app, display)   // Assuming ted is an instance of your TED struct
+			time.Sleep(16 * time.Millisecond) // Approx. 60 FPS
+		}
+	}()
 	display.SetBorder(true).SetTitle(" Plus/4 Display ")
 	display.SetBackgroundColor(tcell.NewRGBColor(181, 155, 255))
 
@@ -112,8 +118,12 @@ func userInterface() {
 			app.Stop()
 			os.Exit(0)
 		case 'r':
-			fmt.Printf("Resetting...\n")
-			// Reset logic here
+			//fmt.Printf("Resetting...\n")
+			cpu.handleRESET()
+			ted.resetTED()
+
+			loadROMs()
+
 		}
 		return event
 	})
@@ -121,4 +131,24 @@ func userInterface() {
 	if err := app.SetRoot(grid, true).Run(); err != nil {
 		panic(err)
 	}
+}
+
+// Function to render ASCII-based graphics in the terminal
+func renderASCII(t *TED, app *tview.Application, textView *tview.TextView) {
+	var asciiArt string
+	for y := 0; y < 200; y++ {
+		for x := 0; x < 320; x++ {
+			pixel := t.GetPixel(x, y)
+			if pixel == 1 {
+				asciiArt += "▓" // ASCII 254 or any suitable character to represent a pixel
+			} else {
+				asciiArt += " " // Space for empty pixel
+			}
+		}
+		asciiArt += "\\n" // New line at the end of each row
+	}
+
+	app.QueueUpdateDraw(func() {
+		textView.SetText(asciiArt)
+	})
 }

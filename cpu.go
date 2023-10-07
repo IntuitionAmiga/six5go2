@@ -370,6 +370,7 @@ func (cpu *CPU) resetCPU() {
 		// Set PC to value stored at reset vector address
 		setPC(uint16(readMemory(RESETVectorAddress)) + uint16(readMemory(RESETVectorAddress+1))*256)
 	}
+
 }
 func (cpu *CPU) startCPU() {
 	for {

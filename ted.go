@@ -28,6 +28,8 @@ type TED struct {
 	TED_KEYBOARD_LINE7 byte
 	TED_KEYBOARD_LINE8 byte
 	TED_KEYBOARD_LINE9 byte
+
+	Framebuffer [320][200]byte
 }
 
 var ted TED
@@ -276,4 +278,14 @@ func (ted *TED) writeTEDReg(address uint16, value byte) {
 	default:
 		return
 	}
+}
+
+// Function to set a pixel in the framebuffer
+func (t *TED) SetPixel(x int, y int, color byte) {
+	t.Framebuffer[x][y] = color
+}
+
+// Function to get a pixel from the framebuffer
+func (t *TED) GetPixel(x int, y int) byte {
+	return t.Framebuffer[x][y]
 }
