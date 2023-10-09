@@ -24,9 +24,9 @@ Usage: ./six5go2 [options]
   -ruudb
 
         RuudB's 8K Test ROM
-  -state
+  -trace
 
-        State monitor mode (Optional)
+        Log Execution Trace to Disk (Optional)
 
 
 To build the project:

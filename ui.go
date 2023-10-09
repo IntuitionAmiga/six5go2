@@ -145,7 +145,7 @@ func renderASCII(t *TED, app *tview.Application, textView *tview.TextView) {
 				asciiArt += " " // Space for empty pixel
 			}
 		}
-		asciiArt += "\\n" // New line at the end of each row
+		asciiArt += "\n" // New line at the end of each row
 	}
 
 	app.QueueUpdateDraw(func() {

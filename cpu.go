@@ -223,7 +223,7 @@ var (
 	cpu CPU
 
 	//cpuSpeedHz uint64 = 985248 // 985248 Hz for a standard 6502
-	cpuSpeedHz uint64 = 985 // Run it slow whilst debugging!
+	cpuSpeedHz uint64 = 9852 // Run it slow whilst debugging!
 
 	cycleTime time.Duration = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
 
@@ -321,8 +321,8 @@ func (cpu *CPU) handleRESET() {
 	cpu.reset = false // Clear the RESET flag
 }
 func (cpu *CPU) handleState(amount int) {
-	if *stateMonitor {
-		printMachineState()
+	if *traceLog {
+		executionTraceLog()
 	}
 	incPC(amount)
 	// If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter

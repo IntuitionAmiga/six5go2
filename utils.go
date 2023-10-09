@@ -4,17 +4,18 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 )
 
 var (
-	allsuitea    = flag.Bool("allsuitea", false, "AllSuiteA ROM")
-	klausd       = flag.Bool("klausd", false, "Klaus Dormann's 6502 functional test ROM")
-	plus4        = flag.Bool("plus4", false, "Plus/4 ROMs")
-	ruudb        = flag.Bool("ruudb", false, "RuudB's 8K Test ROM")
-	c64          = flag.Bool("c64", false, "C64 ROMs")
-	disassemble  = flag.Bool("dis", false, "Disassembler mode (Optional)")
-	stateMonitor = flag.Bool("state", false, "State monitor mode (Optional)")
+	allsuitea   = flag.Bool("allsuitea", false, "AllSuiteA ROM")
+	klausd      = flag.Bool("klausd", false, "Klaus Dormann's 6502 functional test ROM")
+	plus4       = flag.Bool("plus4", false, "Plus/4 ROMs")
+	ruudb       = flag.Bool("ruudb", false, "RuudB's 8K Test ROM")
+	c64         = flag.Bool("c64", false, "C64 ROMs")
+	disassemble = flag.Bool("dis", false, "Disassembler mode (Optional)")
+	traceLog    = flag.Bool("trace", false, "State monitor mode (Optional)")
 
 	disassembledInstruction string
 	instructionCounter      uint32 = 0
@@ -145,9 +146,15 @@ func loadROMs() {
 			return
 		}
 	}
-	if *stateMonitor {
-		fmt.Printf("|  PC  | OP |OPERANDS|    DISASSEMBLY   | \t REGISTERS\t  |  STACK  | SR FLAGS | INST COUNT | CYCLE COUNT | TIME SPENT  |\n")
-		fmt.Printf("|------|----|--------|------------------|-------------------------|---------|----------|------------|-------------|-------------|\n")
+	if *traceLog {
+		f, err := os.OpenFile("trace.txt", os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Fprintf(f, "|  PC  | OP |OPERANDS|    DISASSEMBLY   | \t REGISTERS\t  |  STACK  | SR FLAGS | INST COUNT | CYCLE COUNT | TIME SPENT  |\n")
+		fmt.Fprintf(f, "|------|----|--------|------------------|-------------------------|---------|----------|------------|-------------|-------------|\n")
+		f.Sync()
+		f.Close()
 	}
 }
 func dumpMemoryToFile(memory [65536]byte) {
@@ -214,104 +221,107 @@ func plus4KernalRoutines() {
 	// print "kernal rom call address"
 	//fmt.Printf("\n\u001B[32;5mKernal ROM call address: $%04X\u001B[0m\n", PC)
 }
-func printMachineState() {
+
+func executionTraceLog() {
+	f, err := os.OpenFile("trace.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 	switch {
 	case BRKtrue, cpu.previousOpcode != JSR_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_INDIRECT_OPCODE:
 		switch {
 		case cpu.previousOpcode == RTS_OPCODE, cpu.previousOpcode == BRK_OPCODE && BRKtrue, cpu.previousOpcode == RTI_OPCODE:
-			fmt.Printf("| %04X | ", cpu.previousPC)
-			fmt.Printf("%02X |        |", cpu.previousOpcode)
+			fmt.Fprintf(f, "| %04X | ", cpu.previousPC)
+			fmt.Fprintf(f, "%02X |        |", cpu.previousOpcode)
 			cpu.previousOpcode = 0x00
 			cpu.previousPC = 0x0000
 			cpu.previousOperand1 = 0x00
 			cpu.previousOperand2 = 0x00
 			BRKtrue = false
 		default:
-			fmt.Printf("| %04X | ", cpu.PC)
+			fmt.Fprintf(f, "| %04X | ", cpu.PC)
 			switch cpu.opcode() {
 			case CLC_OPCODE, CLD_OPCODE, CLI_OPCODE, CLV_OPCODE, DEX_OPCODE, DEY_OPCODE, INX_OPCODE, INY_OPCODE, NOP_OPCODE, PHA_OPCODE, PHP_OPCODE, PLA_OPCODE, PLP_OPCODE, RTI_OPCODE, RTS_OPCODE, SEC_OPCODE, SED_OPCODE, SEI_OPCODE, TAX_OPCODE, TAY_OPCODE, TSX_OPCODE, TXA_OPCODE, TXS_OPCODE, TYA_OPCODE, BRK_OPCODE:
-				fmt.Printf("%02X |        |", cpu.opcode())
+				fmt.Fprintf(f, "%02X |        |", cpu.opcode())
 			case ADC_IMMEDIATE_OPCODE, AND_IMMEDIATE_OPCODE, CMP_IMMEDIATE_OPCODE, CPX_IMMEDIATE_OPCODE, CPY_IMMEDIATE_OPCODE, EOR_IMMEDIATE_OPCODE, LDA_IMMEDIATE_OPCODE, LDX_IMMEDIATE_OPCODE, LDY_IMMEDIATE_OPCODE, ORA_IMMEDIATE_OPCODE, SBC_IMMEDIATE_OPCODE:
-				fmt.Printf("%02X | %02X     |", cpu.opcode(), cpu.operand1())
+				fmt.Fprintf(f, "%02X | %02X     |", cpu.opcode(), cpu.operand1())
 			default:
-				fmt.Printf("%02X | %02X %02X  |", cpu.opcode(), cpu.operand1(), cpu.operand2())
+				fmt.Fprintf(f, "%02X | %02X %02X  |", cpu.opcode(), cpu.operand1(), cpu.operand2())
 			}
 		}
 	case cpu.previousOpcode == JSR_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_INDIRECT_OPCODE:
-		fmt.Printf("| %04X | %02X | %02X %02X  |", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
+		fmt.Fprintf(f, "| %04X | %02X | %02X %02X  |", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
 		cpu.previousOpcode = 0x00
 		cpu.previousPC = 0x0000
 		cpu.previousOperand1 = 0x00
 		cpu.previousOperand2 = 0x00
 	default:
-		fmt.Printf("| %04X | ", cpu.previousPC)
-		fmt.Printf("%02X | %02X %02X  |", cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
+		fmt.Fprintf(f, "| %04X | ", cpu.previousPC)
+		fmt.Fprintf(f, "%02X | %02X %02X  |", cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
 	}
 
 	// Print disassembled instruction
-	fmt.Printf("\t %s\t|", disassembledInstruction)
+	fmt.Fprintf(f, "\t %s\t|", disassembledInstruction)
 	// Print A,X,Y,SP as hex values
-	fmt.Printf(" A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | ", cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.SP, readStack())
+	fmt.Fprintf(f, " A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | ", cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.SP, readStack())
 
 	// Print full SR as binary digits with zero padding
-	//fmt.Printf("%08b | ", SR)
+	//fmt.Fprintf(f,"%08b | ", SR)
 
 	// Print N if SR bit 7 is 1 else print -
 	if cpu.getSRBit(7) == 1 {
-		fmt.Printf("N")
+		fmt.Fprintf(f, "N")
 	} else {
-		fmt.Printf("-")
+		fmt.Fprintf(f, "-")
 	}
 	// Print V if SR bit 6 is 1 else print -
 	if cpu.getSRBit(6) == 1 {
-		fmt.Printf("V")
+		fmt.Fprintf(f, "V")
 	} else {
-		fmt.Printf("-")
+		fmt.Fprintf(f, "-")
 	}
 	// Print - for SR bit 5
-	fmt.Printf("-")
+	fmt.Fprintf(f, "-")
 	// Print B if SR bit 4 is 1 else print -
 	if cpu.getSRBit(4) == 1 {
-		fmt.Printf("B")
+		fmt.Fprintf(f, "B")
 	} else {
-		fmt.Printf("-")
+		fmt.Fprintf(f, "-")
 	}
 	// Print D if SR bit 3 is 1 else print -
 	if cpu.getSRBit(3) == 1 {
-		fmt.Printf("D")
+		fmt.Fprintf(f, "D")
 	} else {
-		fmt.Printf("-")
+		fmt.Fprintf(f, "-")
 	}
 	// Print I if SR bit 2 is 1 else print -
 	if cpu.getSRBit(2) == 1 {
-		fmt.Printf("I")
+		fmt.Fprintf(f, "I")
 	} else {
-		fmt.Printf("-")
+		fmt.Fprintf(f, "-")
 	}
 	// Print Z if SR bit 1 is 1 else print -
 	if cpu.getSRBit(1) == 1 {
-		fmt.Printf("Z")
+		fmt.Fprintf(f, "Z")
 	} else {
-		fmt.Printf("-")
+		fmt.Fprintf(f, "-")
 	}
 	// Print C if SR bit 0 is 1 else print -
 	if cpu.getSRBit(0) == 1 {
-		fmt.Printf("C")
+		fmt.Fprintf(f, "C")
 	} else {
-		fmt.Printf("-")
+		fmt.Fprintf(f, "-")
 	}
-	fmt.Printf(" | $%08X  | ", instructionCounter)
-	fmt.Printf(" $%08X  | ", cpu.cycleCounter)
+	fmt.Fprintf(f, " | $%08X  | ", instructionCounter)
+	fmt.Fprintf(f, " $%08X  | ", cpu.cycleCounter)
 	if cpu.cpuTimeSpent == 0 {
-		fmt.Printf("%v\t\t|\n", cpu.cpuTimeSpent)
+		fmt.Fprintf(f, "%v\t\t|\n", cpu.cpuTimeSpent)
 	} else {
-		fmt.Printf("%v\t|\n", cpu.cpuTimeSpent)
-
+		fmt.Fprintf(f, "%v\t|\n", cpu.cpuTimeSpent)
 	}
-	// Move cursor back to beginning of previous line
-	// Comment this line out to get full disassembly and machine state
-	//fmt.Printf("\033[1A")
+	defer f.Close()
 }
+
 func disassembleOpcode() {
 	if *disassemble {
 		fmt.Printf("%s\n", disassembledInstruction)
@@ -360,7 +370,7 @@ func executionTrace() string {
 			}
 		}
 	case cpu.previousOpcode == JSR_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_INDIRECT_OPCODE:
-		traceLine += fmt.Sprintf("%04X %02X %02X %02X ", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
+		traceLine += fmt.Sprintf("$%04X %02X %02X %02X ", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
 		cpu.previousOpcode = 0x00
 		cpu.previousPC = 0x0000
 		cpu.previousOperand1 = 0x00
