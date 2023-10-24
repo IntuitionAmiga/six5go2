@@ -129,47 +129,11 @@ func userInterface() {
 			ted.resetTED()
 			loadROMs()
 		case 'm':
-			var builder strings.Builder
-
-			// Pre-allocate some memory
-			builder.Grow(0xFFFF * 4) // Adjust as needed
-
-			// Format the RAM data
-			for i := 0; i < 0xFFFF; i += 16 {
-				// Print memory address at the start of each line
-				builder.WriteString(fmt.Sprintf("$%04X: ", i))
-
-				// Hex representation
-				for j := 0; j < 16; j++ {
-					builder.WriteString(fmt.Sprintf("%02X ", memory[(i+j)]))
-				}
-
-				// Separator between Hex and PETSCII/ASCII
-				builder.WriteString("  ")
-
-				// PETSCII/ASCII representation
-				for j := 0; j < 16; j++ {
-					char := memory[(i + j)]
-					if char >= 32 && char <= 126 {
-						builder.WriteByte(char)
-					} else {
-						builder.WriteByte('.')
-					}
-				}
-				builder.WriteByte('\n')
-			}
-
-			formattedRAM := builder.String()
-
 			// Create modal
 			modal := tview.NewTextView().
 				SetDynamicColors(true).
 				SetTextAlign(tview.AlignLeft).
 				SetScrollable(true) // Make the TextView scrollable
-
-			// Update the modal text with formatted RAM data
-			modal.SetText(formattedRAM)
-			modal.ScrollToBeginning()
 
 			modalGrid := tview.NewGrid().
 				SetRows(40).
@@ -179,12 +143,15 @@ func userInterface() {
 			// Add modal to the pages widget
 			pages.AddPage("modalGrid", modalGrid, true, false) // Switch to the modal page
 			pages.SwitchToPage("modalGrid")
+
 			// Set input capture for modal to close it when Esc is pressed
 			var scrollPosition int
+			var stopUpdate = make(chan bool)
 			modal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 				switch event.Key() {
 				case tcell.KeyEscape:
 					pages.SwitchToPage("main")
+					stopUpdate <- true
 				case tcell.KeyUp:
 					if scrollPosition > 0 {
 						scrollPosition--
@@ -197,8 +164,45 @@ func userInterface() {
 				return event
 			})
 
+			// Goroutine to update the TextView
+			go func() {
+				for {
+					select {
+					case <-stopUpdate:
+						return
+					default:
+						var builder strings.Builder
+						// Pre-allocate some memory
+						builder.Grow(0xFFFF * 4)
+						// Format the RAM data
+						for i := 0; i < 0xFFFF; i += 16 {
+							builder.WriteString(fmt.Sprintf("$%04X: ", i))
+							for j := 0; j < 16; j++ {
+								builder.WriteString(fmt.Sprintf("%02X ", memory[(i+j)]))
+							}
+							builder.WriteString("  ")
+							for j := 0; j < 16; j++ {
+								char := memory[(i + j)]
+								if char >= 32 && char <= 126 {
+									builder.WriteByte(char)
+								} else {
+									builder.WriteByte('.')
+								}
+							}
+							builder.WriteByte('\n')
+						}
+
+						formattedRAM := builder.String()
+						app.QueueUpdateDraw(func() {
+							modal.SetText(formattedRAM)
+						})
+						time.Sleep(500 * time.Millisecond)
+					}
+				}
+			}()
 		}
 		return event
+
 	})
 	// Set the pages widget as the root
 	app.SetRoot(pages, true)
