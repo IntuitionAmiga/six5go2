@@ -5,6 +5,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -52,7 +53,7 @@ func userInterface() {
 	display.SetBackgroundColor(tcell.NewRGBColor(181, 155, 255))
 
 	// Create Toolbar Panel
-	toolbar := tview.NewTextView().SetText("[Q]uit  [R]eset [S]ettings")
+	toolbar := tview.NewTextView().SetText("[Q]uit  [R]eset [M]emory")
 	toolbar.SetBorder(true).SetTitle(" six5go2 - (c) Zayn Otley ")
 
 	// Create SRFlags Panel
@@ -111,6 +112,11 @@ func userInterface() {
 		AddItem(toolbar, 9, 0, 1, 1, 0, 0, false).
 		AddItem(display, 0, 1, 10, 1, 0, 0, false)
 
+	// Create a tview.Pages widget to manage layers
+	pages := tview.NewPages()
+	// Add your main grid to the pages widget
+	pages.AddPage("main", grid, true, true)
+
 	// Handle input
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
@@ -118,17 +124,86 @@ func userInterface() {
 			app.Stop()
 			os.Exit(0)
 		case 'r':
-			//fmt.Printf("Resetting...\n")
+			// Resetting logic
 			cpu.handleRESET()
 			ted.resetTED()
-
 			loadROMs()
+		case 'm':
+			var builder strings.Builder
+
+			// Pre-allocate some memory
+			builder.Grow(0xFFFF * 4) // Adjust as needed
+
+			// Format the RAM data
+			for i := 0; i < 0xFFFF; i += 16 {
+				// Print memory address at the start of each line
+				builder.WriteString(fmt.Sprintf("$%04X: ", i))
+
+				// Hex representation
+				for j := 0; j < 16; j++ {
+					builder.WriteString(fmt.Sprintf("%02X ", memory[(i+j)]))
+				}
+
+				// Separator between Hex and PETSCII/ASCII
+				builder.WriteString("  ")
+
+				// PETSCII/ASCII representation
+				for j := 0; j < 16; j++ {
+					char := memory[(i + j)]
+					if char >= 32 && char <= 126 {
+						builder.WriteByte(char)
+					} else {
+						builder.WriteByte('.')
+					}
+				}
+				builder.WriteByte('\n')
+			}
+
+			formattedRAM := builder.String()
+
+			// Create modal
+			modal := tview.NewTextView().
+				SetDynamicColors(true).
+				SetTextAlign(tview.AlignLeft).
+				SetScrollable(true) // Make the TextView scrollable
+
+			// Update the modal text with formatted RAM data
+			modal.SetText(formattedRAM)
+			modal.ScrollToBeginning()
+
+			modalGrid := tview.NewGrid().
+				SetRows(40).
+				SetColumns(0).
+				AddItem(modal, 0, 0, 1, 1, 0, 0, true)
+
+			// Add modal to the pages widget
+			pages.AddPage("modalGrid", modalGrid, true, false) // Switch to the modal page
+			pages.SwitchToPage("modalGrid")
+			// Set input capture for modal to close it when Esc is pressed
+			var scrollPosition int
+			modal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+				switch event.Key() {
+				case tcell.KeyEscape:
+					pages.SwitchToPage("main")
+				case tcell.KeyUp:
+					if scrollPosition > 0 {
+						scrollPosition--
+						modal.ScrollTo(scrollPosition, 0)
+					}
+				case tcell.KeyDown:
+					scrollPosition++
+					modal.ScrollTo(scrollPosition, 0)
+				}
+				return event
+			})
 
 		}
 		return event
 	})
+	// Set the pages widget as the root
+	app.SetRoot(pages, true)
 
-	if err := app.SetRoot(grid, true).Run(); err != nil {
+	if err := app.Run(); err != nil {
 		panic(err)
 	}
 }
