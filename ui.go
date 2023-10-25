@@ -139,7 +139,7 @@ func userInterface() {
 				SetDynamicColors(true).
 				SetTextAlign(tview.AlignLeft).
 				SetScrollable(true) // Make the TextView scrollable
-			modal.SetBorder(true).SetTitle(" Memory Monitor ")
+			modal.SetBorder(true).SetTitle(" Memory Monitor - (Ctrl-G to Goto Memory Address / Ctrl-F to Search) ")
 
 			modalGrid := tview.NewGrid().
 				SetRows(40).
@@ -180,11 +180,7 @@ func userInterface() {
 							modal.ScrollTo(lineNumber, 0)
 						})
 					form.SetBorder(true).SetTitle(" Enter address ").SetTitleAlign(tview.AlignLeft)
-					form.AddButton("OK", func() {
-						pages.RemovePage("gotoAddressForm")
-						app.SetFocus(modal)
-					})
-					form.AddButton("Cancel", func() {
+					form.AddButton("Exit", func() {
 						pages.RemovePage("gotoAddressForm")
 						app.SetFocus(modal)
 					})
