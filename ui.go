@@ -302,6 +302,10 @@ func renderASCII(t *TED, app *tview.Application, textView *tview.TextView) {
 
 // KMP Search algorithm
 func KMPSearch(pat string, txt string) bool {
+	if pat == "" {
+		return false
+	}
+
 	m := len(pat)
 	n := len(txt)
 
@@ -372,6 +376,9 @@ func stringToHexSpace(str string) string {
 
 // Finds the first line that contains the specified string in the given memory array
 func findStringInMemory(search string, memory []byte) int {
+	if search == "" {
+		return -1
+	}
 	var line string
 	hexSearch := stringToHexSpace(search)
 	for i := 0; i < len(memory); i += 16 {
@@ -387,18 +394,3 @@ func findStringInMemory(search string, memory []byte) int {
 	}
 	return -1 // Not found
 }
-
-//func findStringInMemory(search string, memory []byte) int {
-//	var line string
-//	for i := 0; i < len(memory); i += 16 {
-//		// Create the line string from the memory slice
-//		for j := 0; j < 16; j++ {
-//			line += fmt.Sprintf("%02X ", memory[i+j])
-//		}
-//		// Check if the line contains the search string
-//		if strings.Contains(line, search) {
-//			return i / 16 // Return the line index
-//		}
-//	}
-//	return -1 // Not found
-//}
