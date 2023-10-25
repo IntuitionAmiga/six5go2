@@ -139,7 +139,7 @@ func userInterface() {
 				SetDynamicColors(true).
 				SetTextAlign(tview.AlignLeft).
 				SetScrollable(true) // Make the TextView scrollable
-			modal.SetBorder(true).SetTitle(" Memory Monitor - (Ctrl-G to Goto Memory Address / Ctrl-F to Search) ")
+			modal.SetBorder(true).SetTitle(" Memory Monitor - (Ctrl-G to Goto/Edit Memory Address / Ctrl-F to Search) ")
 
 			modalGrid := tview.NewGrid().
 				SetRows(40).
@@ -167,7 +167,8 @@ func userInterface() {
 					scrollPosition++
 					modal.ScrollTo(scrollPosition, 0)
 				case tcell.KeyCtrlG:
-					form := tview.NewForm().
+					var form *tview.Form
+					form = tview.NewForm().
 						AddInputField("Go to address: ", "", 10, nil, func(text string) {
 							// Convert entered address to integer
 							address, err := strconv.ParseInt(text, 16, 32)
@@ -178,17 +179,34 @@ func userInterface() {
 							// Calculate the line number to jump to
 							lineNumber := int(address) / 16
 							modal.ScrollTo(lineNumber, 0)
+							// Populate the value field
+							form.GetFormItem(1).(*tview.InputField).SetText(fmt.Sprintf("%02X", memory[address]))
+						}).
+						AddInputField("Current Value: ", "", 2, nil, nil).
+						AddButton("Update", func() {
+							addressField := form.GetFormItem(0).(*tview.InputField).GetText()
+							valueField := form.GetFormItem(1).(*tview.InputField).GetText()
+							address, err := strconv.ParseInt(addressField, 16, 32)
+							if err != nil {
+								return
+							}
+							value, err := strconv.ParseInt(valueField, 16, 8)
+							if err != nil {
+								return
+							}
+							memory[address] = byte(value)
 						})
 					form.SetBorder(true).SetTitle(" Enter address ").SetTitleAlign(tview.AlignLeft)
 					form.AddButton("Exit", func() {
 						pages.RemovePage("gotoAddressForm")
 						app.SetFocus(modal)
 					})
+					// existing code for formGrid, etc.
 
 					// Create a new grid layout for the form, specifying its size
 					formGrid := tview.NewGrid().
-						SetRows(8).
-						SetColumns(25).
+						SetRows(10).
+						SetColumns(30).
 						AddItem(form, 0, 0, 1, 1, 0, 0, true)
 
 					// Add this new grid layout as a new page
