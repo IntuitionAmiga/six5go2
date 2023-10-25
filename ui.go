@@ -5,6 +5,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -130,10 +131,11 @@ func userInterface() {
 			loadROMs()
 		case 'm':
 			// Create modal
-			modal := tview.NewTextView().
+			modal := tview.NewTextView().SetText("Memory Monitor").
 				SetDynamicColors(true).
 				SetTextAlign(tview.AlignLeft).
 				SetScrollable(true) // Make the TextView scrollable
+			modal.SetBorder(true).SetTitle(" Memory Monitor ")
 
 			modalGrid := tview.NewGrid().
 				SetRows(40).
@@ -160,7 +162,73 @@ func userInterface() {
 				case tcell.KeyDown:
 					scrollPosition++
 					modal.ScrollTo(scrollPosition, 0)
+				case tcell.KeyCtrlG:
+					form := tview.NewForm().
+						AddInputField("Go to address: ", "", 10, nil, func(text string) {
+							// Convert entered address to integer
+							address, err := strconv.ParseInt(text, 16, 32)
+							if err != nil {
+								// Handle error
+								return
+							}
+							// Calculate the line number to jump to
+							lineNumber := int(address) / 16
+							modal.ScrollTo(lineNumber, 0)
+						})
+					form.SetBorder(true).SetTitle(" Enter address ").SetTitleAlign(tview.AlignLeft)
+					form.AddButton("OK", func() {
+						pages.RemovePage("gotoAddressForm")
+						app.SetFocus(modal)
+					})
+					form.AddButton("Cancel", func() {
+						pages.RemovePage("gotoAddressForm")
+						app.SetFocus(modal)
+					})
+
+					// Create a new grid layout for the form, specifying its size
+					formGrid := tview.NewGrid().
+						SetRows(8).
+						SetColumns(25).
+						AddItem(form, 0, 0, 1, 1, 0, 0, true)
+
+					// Add this new grid layout as a new page
+					pages.AddPage("gotoAddressForm", formGrid, true, true)
+
+					// Set focus to the new form grid layout
+					app.SetFocus(formGrid)
+				case tcell.KeyCtrlF:
+					form := tview.NewForm().
+						AddInputField(" Find string: ", "", 10, nil, func(text string) {
+							// Search for the string in the memory and find the corresponding line
+							lineIndex := findStringInMemory(text, memory[:])
+							if lineIndex != -1 {
+								modal.ScrollTo(lineIndex, 0)
+							}
+						})
+					form.SetBorder(true).SetTitle(" Enter string ").SetTitleAlign(tview.AlignLeft)
+					form.AddButton("OK", func() {
+						pages.RemovePage("findStringForm")
+						app.SetFocus(modal)
+					})
+					form.AddButton("Cancel", func() {
+						pages.RemovePage("findStringForm")
+						app.SetFocus(modal)
+					})
+
+					// Create a new grid layout for the form, specifying its size (same as for Ctrl-G)
+					formGrid := tview.NewGrid().
+						SetRows(8).
+						SetColumns(25).
+						AddItem(form, 0, 0, 1, 1, 0, 0, true)
+
+					// Add this new grid layout as a new page
+					pages.AddPage("findStringForm", formGrid, true, true)
+
+					// Set focus to the new form grid layout
+					app.SetFocus(formGrid)
+
 				}
+
 				return event
 			})
 
@@ -231,3 +299,106 @@ func renderASCII(t *TED, app *tview.Application, textView *tview.TextView) {
 		textView.SetText(asciiArt)
 	})
 }
+
+// KMP Search algorithm
+func KMPSearch(pat string, txt string) bool {
+	m := len(pat)
+	n := len(txt)
+
+	// create lps[] that will hold the longest prefix suffix values for pattern
+	var lps []int
+	lps = make([]int, m)
+	var j int = 0 // index for pat[]
+
+	// Preprocess the pattern (calculate lps[] array)
+	computeLPSArray(pat, m, lps)
+
+	i := 0 // index for txt[]
+	for i < n {
+		if pat[j] == txt[i] {
+			j++
+			i++
+		}
+
+		if j == m {
+			return true
+			//j = lps[j-1] // For use when enabling Find Next Occurrence feature
+		}
+
+		// mismatch after j matches
+		if i < n && pat[j] != txt[i] {
+			if j != 0 {
+				j = lps[j-1]
+			} else {
+				i = i + 1
+			}
+		}
+	}
+	return false
+}
+
+// Fills lps[] for given patttern pat[0..M-1]
+func computeLPSArray(pat string, M int, lps []int) {
+	length := 0 // length of the previous longest prefix suffix
+
+	lps[0] = 0 // lps[0] is always 0
+	i := 1
+
+	// the loop calculates lps[i] for i = 1 to M-1
+	for i < M {
+		if pat[i] == pat[length] {
+			length++
+			lps[i] = length
+			i++
+		} else {
+			if length != 0 {
+				length = lps[length-1]
+			} else {
+				lps[i] = 0
+				i++
+			}
+		}
+	}
+}
+
+// Convert string to its hexadecimal representation with spaces
+func stringToHexSpace(str string) string {
+	var hexStr string
+	for i := 0; i < len(str); i++ {
+		hexStr += fmt.Sprintf("%02X ", str[i])
+	}
+	return hexStr
+}
+
+// Finds the first line that contains the specified string in the given memory array
+func findStringInMemory(search string, memory []byte) int {
+	var line string
+	hexSearch := stringToHexSpace(search)
+	for i := 0; i < len(memory); i += 16 {
+		// Create the line string from the memory slice
+		for j := 0; j < 16; j++ {
+			line += fmt.Sprintf("%02X ", memory[i+j])
+		}
+		// Check if the line contains the search string using KMP
+		if KMPSearch(hexSearch, line) {
+			return i / 16 // Return the line index
+		}
+		line = "" // Reset line
+	}
+	return -1 // Not found
+}
+
+//func findStringInMemory(search string, memory []byte) int {
+//	var line string
+//	for i := 0; i < len(memory); i += 16 {
+//		// Create the line string from the memory slice
+//		for j := 0; j < 16; j++ {
+//			line += fmt.Sprintf("%02X ", memory[i+j])
+//		}
+//		// Check if the line contains the search string
+//		if strings.Contains(line, search) {
+//			return i / 16 // Return the line index
+//		}
+//	}
+//	return -1 // Not found
+//}
