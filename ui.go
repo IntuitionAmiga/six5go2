@@ -10,6 +10,9 @@ import (
 	"time"
 )
 
+var lastFoundPosition int = -1
+var lastSearchString string = ""
+
 func userInterface() {
 	app := tview.NewApplication()
 
@@ -203,12 +206,22 @@ func userInterface() {
 							lineIndex := findStringInMemory(text, memory[:])
 							if lineIndex != -1 {
 								modal.ScrollTo(lineIndex, 0)
+								lastFoundPosition = lineIndex * 16 // Update the last found position
+								lastSearchString = text            // Update the last search string
 							}
 						})
 					form.SetBorder(true).SetTitle(" Enter string ").SetTitleAlign(tview.AlignLeft)
-					form.AddButton("OK", func() {
-						pages.RemovePage("findStringForm")
-						app.SetFocus(modal)
+					form.AddButton("Next", func() {
+						//pages.RemovePage("findStringForm")
+						//app.SetFocus(modal)
+						if lastSearchString != "" {
+							// Use KMP search starting from lastFoundPosition
+							newLineIndex := findStringInMemory(lastSearchString, memory[:])
+							if newLineIndex != -1 {
+								modal.ScrollTo(newLineIndex, 0)
+								lastFoundPosition = newLineIndex * 16 // Update the last found position
+							}
+						}
 					})
 					form.AddButton("Cancel", func() {
 						pages.RemovePage("findStringForm")
@@ -374,21 +387,54 @@ func stringToHexSpace(str string) string {
 	return hexStr
 }
 
+//// Finds the first line that contains the specified string in the given memory array
+//func findStringInMemory(search string, memory []byte) int {
+//	if search == "" {
+//		return -1
+//	}
+//	var line string
+//	hexSearch := stringToHexSpace(search)
+//	for i := 0; i < len(memory); i += 16 {
+//		// Create the line string from the memory slice
+//		for j := 0; j < 16; j++ {
+//			line += fmt.Sprintf("%02X ", memory[i+j])
+//		}
+//		// Check if the line contains the search string using KMP
+//		if KMPSearch(hexSearch, line) {
+//			return i / 16 // Return the line index
+//		}
+//		line = "" // Reset line
+//	}
+//	return -1 // Not found
+//}
+
 // Finds the first line that contains the specified string in the given memory array
 func findStringInMemory(search string, memory []byte) int {
 	if search == "" {
 		return -1
 	}
+
 	var line string
 	hexSearch := stringToHexSpace(search)
-	for i := 0; i < len(memory); i += 16 {
+
+	// Determine starting position
+	var i int
+	if search == lastSearchString && lastFoundPosition < len(memory) {
+		i = lastFoundPosition + 16 // Start after the last found position
+	} else {
+		i = 0 // Start from the beginning
+	}
+
+	for ; i < len(memory); i += 16 {
 		// Create the line string from the memory slice
 		for j := 0; j < 16; j++ {
 			line += fmt.Sprintf("%02X ", memory[i+j])
 		}
 		// Check if the line contains the search string using KMP
 		if KMPSearch(hexSearch, line) {
-			return i / 16 // Return the line index
+			lastFoundPosition = i     // Update the last found position
+			lastSearchString = search // Update the last search string
+			return i / 16             // Return the line index
 		}
 		line = "" // Reset line
 	}
