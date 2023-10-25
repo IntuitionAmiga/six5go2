@@ -10,8 +10,9 @@ import (
 	"time"
 )
 
-var lastFoundPosition int = -1
-var lastSearchString string = ""
+var lastFoundPosition = -1
+var lastSearchString = ""
+var lastReverseFoundPosition = -1
 
 func userInterface() {
 	app := tview.NewApplication()
@@ -203,7 +204,7 @@ func userInterface() {
 					form := tview.NewForm().
 						AddInputField(" Find string: ", "", 10, nil, func(text string) {
 							// Search for the string in the memory and find the corresponding line
-							lineIndex := findStringInMemory(text, memory[:])
+							lineIndex := findStringInMemory(text, memory[:], true)
 							if lineIndex != -1 {
 								modal.ScrollTo(lineIndex, 0)
 								lastFoundPosition = lineIndex * 16 // Update the last found position
@@ -212,18 +213,25 @@ func userInterface() {
 						})
 					form.SetBorder(true).SetTitle(" Enter string ").SetTitleAlign(tview.AlignLeft)
 					form.AddButton("Next", func() {
-						//pages.RemovePage("findStringForm")
-						//app.SetFocus(modal)
 						if lastSearchString != "" {
 							// Use KMP search starting from lastFoundPosition
-							newLineIndex := findStringInMemory(lastSearchString, memory[:])
+							newLineIndex := findStringInMemory(lastSearchString, memory[:], true)
 							if newLineIndex != -1 {
 								modal.ScrollTo(newLineIndex, 0)
-								lastFoundPosition = newLineIndex * 16 // Update the last found position
 							}
 						}
 					})
-					form.AddButton("Cancel", func() {
+					form.AddButton("Previous", func() {
+						if lastSearchString != "" {
+							// Use KMP search starting from lastFoundPosition
+							newLineIndex := findStringInMemory(lastSearchString, memory[:], false)
+							if newLineIndex != -1 {
+								modal.ScrollTo(newLineIndex, 0)
+							}
+						}
+					})
+
+					form.AddButton("Exit", func() {
 						pages.RemovePage("findStringForm")
 						app.SetFocus(modal)
 					})
@@ -231,7 +239,7 @@ func userInterface() {
 					// Create a new grid layout for the form, specifying its size (same as for Ctrl-G)
 					formGrid := tview.NewGrid().
 						SetRows(8).
-						SetColumns(25).
+						SetColumns(34).
 						AddItem(form, 0, 0, 1, 1, 0, 0, true)
 
 					// Add this new grid layout as a new page
@@ -325,7 +333,7 @@ func KMPSearch(pat string, txt string) bool {
 	// create lps[] that will hold the longest prefix suffix values for pattern
 	var lps []int
 	lps = make([]int, m)
-	var j int = 0 // index for pat[]
+	var j = 0 // index for pat[]
 
 	// Preprocess the pattern (calculate lps[] array)
 	computeLPSArray(pat, m, lps)
@@ -387,29 +395,7 @@ func stringToHexSpace(str string) string {
 	return hexStr
 }
 
-//// Finds the first line that contains the specified string in the given memory array
-//func findStringInMemory(search string, memory []byte) int {
-//	if search == "" {
-//		return -1
-//	}
-//	var line string
-//	hexSearch := stringToHexSpace(search)
-//	for i := 0; i < len(memory); i += 16 {
-//		// Create the line string from the memory slice
-//		for j := 0; j < 16; j++ {
-//			line += fmt.Sprintf("%02X ", memory[i+j])
-//		}
-//		// Check if the line contains the search string using KMP
-//		if KMPSearch(hexSearch, line) {
-//			return i / 16 // Return the line index
-//		}
-//		line = "" // Reset line
-//	}
-//	return -1 // Not found
-//}
-
-// Finds the first line that contains the specified string in the given memory array
-func findStringInMemory(search string, memory []byte) int {
+func findStringInMemory(search string, memory []byte, searchForward bool) int {
 	if search == "" {
 		return -1
 	}
@@ -419,24 +405,48 @@ func findStringInMemory(search string, memory []byte) int {
 
 	// Determine starting position
 	var i int
-	if search == lastSearchString && lastFoundPosition < len(memory) {
-		i = lastFoundPosition + 16 // Start after the last found position
+	if search == lastSearchString {
+		if searchForward && lastFoundPosition < len(memory) {
+			i = lastFoundPosition + 16 // Start after the last found position
+		} else if !searchForward && lastReverseFoundPosition > 0 {
+			i = lastReverseFoundPosition - 16 // Start before the last reverse found position
+		} else if !searchForward {
+			i = len(memory) - 16 // Start from the end if searching backward
+		}
 	} else {
-		i = 0 // Start from the beginning
+		i = 0 // Start from the beginning if searching forward
 	}
 
-	for ; i < len(memory); i += 16 {
-		// Create the line string from the memory slice
-		for j := 0; j < 16; j++ {
-			line += fmt.Sprintf("%02X ", memory[i+j])
+	if searchForward {
+		for ; i < len(memory); i += 16 {
+			// Create the line string from the memory slice
+			for j := 0; j < 16; j++ {
+				line += fmt.Sprintf("%02X ", memory[i+j])
+			}
+			// Check if the line contains the search string using KMP
+			if KMPSearch(hexSearch, line) {
+				lastFoundPosition = i
+				lastReverseFoundPosition = i // Update the last reverse found position too
+				lastSearchString = search
+				return i / 16
+			}
+			line = ""
 		}
-		// Check if the line contains the search string using KMP
-		if KMPSearch(hexSearch, line) {
-			lastFoundPosition = i     // Update the last found position
-			lastSearchString = search // Update the last search string
-			return i / 16             // Return the line index
+	} else {
+		for ; i >= 0; i -= 16 {
+			// Create the line string from the memory slice
+			for j := 0; j < 16; j++ {
+				line += fmt.Sprintf("%02X ", memory[i+j])
+			}
+			// Check if the line contains the search string using KMP
+			if KMPSearch(hexSearch, line) {
+				lastReverseFoundPosition = i
+				lastFoundPosition = i // Update the last found position too
+				lastSearchString = search
+				return i / 16
+			}
+			line = ""
 		}
-		line = "" // Reset line
 	}
-	return -1 // Not found
+	return -1
 }
