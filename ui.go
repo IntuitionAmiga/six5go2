@@ -13,6 +13,7 @@ import (
 var lastFoundPosition = -1
 var lastSearchString = ""
 var lastReverseFoundPosition = -1
+var pc uint16
 
 func userInterface() {
 	app := tview.NewApplication()
@@ -384,7 +385,7 @@ func userInterface() {
 		for {
 			pc = <-breakpointHit // Wait for a breakpoint hit
 			app.QueueUpdateDraw(func() {
-				messageView.SetText("[red::b] Breakpoint hit, press 'c' to continue execution!")
+				messageView.SetText("[red::b]Breakpoint hit, press 'c' to continue execution!")
 			})
 		}
 	}()
