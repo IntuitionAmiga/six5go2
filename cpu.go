@@ -223,7 +223,8 @@ var (
 	cpu CPU
 
 	//cpuSpeedHz uint64 = 985248 // 985248 Hz for a standard 6502
-	cpuSpeedHz uint64 = 9852 // Run it slow whilst debugging!
+	//cpuSpeedHz uint64 = 1760000 // 1760000 Hz for a 7501/8501
+	cpuSpeedHz uint64 = 75 // Run it slow whilst debugging!
 
 	cycleTime time.Duration = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
 
@@ -231,8 +232,12 @@ var (
 
 	BRKtrue bool = false
 
-	cpuMutex sync.Mutex
+	cpuMutex         sync.Mutex
+	breakpointsMutex sync.Mutex
 )
+var breakpoints = make(map[uint16]bool)
+var breakpointHit = make(chan uint16, 1)
+var breakpointHalted bool = false
 
 func (cpu *CPU) opcode() byte {
 	return readMemory(cpu.PC)
@@ -321,9 +326,6 @@ func (cpu *CPU) handleRESET() {
 	cpu.reset = false // Clear the RESET flag
 }
 func (cpu *CPU) handleState(amount int) {
-	if *traceLog {
-		executionTraceLog()
-	}
 	incPC(amount)
 	// If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
 	if amount != 0 {
@@ -376,7 +378,16 @@ func (cpu *CPU) startCPU() {
 	for {
 		cpuMutex.Lock()
 		for uint(cpu.PC) < 0xFFFF {
-			//for cpu.PC {
+			breakpointsMutex.Lock()
+			_, exists := breakpoints[cpu.PC]
+			breakpointsMutex.Unlock()
+			if exists {
+				breakpointHalted = true  // Indicate that we're halted at a breakpoint
+				breakpointHit <- cpu.PC  // Signal that a breakpoint has been hit
+				<-breakpointHit          // Wait here until we receive a signal to continue
+				breakpointHalted = false // Reset the flag as we're continuing
+			}
+
 			//  1 byte instructions with no operands
 			switch cpu.opcode() {
 			// Implied addressing mode instructions

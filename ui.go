@@ -40,7 +40,6 @@ func userInterface() {
 				traceLine := executionTrace()
 				formattedText := fmt.Sprintf("%s", traceLine)
 				trace.SetText(formattedText)
-
 			})
 		}
 	}()
@@ -117,6 +116,14 @@ func userInterface() {
 		AddItem(toolbar, 9, 0, 1, 1, 0, 0, false).
 		AddItem(display, 0, 1, 10, 1, 0, 0, false)
 
+	breakpointsView := tview.NewTextView().SetText("N/A ")
+	breakpointsView.SetBorder(true).SetTitle(" Breakpoints ")
+	grid.AddItem(breakpointsView, 5, 0, 1, 1, 0, 0, false) // Replace 5, 0, 1, 1 with the appropriate position and size in your layout.
+
+	messageView := tview.NewTextView()
+	messageView.SetDynamicColors(true)
+	grid.AddItem(messageView, 6, 0, 1, 1, 0, 0, false) // Add this after the breakpointsView
+
 	// Create a tview.Pages widget to manage layers
 	pages := tview.NewPages()
 	// Add your main grid to the pages widget
@@ -133,6 +140,13 @@ func userInterface() {
 			cpu.handleRESET()
 			ted.resetTED()
 			loadROMs()
+		case 'c':
+			if breakpointHalted {
+				breakpointHit <- cpu.PC  // Signal to continue
+				breakpointHalted = false // Reset the flag
+				messageView.SetText("")  // Clear the message
+			}
+
 		case 'm':
 			// Create modal
 			modal := tview.NewTextView().SetText("Memory Monitor").
@@ -196,6 +210,23 @@ func userInterface() {
 							}
 							memory[address] = byte(value)
 						})
+					form.AddButton("Toggle Breakpoint", func() {
+						address, _ := strconv.ParseInt(form.GetFormItemByLabel("Go to address: ").(*tview.InputField).GetText(), 16, 32)
+						breakpointsMutex.Lock()
+						_, exists := breakpoints[uint16(address)]
+						if exists {
+							delete(breakpoints, uint16(address))
+						} else {
+							breakpoints[uint16(address)] = true
+						}
+						var formattedText string
+						for address := range breakpoints {
+							formattedText += fmt.Sprintf("$%04X ", address)
+						}
+						breakpointsView.SetText(formattedText)
+						breakpointsMutex.Unlock()
+
+					})
 					form.SetBorder(true).SetTitle(" Enter address ").SetTitleAlign(tview.AlignLeft)
 					form.AddButton("Exit", func() {
 						pages.RemovePage("gotoAddressForm")
@@ -206,7 +237,7 @@ func userInterface() {
 					// Create a new grid layout for the form, specifying its size
 					formGrid := tview.NewGrid().
 						SetRows(10).
-						SetColumns(30).
+						SetColumns(45).
 						AddItem(form, 0, 0, 1, 1, 0, 0, true)
 
 					// Add this new grid layout as a new page
@@ -277,13 +308,48 @@ func userInterface() {
 						var builder strings.Builder
 						// Pre-allocate some memory
 						builder.Grow(0xFFFF * 4)
+
 						// Format the RAM data
 						for i := 0; i < 0xFFFF; i += 16 {
-							builder.WriteString(fmt.Sprintf("$%04X: ", i))
+							// Check if the line has a breakpoint
+							lineHasBreakpoint := false
+							breakpointsMutex.Lock()
 							for j := 0; j < 16; j++ {
-								builder.WriteString(fmt.Sprintf("%02X ", memory[(i+j)]))
+								_, exists := breakpoints[uint16(i+j)]
+								if exists {
+									lineHasBreakpoint = true
+									break
+								}
 							}
+							breakpointsMutex.Unlock()
+
+							// Set background color to red if the line has a breakpoint
+							if lineHasBreakpoint {
+								builder.WriteString("[white:red:b]")
+							}
+
+							builder.WriteString(fmt.Sprintf("$%04X: ", i))
+
+							for j := 0; j < 16; j++ {
+								// Check if this particular address has a breakpoint
+								breakpointsMutex.Lock()
+								_, exists := breakpoints[uint16(i+j)]
+								if exists {
+									// Set foreground color to green if there is a breakpoint
+									builder.WriteString("[green::b]")
+								}
+								breakpointsMutex.Unlock()
+
+								builder.WriteString(fmt.Sprintf("%02X ", memory[(i+j)]))
+
+								// Reset the foreground color to default, keeping the background
+								if exists {
+									builder.WriteString("[white:red:b]")
+								}
+							}
+
 							builder.WriteString("  ")
+
 							for j := 0; j < 16; j++ {
 								char := memory[(i + j)]
 								if char >= 32 && char <= 126 {
@@ -292,6 +358,9 @@ func userInterface() {
 									builder.WriteByte('.')
 								}
 							}
+
+							// Reset all the colors at the end of the line
+							builder.WriteString("[-:-:-]")
 							builder.WriteByte('\n')
 						}
 
@@ -309,6 +378,16 @@ func userInterface() {
 	})
 	// Set the pages widget as the root
 	app.SetRoot(pages, true)
+
+	//Handle breakpoints
+	go func() {
+		for {
+			pc = <-breakpointHit // Wait for a breakpoint hit
+			app.QueueUpdateDraw(func() {
+				messageView.SetText("[red::b] Breakpoint hit, press 'c' to continue execution!")
+			})
+		}
+	}()
 
 	if err := app.Run(); err != nil {
 		panic(err)

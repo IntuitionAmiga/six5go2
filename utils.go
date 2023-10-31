@@ -227,6 +227,8 @@ func executionTraceLog() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	//cpuMutex.Lock()         // Lock before reading
+	//defer cpuMutex.Unlock() // Unlock after done
 	switch {
 	case BRKtrue, cpu.previousOpcode != JSR_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_INDIRECT_OPCODE:
 		switch {
@@ -347,6 +349,8 @@ func boilerPlate() {
 
 func executionTrace() string {
 	var traceLine string
+	//cpuMutex.Lock()         // Lock before reading
+	//defer cpuMutex.Unlock() // Unlock after done
 	switch {
 	case BRKtrue, cpu.previousOpcode != JSR_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_INDIRECT_OPCODE:
 		switch {
@@ -379,7 +383,9 @@ func executionTrace() string {
 		traceLine += fmt.Sprintf("%04X ", cpu.previousPC)
 		traceLine += fmt.Sprintf("%02X %02X %02X ", cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
 	}
-
+	if *traceLog {
+		executionTraceLog()
+	}
 	return traceLine
 }
 
