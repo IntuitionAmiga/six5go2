@@ -1630,7 +1630,7 @@ func BRK() {
 	cpu.setInterruptFlag()
 
 	// Set PC to interrupt vector address
-	setPC((uint16(readMemory(IRQVectorAddress+1)) << 8) | uint16(readMemory(IRQVectorAddress)))
+	setPC((uint16(readMemory(IRQVectorAddressHigh)) << 8) | uint16(readMemory(IRQVectorAddressLow)))
 	cpu.updateCycleCounter(7)
 	cpu.handleState(0)
 }

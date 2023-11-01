@@ -222,9 +222,9 @@ type CPU struct {
 var (
 	cpu CPU
 
-	//cpuSpeedHz uint64 = 985248 // 985248 Hz for a standard 6502
+	cpuSpeedHz uint64 = 985248 // 985248 Hz for a standard 6502
 	//cpuSpeedHz uint64 = 1760000 // 1760000 Hz for a 7501/8501
-	cpuSpeedHz uint64 = 75 // Run it slow whilst debugging!
+	//cpuSpeedHz uint64 = 75 // Run it slow whilst debugging!
 
 	cycleTime time.Duration = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
 
@@ -303,7 +303,10 @@ func (cpu *CPU) handleIRQ() {
 	cpu.setInterruptFlag()
 	//fmt.Printf("Debug: PC pushed to stack. SP: %X\n", cpu.SP)
 	// Set PC to IRQ Service Routine address
-	setPC(uint16(readMemory(IRQVectorAddress)) | uint16(readMemory(IRQVectorAddress+1))<<8)
+	lowByte := readMemory(IRQVectorAddressLow)
+	highByte := readMemory(IRQVectorAddressHigh)
+	setPC(uint16(lowByte) | uint16(highByte)<<8)
+	//setPC(uint16(readMemory(IRQVectorAddress)) | uint16(readMemory(IRQVectorAddress+1))<<8)
 	//fmt.Printf("Debug: Jumping to IRQ Service Routine at %X\n", cpu.PC)
 	cpu.irq = false
 	//fmt.println("Debug: Exiting handleIRQ()")
@@ -318,7 +321,10 @@ func (cpu *CPU) handleNMI() {
 	updateStack(cpu.SR)
 	cpu.decSP()
 	// Set PC to NMI Service Routine address
-	setPC(uint16(readMemory(NMIVectorAddress)) | uint16(readMemory(NMIVectorAddress+1))<<8)
+	lowByte := readMemory(NMIVectorAddressLow)
+	highByte := readMemory(NMIVectorAddressHigh)
+	setPC(uint16(lowByte) | uint16(highByte)<<8)
+	//setPC(uint16(readMemory(NMIVectorAddress)) | uint16(readMemory(NMIVectorAddress+1))<<8)
 	cpu.nmi = false // Clear the NMI flag
 }
 func (cpu *CPU) handleRESET() {
@@ -370,7 +376,10 @@ func (cpu *CPU) resetCPU() {
 		setPC(0x400)
 	} else {
 		// Set PC to value stored at reset vector address
-		setPC(uint16(readMemory(RESETVectorAddress)) + uint16(readMemory(RESETVectorAddress+1))*256)
+		lowByte := readMemory(RESETVectorAddressLow)
+		highByte := readMemory(RESETVectorAddressHigh)
+		setPC(uint16(lowByte) | uint16(highByte)<<8)
+		//setPC(uint16(readMemory(RESETVectorAddress)) + uint16(readMemory(RESETVectorAddress+1))*256)
 	}
 
 }

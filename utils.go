@@ -112,8 +112,8 @@ func loadROMs() {
 		fmt.Printf("Copying %vKB AllSuiteA ROM into memory from $%04X to $%04X\n\n", len(AllSuiteAROM)/1024, AllSuiteAROMAddress, AllSuiteAROMAddress+len(AllSuiteAROM)-1)
 		copy(memory[AllSuiteAROMAddress:], AllSuiteAROM)
 		// Set the interrupt vector addresses manually
-		writeMemory(IRQVectorAddress, 0x00)   // Low byte of 0x4000
-		writeMemory(IRQVectorAddress+1, 0x40) // High byte of 0x4000
+		writeMemory(IRQVectorAddressLow, 0x00)  // Low byte of 0x4000
+		writeMemory(IRQVectorAddressHigh, 0x40) // High byte of 0x4000
 		err := file.Close()
 		if err != nil {
 			return
@@ -127,8 +127,8 @@ func loadROMs() {
 		copy(memory[KlausDTestROMAddress:], KlausDTestROM)
 		fmt.Printf("Copying Klaus Dormann's %vKB 6502 Functional Test ROM into memory from $%04X to $%04X\n\n", len(KlausDTestROM)/1024, KlausDTestROMAddress, KlausDTestROMAddress+len(KlausDTestROM)-1)
 		// Set the interrupt vector addresses manually
-		writeMemory(IRQVectorAddress, 0x00)   // Low byte of 0x4000
-		writeMemory(IRQVectorAddress+1, 0x40) // High byte of 0x4000
+		writeMemory(IRQVectorAddressLow, 0x00)  // Low byte of 0x4000
+		writeMemory(IRQVectorAddressHigh, 0x40) // High byte of 0x4000
 		err := file.Close()
 		if err != nil {
 			return

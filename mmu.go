@@ -1,15 +1,16 @@
 package main
 
-// Constants for MMIO address ranges and TED specific addresses
+// Constants for fixed address ranges and TED specific addresses
 const (
-	NMIVectorAddress   = 0xFFFA
-	RESETVectorAddress = 0xFFFC
-
-	TED_REG_START = 0xFD00
-	TED_REG_END   = 0xFD19
+	NMIVectorAddressLow    uint16 = 0xFFFA
+	NMIVectorAddressHigh   uint16 = 0xFFFB
+	RESETVectorAddressLow  uint16 = 0xFFFC
+	RESETVectorAddressHigh uint16 = 0xFFFD
+	IRQVectorAddressLow    uint16 = 0xFFFE
+	IRQVectorAddressHigh   uint16 = 0xFFFF
+	TED_REG_START                 = 0xFD00
+	TED_REG_END                   = 0xFD19
 )
-
-const IRQVectorAddress uint16 = 0xFFFE
 
 func readMemory(address uint16) byte {
 	if address >= TED_REG_START && address <= TED_REG_END {
@@ -22,7 +23,7 @@ func writeMemory(address uint16, value byte) {
 	//fmt.Printf("Content of memory at IRQVectorAddress: %04X\n", memory[IRQVectorAddress])
 	//fmt.Printf("Content of memory at IRQVectorAddress+1: %04X\n", memory[IRQVectorAddress+1])
 
-	if address == IRQVectorAddress {
+	if address == IRQVectorAddressLow || address == IRQVectorAddressHigh {
 		//fmt.println("Interrupt vector %04X written to with value: %04X", address, value)
 		cpu.irq = true
 		//fmt.println("IRQ request!")
@@ -34,13 +35,13 @@ func writeMemory(address uint16, value byte) {
 		memory[address] = value
 	}
 	// Existing special address checks
-	if address == IRQVectorAddress {
+	if address == IRQVectorAddressLow || address == IRQVectorAddressHigh {
 		cpu.irq = true // Signal an IRQ
 	}
-	if address == NMIVectorAddress {
+	if address == NMIVectorAddressLow || address == NMIVectorAddressHigh {
 		cpu.nmi = true // Signal an NMI
 	}
-	if address == RESETVectorAddress {
+	if address == RESETVectorAddressLow || address == RESETVectorAddressHigh {
 		cpu.reset = true // Signal a RESET
 	}
 	memory[address] = value
