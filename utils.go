@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 var (
@@ -16,9 +17,6 @@ var (
 	c64         = flag.Bool("c64", false, "C64 ROMs")
 	disassemble = flag.Bool("dis", false, "Disassembler mode (Optional)")
 	traceLog    = flag.Bool("trace", false, "State monitor mode (Optional)")
-
-	disassembledInstruction string
-	instructionCounter      uint32 = 0
 
 	C64BASICROM  = make([]byte, 8192)
 	C64KERNALROM = make([]byte, 8192)
@@ -37,14 +35,15 @@ var (
 	c64kernalROMAddress = 0xE000
 	c64charROMAddress   = 0xD000
 
-	plus4basicROMAddress  = 0x8000
-	plus4kernalROMAddress = 0xC000
-	plus4charROMAddress   = 0xC000
-	threePlus1ROMAddress  = 0x8000
+	plus4basicROMAddress     = 0x8000
+	plus4kernalROMAddress    = 0xC000
+	plus4charROMAddress      = 0xF800
+	threePlus1ROMAddressLow  = 0x8000
+	threePlus1ROMAddressHigh = 0xA000
 
 	AllSuiteAROMAddress              = 0x4000
 	KlausDTestROMAddress             = 0x0000
-	KlausDInfiniteLoopAddress uint16 = 0x062B
+	KlausDInfiniteLoopAddress uint16 = 0x3469
 	RuudBTestROMAddress              = 0xE000
 )
 
@@ -221,115 +220,14 @@ func plus4KernalRoutines() {
 	// print "kernal rom call address"
 	//fmt.Printf("\n\u001B[32;5mKernal ROM call address: $%04X\u001B[0m\n", PC)
 }
-
-func executionTraceLog() {
-	f, err := os.OpenFile("trace.txt", os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	//cpuMutex.Lock()         // Lock before reading
-	//defer cpuMutex.Unlock() // Unlock after done
-	switch {
-	case BRKtrue, cpu.previousOpcode != JSR_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_INDIRECT_OPCODE:
-		switch {
-		case cpu.previousOpcode == RTS_OPCODE, cpu.previousOpcode == BRK_OPCODE && BRKtrue, cpu.previousOpcode == RTI_OPCODE:
-			fmt.Fprintf(f, "| %04X | ", cpu.previousPC)
-			fmt.Fprintf(f, "%02X |        |", cpu.previousOpcode)
-			cpu.previousOpcode = 0x00
-			cpu.previousPC = 0x0000
-			cpu.previousOperand1 = 0x00
-			cpu.previousOperand2 = 0x00
-			BRKtrue = false
-		default:
-			fmt.Fprintf(f, "| %04X | ", cpu.PC)
-			switch cpu.opcode() {
-			case CLC_OPCODE, CLD_OPCODE, CLI_OPCODE, CLV_OPCODE, DEX_OPCODE, DEY_OPCODE, INX_OPCODE, INY_OPCODE, NOP_OPCODE, PHA_OPCODE, PHP_OPCODE, PLA_OPCODE, PLP_OPCODE, RTI_OPCODE, RTS_OPCODE, SEC_OPCODE, SED_OPCODE, SEI_OPCODE, TAX_OPCODE, TAY_OPCODE, TSX_OPCODE, TXA_OPCODE, TXS_OPCODE, TYA_OPCODE, BRK_OPCODE:
-				fmt.Fprintf(f, "%02X |        |", cpu.opcode())
-			case ADC_IMMEDIATE_OPCODE, AND_IMMEDIATE_OPCODE, CMP_IMMEDIATE_OPCODE, CPX_IMMEDIATE_OPCODE, CPY_IMMEDIATE_OPCODE, EOR_IMMEDIATE_OPCODE, LDA_IMMEDIATE_OPCODE, LDX_IMMEDIATE_OPCODE, LDY_IMMEDIATE_OPCODE, ORA_IMMEDIATE_OPCODE, SBC_IMMEDIATE_OPCODE:
-				fmt.Fprintf(f, "%02X | %02X     |", cpu.opcode(), cpu.operand1())
-			default:
-				fmt.Fprintf(f, "%02X | %02X %02X  |", cpu.opcode(), cpu.operand1(), cpu.operand2())
-			}
-		}
-	case cpu.previousOpcode == JSR_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_INDIRECT_OPCODE:
-		fmt.Fprintf(f, "| %04X | %02X | %02X %02X  |", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
-		cpu.previousOpcode = 0x00
-		cpu.previousPC = 0x0000
-		cpu.previousOperand1 = 0x00
-		cpu.previousOperand2 = 0x00
-	default:
-		fmt.Fprintf(f, "| %04X | ", cpu.previousPC)
-		fmt.Fprintf(f, "%02X | %02X %02X  |", cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
-	}
-
-	// Print disassembled instruction
-	fmt.Fprintf(f, "\t %s\t|", disassembledInstruction)
-	// Print A,X,Y,SP as hex values
-	fmt.Fprintf(f, " A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | ", cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.SP, readStack())
-
-	// Print full SR as binary digits with zero padding
-	//fmt.Fprintf(f,"%08b | ", SR)
-
-	// Print N if SR bit 7 is 1 else print -
-	if cpu.getSRBit(7) == 1 {
-		fmt.Fprintf(f, "N")
-	} else {
-		fmt.Fprintf(f, "-")
-	}
-	// Print V if SR bit 6 is 1 else print -
-	if cpu.getSRBit(6) == 1 {
-		fmt.Fprintf(f, "V")
-	} else {
-		fmt.Fprintf(f, "-")
-	}
-	// Print - for SR bit 5
-	fmt.Fprintf(f, "-")
-	// Print B if SR bit 4 is 1 else print -
-	if cpu.getSRBit(4) == 1 {
-		fmt.Fprintf(f, "B")
-	} else {
-		fmt.Fprintf(f, "-")
-	}
-	// Print D if SR bit 3 is 1 else print -
-	if cpu.getSRBit(3) == 1 {
-		fmt.Fprintf(f, "D")
-	} else {
-		fmt.Fprintf(f, "-")
-	}
-	// Print I if SR bit 2 is 1 else print -
-	if cpu.getSRBit(2) == 1 {
-		fmt.Fprintf(f, "I")
-	} else {
-		fmt.Fprintf(f, "-")
-	}
-	// Print Z if SR bit 1 is 1 else print -
-	if cpu.getSRBit(1) == 1 {
-		fmt.Fprintf(f, "Z")
-	} else {
-		fmt.Fprintf(f, "-")
-	}
-	// Print C if SR bit 0 is 1 else print -
-	if cpu.getSRBit(0) == 1 {
-		fmt.Fprintf(f, "C")
-	} else {
-		fmt.Fprintf(f, "-")
-	}
-	fmt.Fprintf(f, " | $%08X  | ", instructionCounter)
-	fmt.Fprintf(f, " $%08X  | ", cpu.cycleCounter)
-	if cpu.cpuTimeSpent == 0 {
-		fmt.Fprintf(f, "%v\t\t|\n", cpu.cpuTimeSpent)
-	} else {
-		fmt.Fprintf(f, "%v\t|\n", cpu.cpuTimeSpent)
-	}
-	defer f.Close()
-}
-
 func disassembleOpcode() {
 	if *disassemble {
-		fmt.Printf("%s\n", disassembledInstruction)
+		fmt.Printf("%s\n", getMnemonic(cpu.opcode()))
 	}
 }
 func boilerPlate() {
+	os.Remove("trace.txt")
+
 	// Clear the screen and move cursor to top left
 	fmt.Printf("\033[2J")
 	fmt.Printf("\033[0;0H")
@@ -348,53 +246,140 @@ func boilerPlate() {
 }
 
 func executionTrace() string {
-	var traceLine string
-	//cpuMutex.Lock()         // Lock before reading
-	//defer cpuMutex.Unlock() // Unlock after done
+	cpu.traceLine = ""
+	// Save the current opcode and operands before any changes.
+	currentOpcode := cpu.opcode()
+	currentOperand1 := cpu.operand1()
+	currentOperand2 := cpu.operand2()
+	currentPC := cpu.PC
+
+	// Special handling for opcodes that affect control flow differently
 	switch {
-	case BRKtrue, cpu.previousOpcode != JSR_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_ABSOLUTE_OPCODE && cpu.previousOpcode != JMP_INDIRECT_OPCODE:
-		switch {
-		case cpu.previousOpcode == RTS_OPCODE, cpu.previousOpcode == BRK_OPCODE && BRKtrue, cpu.previousOpcode == RTI_OPCODE:
-			traceLine = fmt.Sprintf("$%04X ", cpu.previousPC)
-			traceLine += fmt.Sprintf("%02X ", cpu.previousOpcode)
-			cpu.previousOpcode = 0x00
-			cpu.previousPC = 0x0000
-			cpu.previousOperand1 = 0x00
-			cpu.previousOperand2 = 0x00
-			BRKtrue = false
-		default:
-			traceLine += fmt.Sprintf("$%04X ", cpu.PC)
-			switch cpu.opcode() {
-			case CLC_OPCODE, CLD_OPCODE, CLI_OPCODE, CLV_OPCODE, DEX_OPCODE, DEY_OPCODE, INX_OPCODE, INY_OPCODE, NOP_OPCODE, PHA_OPCODE, PHP_OPCODE, PLA_OPCODE, PLP_OPCODE, RTI_OPCODE, RTS_OPCODE, SEC_OPCODE, SED_OPCODE, SEI_OPCODE, TAX_OPCODE, TAY_OPCODE, TSX_OPCODE, TXA_OPCODE, TXS_OPCODE, TYA_OPCODE, BRK_OPCODE:
-				traceLine += fmt.Sprintf("%02X ", cpu.opcode())
-			case ADC_IMMEDIATE_OPCODE, AND_IMMEDIATE_OPCODE, CMP_IMMEDIATE_OPCODE, CPX_IMMEDIATE_OPCODE, CPY_IMMEDIATE_OPCODE, EOR_IMMEDIATE_OPCODE, LDA_IMMEDIATE_OPCODE, LDX_IMMEDIATE_OPCODE, LDY_IMMEDIATE_OPCODE, ORA_IMMEDIATE_OPCODE, SBC_IMMEDIATE_OPCODE:
-				traceLine += fmt.Sprintf("%02X %02X ", cpu.opcode(), cpu.operand1())
-			default:
-				traceLine += fmt.Sprintf("%02X %02X %02X ", cpu.opcode(), cpu.operand1(), cpu.operand2())
-			}
+	case cpu.previousOpcode == BRK_OPCODE && cpu.BRKtrue:
+		cpu.traceLine = fmt.Sprintf("| %04X | %02X |        |", cpu.previousPC, cpu.previousOpcode)
+		// Write to trace file if needed
+		if *traceLog {
+			writeTraceToFile(cpu.traceLine, getMnemonic(cpu.previousOpcode), cpu.A, cpu.X, cpu.Y, cpu.SP, readStack())
 		}
-	case cpu.previousOpcode == JSR_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_ABSOLUTE_OPCODE, cpu.previousOpcode == JMP_INDIRECT_OPCODE:
-		traceLine += fmt.Sprintf("$%04X %02X %02X %02X ", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
-		cpu.previousOpcode = 0x00
-		cpu.previousPC = 0x0000
-		cpu.previousOperand1 = 0x00
-		cpu.previousOperand2 = 0x00
+		cpu.previousOpcode = 0
+		cpu.previousPC = 0
+		cpu.previousOperand1 = 0
+		cpu.previousOperand2 = 0
+		cpu.BRKtrue = false // Reset the BRK flag after handling it
+
+	case cpu.previousOpcode == JSR_ABSOLUTE_OPCODE || cpu.previousOpcode == JMP_ABSOLUTE_OPCODE || cpu.previousOpcode == JMP_INDIRECT_OPCODE:
+		cpu.traceLine = fmt.Sprintf("| %04X | %02X | %02X %02X  |", cpu.previousPC, cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
+		// Write to trace file if needed
+		if *traceLog {
+			writeTraceToFile(cpu.traceLine, getMnemonic(cpu.previousOpcode), cpu.A, cpu.X, cpu.Y, cpu.SP, readStack())
+		}
+		cpu.previousOpcode = 0
+		cpu.previousPC = 0
+		cpu.previousOperand1 = 0
+		cpu.previousOperand2 = 0
+
 	default:
-		traceLine += fmt.Sprintf("%04X ", cpu.previousPC)
-		traceLine += fmt.Sprintf("%02X %02X %02X ", cpu.previousOpcode, cpu.previousOperand1, cpu.previousOperand2)
+		cpu.traceLine = fmt.Sprintf("| %04X | %02X | ", currentPC, currentOpcode)
+
+		// Check if the opcode belongs to a specific set of instruction sizes.
+		_, oneByte := oneByteInstructions[currentOpcode]
+		_, twoByte := twoByteInstructions[currentOpcode]
+		_, threeByte := threeByteInstructions[currentOpcode]
+
+		// Print operands based on the instruction size.
+		if oneByte {
+			cpu.traceLine += fmt.Sprintf("       |")
+		} else if twoByte {
+			cpu.traceLine += fmt.Sprintf("%02X     |", currentOperand1)
+		} else if threeByte {
+			cpu.traceLine += fmt.Sprintf("%02X %02X  |", currentOperand1, currentOperand2)
+		} else {
+			cpu.traceLine += fmt.Sprintf("???    |") // Handle unknown instruction sizes.
+		}
+		// Write to trace file if needed
+		if *traceLog {
+			writeTraceToFile(cpu.traceLine, getMnemonic(currentOpcode), cpu.A, cpu.X, cpu.Y, cpu.SP, readStack())
+		}
 	}
-	if *traceLog {
-		executionTraceLog()
-	}
-	return traceLine
+
+	// Log to stderr
+	//fmt.Fprintf(os.Stderr, "%s\n", cpu.traceLine)
+
+	return cpu.traceLine
 }
 
+func writeTraceToFile(traceLine, disassembledInstruction string, A, X, Y byte, SP uint16, stackValue byte) {
+	// Open the file for appending. Create it if it doesn't exist.
+	f, err := os.OpenFile("trace.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("Failed to open trace file: %v", err)
+	}
+	defer f.Close()
+	// Create the full trace line with additional information including SR flags
+	fullTraceLine := fmt.Sprintf("%s\t%s\t| A:%02X X:%02X Y:%02X SP:$%04X | $%04X | %s | %04X | %04X | %v |\n",
+		traceLine, disassembledInstruction, A, X, Y, SPBaseAddress+SP, stackValue, getSRFlags(), cpu.instructionCounter, cpu.cycleCounter, cpu.cpuTimeSpent)
+
+	// Write the full trace line to the file
+	if _, err := f.WriteString(fullTraceLine); err != nil {
+		log.Fatalf("Failed to write to trace file: %v", err)
+	}
+}
+func getSRFlags() string {
+	// Using a string builder to efficiently build the SR flags string
+	var SRFlagsBuilder strings.Builder
+
+	// Append the N flag or '-' accordingly
+	if cpu.getSRBit(7) == 1 {
+		SRFlagsBuilder.WriteString("N")
+	} else {
+		SRFlagsBuilder.WriteString("-")
+	}
+	// Append the V flag or '-' accordingly
+	if cpu.getSRBit(6) == 1 {
+		SRFlagsBuilder.WriteString("V")
+	} else {
+		SRFlagsBuilder.WriteString("-")
+	}
+	// Append '-' for bit 5 (which is not used)
+	SRFlagsBuilder.WriteString("-")
+	// Append the B flag or '-' accordingly
+	if cpu.getSRBit(4) == 1 {
+		SRFlagsBuilder.WriteString("B")
+	} else {
+		SRFlagsBuilder.WriteString("-")
+	}
+	// Append the D flag or '-' accordingly
+	if cpu.getSRBit(3) == 1 {
+		SRFlagsBuilder.WriteString("D")
+	} else {
+		SRFlagsBuilder.WriteString("-")
+	}
+	// Append the I flag or '-' accordingly
+	if cpu.getSRBit(2) == 1 {
+		SRFlagsBuilder.WriteString("I")
+	} else {
+		SRFlagsBuilder.WriteString("-")
+	}
+	// Append the Z flag or '-' accordingly
+	if cpu.getSRBit(1) == 1 {
+		SRFlagsBuilder.WriteString("Z")
+	} else {
+		SRFlagsBuilder.WriteString("-")
+	}
+	// Append the C flag or '-' accordingly
+	if cpu.getSRBit(0) == 1 {
+		SRFlagsBuilder.WriteString("C")
+	} else {
+		SRFlagsBuilder.WriteString("-")
+	}
+
+	return SRFlagsBuilder.String()
+}
 func instructionCount() string {
 	var instructionCountLine string
-	instructionCountLine = fmt.Sprintf("Instructions:\t$%08X ", instructionCounter)
+	instructionCountLine = fmt.Sprintf("Instructions:\t$%08X ", cpu.instructionCounter)
 	return instructionCountLine
 }
-
 func statusFlags() string {
 	var statusLine string
 	// Print N if SR bit 7 is 1 else print -
@@ -457,4 +442,91 @@ func statusFlags() string {
 		statusLine += fmt.Sprintf("-")
 	}
 	return statusLine
+}
+func getMnemonic(opcode byte) string {
+	mnemonic, exists := opcodeMnemonics[opcode]
+
+	if !exists {
+		return "???"
+	}
+
+	// Define operand variables for use below
+	var operand1, operand2 byte
+	var address uint16
+
+	// Determine the addressing mode and format the full disassembly accordingly
+	switch opcode {
+	// Immediate
+	case 0x69, 0x29, 0xC9, 0xE0, 0xC0, 0x49, 0xA9, 0xA2, 0xA0, 0x09, 0xE9:
+		operand1 = readMemory(cpu.PC + 1)
+		return fmt.Sprintf("%s #$%02X", mnemonic, operand1)
+
+	// Zero Page
+	case 0x65, 0x25, 0x05, 0x24, 0xA5, 0xA6, 0xA4, 0x06, 0x46, 0xE6, 0xC6, 0x85, 0x86, 0x84:
+		operand1 = readMemory(cpu.PC + 1)
+		return fmt.Sprintf("%s $%02X", mnemonic, operand1)
+
+	// Zero Page,X
+	case 0x75, 0x35, 0x15, 0xB5, 0xB4, 0x16, 0x56, 0xF6, 0xD6, 0x95, 0x94:
+		operand1 = readMemory(cpu.PC + 1)
+		return fmt.Sprintf("%s $%02X,X", mnemonic, operand1)
+
+	// Zero Page,Y
+	case 0xB6, 0x96:
+		operand1 = readMemory(cpu.PC + 1)
+		return fmt.Sprintf("%s $%02X,Y", mnemonic, operand1)
+
+	// Absolute
+	case 0x6D, 0x2D, 0x0D, 0x2C, 0xAD, 0xAE, 0xAC, 0x0E, 0x4E, 0xEE, 0xCE, 0x8D, 0x8E, 0x8C, 0x4C, 0x20:
+		operand1 = readMemory(cpu.PC + 1)
+		operand2 = readMemory(cpu.PC + 2)
+		address = uint16(operand2)<<8 | uint16(operand1)
+		return fmt.Sprintf("%s $%04X", mnemonic, address)
+
+	// Absolute,X
+	case 0x7D, 0x3D, 0x1D, 0xBD, 0xBC, 0x1E, 0x5E, 0xFE, 0xDE, 0x9D:
+		operand1 = readMemory(cpu.PC + 1)
+		operand2 = readMemory(cpu.PC + 2)
+		address = uint16(operand2)<<8 | uint16(operand1)
+		return fmt.Sprintf("%s $%04X,X", mnemonic, address)
+
+	// Absolute,Y
+	case 0x79, 0x39, 0x19, 0xB9, 0xBE, 0x99, 0x91, 0xD9:
+		operand1 = readMemory(cpu.PC + 1)
+		operand2 = readMemory(cpu.PC + 2)
+		address = uint16(operand2)<<8 | uint16(operand1)
+		return fmt.Sprintf("%s $%04X,Y", mnemonic, address)
+
+	// Indirect,X
+	case 0x61, 0x21, 0x41, 0xA1, 0x01, 0xE1:
+		operand1 = readMemory(cpu.PC + 1)
+		return fmt.Sprintf("%s ($%02X,X)", mnemonic, operand1)
+
+	// Indirect,Y
+	case 0x71, 0x31, 0x51, 0xB1, 0x11, 0xF1:
+		operand1 = readMemory(cpu.PC + 1)
+		return fmt.Sprintf("%s ($%02X),Y", mnemonic, operand1)
+
+	// Relative (for branch instructions)
+	case 0x90, 0xB0, 0xF0, 0x30, 0xD0, 0x10, 0x50, 0x70:
+		operand1 = readMemory(cpu.PC + 1)
+		return fmt.Sprintf("%s $%02X", mnemonic, operand1)
+
+	// Indirect (only JMP has this addressing mode)
+	case 0x6C:
+		operand1 = readMemory(cpu.PC + 1)
+		operand2 = readMemory(cpu.PC + 2)
+		address = uint16(operand2)<<8 | uint16(operand1)
+		return fmt.Sprintf("%s ($%04X)", mnemonic, address)
+
+	// Accumulator or Implied
+	case 0x0A, 0x4A, 0x2A, 0x6A, 0xEA, 0x40, 0x60, 0x18, 0xD8, 0x58, 0xB8, 0xCA, 0x88, 0xE8, 0xC8, 0x48, 0x08, 0x68, 0x28, 0x78, 0xAA, 0xA8, 0xBA, 0x8A, 0x9A, 0x98:
+		if opcode == 0x0A || opcode == 0x4A || opcode == 0x2A || opcode == 0x6A {
+			return fmt.Sprintf("%s A", mnemonic)
+		}
+		return mnemonic // Implied
+
+	default:
+		return fmt.Sprintf("%s ???", mnemonic)
+	}
 }

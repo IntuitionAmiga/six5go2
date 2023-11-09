@@ -5,6 +5,325 @@ import (
 	"os"
 )
 
+var opcodeMnemonics = map[byte]string{
+	0x69: "ADC", 0x65: "ADC", 0x75: "ADC", 0x6D: "ADC", 0x7D: "ADC", 0x79: "ADC", 0x61: "ADC", 0x71: "ADC",
+	0x29: "AND", 0x25: "AND", 0x35: "AND", 0x2D: "AND", 0x3D: "AND", 0x39: "AND", 0x21: "AND", 0x31: "AND",
+	0x0A: "ASL", 0x06: "ASL", 0x16: "ASL", 0x0E: "ASL", 0x1E: "ASL",
+	0x90: "BCC",
+	0xB0: "BCS",
+	0xF0: "BEQ",
+	0x24: "BIT", 0x2C: "BIT",
+	0x30: "BMI",
+	0xD0: "BNE",
+	0x10: "BPL",
+	0x00: "BRK",
+	0x50: "BVC",
+	0x70: "BVS",
+	0x18: "CLC",
+	0xD8: "CLD",
+	0x58: "CLI",
+	0xB8: "CLV",
+	0xC9: "CMP", 0xC5: "CMP", 0xD5: "CMP", 0xCD: "CMP", 0xDD: "CMP", 0xD9: "CMP", 0xC1: "CMP", 0xD1: "CMP",
+	0xE0: "CPX", 0xE4: "CPX", 0xEC: "CPX",
+	0xC0: "CPY", 0xC4: "CPY", 0xCC: "CPY",
+	0xC6: "DEC", 0xD6: "DEC", 0xCE: "DEC", 0xDE: "DEC",
+	0xCA: "DEX",
+	0x88: "DEY",
+	0x49: "EOR", 0x45: "EOR", 0x55: "EOR", 0x4D: "EOR", 0x5D: "EOR", 0x59: "EOR", 0x41: "EOR", 0x51: "EOR",
+	0xE6: "INC", 0xF6: "INC", 0xEE: "INC", 0xFE: "INC",
+	0xE8: "INX",
+	0xC8: "INY",
+	0x4C: "JMP", 0x6C: "JMP",
+	0x20: "JSR",
+	0xA9: "LDA", 0xA5: "LDA", 0xB5: "LDA", 0xAD: "LDA", 0xBD: "LDA", 0xB9: "LDA", 0xA1: "LDA", 0xB1: "LDA",
+	0xA2: "LDX", 0xA6: "LDX", 0xB6: "LDX", 0xAE: "LDX", 0xBE: "LDX",
+	0xA0: "LDY", 0xA4: "LDY", 0xB4: "LDY", 0xAC: "LDY", 0xBC: "LDY",
+	0x4A: "LSR", 0x46: "LSR", 0x56: "LSR", 0x4E: "LSR", 0x5E: "LSR",
+	0xEA: "NOP",
+	0x09: "ORA", 0x05: "ORA", 0x15: "ORA", 0x0D: "ORA", 0x1D: "ORA", 0x19: "ORA", 0x01: "ORA", 0x11: "ORA",
+	0x48: "PHA",
+	0x08: "PHP",
+	0x68: "PLA",
+	0x28: "PLP",
+	0x2A: "ROL", 0x26: "ROL", 0x36: "ROL", 0x2E: "ROL", 0x3E: "ROL",
+	0x6A: "ROR", 0x66: "ROR", 0x76: "ROR", 0x6E: "ROR", 0x7E: "ROR",
+	0x40: "RTI",
+	0x60: "RTS",
+	0xE9: "SBC", 0xE5: "SBC", 0xF5: "SBC", 0xED: "SBC", 0xFD: "SBC", 0xF9: "SBC", 0xE1: "SBC", 0xF1: "SBC",
+	0x38: "SEC",
+	0xF8: "SED",
+	0x78: "SEI",
+	0x85: "STA", 0x95: "STA", 0x8D: "STA", 0x9D: "STA", 0x99: "STA", 0x81: "STA", 0x91: "STA",
+	0x86: "STX", 0x96: "STX", 0x8E: "STX",
+	0x84: "STY", 0x94: "STY", 0x8C: "STY",
+	0xAA: "TAX",
+	0xA8: "TAY",
+	0xBA: "TSX",
+	0x8A: "TXA",
+	0x9A: "TXS",
+	0x98: "TYA",
+}
+
+// Constant names for opcodes
+const (
+	LDA_IMMEDIATE_OPCODE   = 0xA9
+	LDA_ZERO_PAGE_OPCODE   = 0xA5
+	LDA_ZERO_PAGE_X_OPCODE = 0xB5
+	LDA_ABSOLUTE_OPCODE    = 0xAD
+	LDA_ABSOLUTE_X_OPCODE  = 0xBD
+	LDA_ABSOLUTE_Y_OPCODE  = 0xB9
+	LDA_INDIRECT_X_OPCODE  = 0xA1
+	LDA_INDIRECT_Y_OPCODE  = 0xB1
+
+	LDX_IMMEDIATE_OPCODE   = 0xA2
+	LDX_ZERO_PAGE_OPCODE   = 0xA6
+	LDX_ZERO_PAGE_Y_OPCODE = 0xB6
+	LDX_ABSOLUTE_OPCODE    = 0xAE
+	LDX_ABSOLUTE_Y_OPCODE  = 0xBE
+
+	LDY_IMMEDIATE_OPCODE   = 0xA0
+	LDY_ZERO_PAGE_OPCODE   = 0xA4
+	LDY_ZERO_PAGE_X_OPCODE = 0xB4
+	LDY_ABSOLUTE_OPCODE    = 0xAC
+	LDY_ABSOLUTE_X_OPCODE  = 0xBC
+
+	STA_ZERO_PAGE_OPCODE   = 0x85
+	STA_ZERO_PAGE_X_OPCODE = 0x95
+	STA_ABSOLUTE_OPCODE    = 0x8D
+	STA_ABSOLUTE_X_OPCODE  = 0x9D
+	STA_ABSOLUTE_Y_OPCODE  = 0x99
+	STA_INDIRECT_X_OPCODE  = 0x81
+	STA_INDIRECT_Y_OPCODE  = 0x91
+
+	STX_ZERO_PAGE_OPCODE   = 0x86
+	STX_ZERO_PAGE_Y_OPCODE = 0x96
+	STX_ABSOLUTE_OPCODE    = 0x8E
+
+	STY_ZERO_PAGE_OPCODE   = 0x84
+	STY_ZERO_PAGE_X_OPCODE = 0x94
+	STY_ABSOLUTE_OPCODE    = 0x8C
+
+	CMP_IMMEDIATE_OPCODE   = 0xC9
+	CMP_ZERO_PAGE_OPCODE   = 0xC5
+	CMP_ZERO_PAGE_X_OPCODE = 0xD5
+	CMP_ABSOLUTE_OPCODE    = 0xCD
+	CMP_ABSOLUTE_X_OPCODE  = 0xDD
+	CMP_ABSOLUTE_Y_OPCODE  = 0xD9
+	CMP_INDIRECT_X_OPCODE  = 0xC1
+	CMP_INDIRECT_Y_OPCODE  = 0xD1
+
+	CPX_IMMEDIATE_OPCODE = 0xE0
+	CPX_ZERO_PAGE_OPCODE = 0xE4
+	CPX_ABSOLUTE_OPCODE  = 0xEC
+
+	CPY_IMMEDIATE_OPCODE = 0xC0
+	CPY_ZERO_PAGE_OPCODE = 0xC4
+	CPY_ABSOLUTE_OPCODE  = 0xCC
+
+	DEC_ZERO_PAGE_OPCODE   = 0xC6
+	DEC_ZERO_PAGE_X_OPCODE = 0xD6
+	DEC_ABSOLUTE_OPCODE    = 0xCE
+	DEC_ABSOLUTE_X_OPCODE  = 0xDE
+
+	INC_ZERO_PAGE_OPCODE   = 0xE6
+	INC_ZERO_PAGE_X_OPCODE = 0xF6
+	INC_ABSOLUTE_OPCODE    = 0xEE
+	INC_ABSOLUTE_X_OPCODE  = 0xFE
+
+	JMP_ABSOLUTE_OPCODE = 0x4C
+	JMP_INDIRECT_OPCODE = 0x6C
+
+	JSR_ABSOLUTE_OPCODE = 0x20
+
+	AND_IMMEDIATE_OPCODE   = 0x29
+	AND_ZERO_PAGE_OPCODE   = 0x25
+	AND_ZERO_PAGE_X_OPCODE = 0x35
+	AND_ABSOLUTE_OPCODE    = 0x2D
+	AND_ABSOLUTE_X_OPCODE  = 0x3D
+	AND_ABSOLUTE_Y_OPCODE  = 0x39
+	AND_INDIRECT_X_OPCODE  = 0x21
+	AND_INDIRECT_Y_OPCODE  = 0x31
+
+	EOR_IMMEDIATE_OPCODE   = 0x49
+	EOR_ZERO_PAGE_OPCODE   = 0x45
+	EOR_ZERO_PAGE_X_OPCODE = 0x55
+	EOR_ABSOLUTE_OPCODE    = 0x4D
+	EOR_ABSOLUTE_X_OPCODE  = 0x5D
+	EOR_ABSOLUTE_Y_OPCODE  = 0x59
+	EOR_INDIRECT_X_OPCODE  = 0x41
+	EOR_INDIRECT_Y_OPCODE  = 0x51
+
+	ORA_IMMEDIATE_OPCODE   = 0x09
+	ORA_ZERO_PAGE_OPCODE   = 0x05
+	ORA_ZERO_PAGE_X_OPCODE = 0x15
+	ORA_ABSOLUTE_OPCODE    = 0x0D
+	ORA_ABSOLUTE_X_OPCODE  = 0x1D
+	ORA_ABSOLUTE_Y_OPCODE  = 0x19
+	ORA_INDIRECT_X_OPCODE  = 0x01
+	ORA_INDIRECT_Y_OPCODE  = 0x11
+
+	ADC_IMMEDIATE_OPCODE   = 0x69
+	ADC_ZERO_PAGE_OPCODE   = 0x65
+	ADC_ZERO_PAGE_X_OPCODE = 0x75
+	ADC_ABSOLUTE_OPCODE    = 0x6D
+	ADC_ABSOLUTE_X_OPCODE  = 0x7D
+	ADC_ABSOLUTE_Y_OPCODE  = 0x79
+	ADC_INDIRECT_X_OPCODE  = 0x61
+	ADC_INDIRECT_Y_OPCODE  = 0x71
+
+	SBC_IMMEDIATE_OPCODE   = 0xE9
+	SBC_ZERO_PAGE_OPCODE   = 0xE5
+	SBC_ZERO_PAGE_X_OPCODE = 0xF5
+	SBC_ABSOLUTE_OPCODE    = 0xED
+	SBC_ABSOLUTE_X_OPCODE  = 0xFD
+	SBC_ABSOLUTE_Y_OPCODE  = 0xF9
+	SBC_INDIRECT_X_OPCODE  = 0xE1
+	SBC_INDIRECT_Y_OPCODE  = 0xF1
+
+	BIT_ZERO_PAGE_OPCODE = 0x24
+	BIT_ABSOLUTE_OPCODE  = 0x2C
+
+	ROL_ACCUMULATOR_OPCODE = 0x2A
+	ROL_ZERO_PAGE_OPCODE   = 0x26
+	ROL_ZERO_PAGE_X_OPCODE = 0x36
+	ROL_ABSOLUTE_OPCODE    = 0x2E
+	ROL_ABSOLUTE_X_OPCODE  = 0x3E
+
+	ROR_ACCUMULATOR_OPCODE = 0x6A
+	ROR_ZERO_PAGE_OPCODE   = 0x66
+	ROR_ZERO_PAGE_X_OPCODE = 0x76
+	ROR_ABSOLUTE_OPCODE    = 0x6E
+	ROR_ABSOLUTE_X_OPCODE  = 0x7E
+
+	LSR_ACCUMULATOR_OPCODE = 0x4A
+	LSR_ZERO_PAGE_OPCODE   = 0x46
+	LSR_ZERO_PAGE_X_OPCODE = 0x56
+	LSR_ABSOLUTE_OPCODE    = 0x4E
+	LSR_ABSOLUTE_X_OPCODE  = 0x5E
+
+	ASL_ACCUMULATOR_OPCODE = 0x0A
+	ASL_ZERO_PAGE_OPCODE   = 0x06
+	ASL_ZERO_PAGE_X_OPCODE = 0x16
+	ASL_ABSOLUTE_OPCODE    = 0x0E
+	ASL_ABSOLUTE_X_OPCODE  = 0x1E
+
+	BCC_RELATIVE_OPCODE = 0x90
+	BCS_RELATIVE_OPCODE = 0xB0
+	BEQ_RELATIVE_OPCODE = 0xF0
+	BNE_RELATIVE_OPCODE = 0xD0
+	BMI_RELATIVE_OPCODE = 0x30
+	BPL_RELATIVE_OPCODE = 0x10
+	BVC_RELATIVE_OPCODE = 0x50
+	BVS_RELATIVE_OPCODE = 0x70
+
+	CLC_OPCODE = 0x18
+	CLD_OPCODE = 0xD8
+	CLI_OPCODE = 0x58
+	CLV_OPCODE = 0xB8
+	DEX_OPCODE = 0xCA
+	DEY_OPCODE = 0x88
+	INX_OPCODE = 0xE8
+	INY_OPCODE = 0xC8
+	NOP_OPCODE = 0xEA
+	PHA_OPCODE = 0x48
+	PHP_OPCODE = 0x08
+	PLA_OPCODE = 0x68
+	PLP_OPCODE = 0x28
+	RTI_OPCODE = 0x40
+	RTS_OPCODE = 0x60
+	SEC_OPCODE = 0x38
+	SED_OPCODE = 0xF8
+	SEI_OPCODE = 0x78
+	TAX_OPCODE = 0xAA
+	TAY_OPCODE = 0xA8
+	TSX_OPCODE = 0xBA
+	TXA_OPCODE = 0x8A
+	TXS_OPCODE = 0x9A
+	TYA_OPCODE = 0x98
+
+	BRK_OPCODE = 0x00
+)
+
+var (
+	oneByteInstructions = map[byte]bool{
+		CLC_OPCODE: true, CLD_OPCODE: true, CLI_OPCODE: true, CLV_OPCODE: true,
+		DEX_OPCODE: true, DEY_OPCODE: true, INX_OPCODE: true, INY_OPCODE: true,
+		NOP_OPCODE: true,
+		PHA_OPCODE: true, PHP_OPCODE: true,
+		PLA_OPCODE: true, PLP_OPCODE: true,
+		SEC_OPCODE: true, SED_OPCODE: true, SEI_OPCODE: true,
+		TAX_OPCODE: true, TAY_OPCODE: true,
+		TSX_OPCODE: true,
+		TXA_OPCODE: true, TXS_OPCODE: true, TYA_OPCODE: true, BRK_OPCODE: true, LDX_ZERO_PAGE_OPCODE: true,
+		STA_ZERO_PAGE_OPCODE: true, STX_ZERO_PAGE_OPCODE: true, STY_ZERO_PAGE_OPCODE: true, RTS_OPCODE: true, RTI_OPCODE: true,
+		ROL_ACCUMULATOR_OPCODE: true, ROR_ACCUMULATOR_OPCODE: true, LSR_ACCUMULATOR_OPCODE: true, ASL_ACCUMULATOR_OPCODE: true,
+	}
+	twoByteInstructions = map[byte]bool{
+		LDA_IMMEDIATE_OPCODE: true, LDX_IMMEDIATE_OPCODE: true, LDY_IMMEDIATE_OPCODE: true, LDA_ZERO_PAGE_OPCODE: true,
+		LDX_ZERO_PAGE_OPCODE: true, LDY_ZERO_PAGE_OPCODE: true, LDA_ZERO_PAGE_X_OPCODE: true, LDX_ZERO_PAGE_Y_OPCODE: true,
+		LDY_ZERO_PAGE_X_OPCODE: true,
+		CMP_IMMEDIATE_OPCODE:   true,
+		CPX_IMMEDIATE_OPCODE:   true, CPY_IMMEDIATE_OPCODE: true,
+		AND_IMMEDIATE_OPCODE: true,
+		EOR_IMMEDIATE_OPCODE: true,
+		ORA_IMMEDIATE_OPCODE: true,
+		ADC_IMMEDIATE_OPCODE: true, SBC_IMMEDIATE_OPCODE: true,
+		BIT_ZERO_PAGE_OPCODE: true,
+		STX_ZERO_PAGE_OPCODE: true, STY_ZERO_PAGE_OPCODE: true, STA_ZERO_PAGE_OPCODE: true, STA_ZERO_PAGE_X_OPCODE: true,
+		DEC_ZERO_PAGE_OPCODE: true, INC_ZERO_PAGE_OPCODE: true,
+		ROL_ZERO_PAGE_OPCODE: true, ROR_ZERO_PAGE_OPCODE: true,
+		LSR_ZERO_PAGE_OPCODE: true, ASL_ZERO_PAGE_OPCODE: true,
+		BCC_RELATIVE_OPCODE: true, BCS_RELATIVE_OPCODE: true,
+		BEQ_RELATIVE_OPCODE: true, BNE_RELATIVE_OPCODE: true,
+		BMI_RELATIVE_OPCODE: true, BPL_RELATIVE_OPCODE: true,
+		BVC_RELATIVE_OPCODE: true, BVS_RELATIVE_OPCODE: true,
+
+		LDA_INDIRECT_X_OPCODE: true, LDA_INDIRECT_Y_OPCODE: true,
+		CMP_INDIRECT_X_OPCODE: true, CMP_INDIRECT_Y_OPCODE: true,
+		AND_INDIRECT_X_OPCODE: true, AND_INDIRECT_Y_OPCODE: true,
+		EOR_INDIRECT_X_OPCODE: true, EOR_INDIRECT_Y_OPCODE: true,
+		ORA_INDIRECT_X_OPCODE: true, ORA_INDIRECT_Y_OPCODE: true,
+		ADC_INDIRECT_X_OPCODE: true, ADC_INDIRECT_Y_OPCODE: true,
+		SBC_INDIRECT_X_OPCODE: true, SBC_INDIRECT_Y_OPCODE: true,
+		STY_ZERO_PAGE_X_OPCODE: true, STX_ZERO_PAGE_Y_OPCODE: true,
+		ORA_ZERO_PAGE_OPCODE: true, ORA_ZERO_PAGE_X_OPCODE: true,
+		ASL_ZERO_PAGE_X_OPCODE: true,
+		AND_ZERO_PAGE_OPCODE:   true, AND_ZERO_PAGE_X_OPCODE: true,
+		ROL_ZERO_PAGE_X_OPCODE: true,
+		EOR_ZERO_PAGE_OPCODE:   true, EOR_ZERO_PAGE_X_OPCODE: true,
+		LSR_ZERO_PAGE_X_OPCODE: true,
+		ADC_ZERO_PAGE_OPCODE:   true, ADC_ZERO_PAGE_X_OPCODE: true,
+		ROR_ZERO_PAGE_X_OPCODE: true,
+		CPY_ZERO_PAGE_OPCODE:   true,
+		CMP_ZERO_PAGE_OPCODE:   true, CMP_ZERO_PAGE_X_OPCODE: true,
+		DEC_ZERO_PAGE_X_OPCODE: true,
+		CPX_ZERO_PAGE_OPCODE:   true,
+		SBC_ZERO_PAGE_OPCODE:   true, SBC_ZERO_PAGE_X_OPCODE: true,
+		INC_ZERO_PAGE_X_OPCODE: true,
+	}
+	threeByteInstructions = map[byte]bool{
+		ADC_ABSOLUTE_OPCODE: true, ADC_ABSOLUTE_X_OPCODE: true, ADC_ABSOLUTE_Y_OPCODE: true,
+		AND_ABSOLUTE_OPCODE: true, AND_ABSOLUTE_X_OPCODE: true, AND_ABSOLUTE_Y_OPCODE: true,
+		ASL_ABSOLUTE_OPCODE: true, ASL_ABSOLUTE_X_OPCODE: true,
+		BIT_ABSOLUTE_OPCODE: true,
+		CMP_ABSOLUTE_OPCODE: true, CMP_ABSOLUTE_X_OPCODE: true, CMP_ABSOLUTE_Y_OPCODE: true,
+		CPX_ABSOLUTE_OPCODE: true, CPY_ABSOLUTE_OPCODE: true,
+		DEC_ABSOLUTE_OPCODE: true, DEC_ABSOLUTE_X_OPCODE: true,
+		EOR_ABSOLUTE_OPCODE: true, EOR_ABSOLUTE_X_OPCODE: true, EOR_ABSOLUTE_Y_OPCODE: true,
+		INC_ABSOLUTE_OPCODE: true, INC_ABSOLUTE_X_OPCODE: true,
+		LDA_ABSOLUTE_OPCODE: true, LDA_ABSOLUTE_X_OPCODE: true, LDA_ABSOLUTE_Y_OPCODE: true,
+		LDX_ABSOLUTE_OPCODE: true, LDX_ABSOLUTE_Y_OPCODE: true, LDY_ABSOLUTE_OPCODE: true, LDY_ABSOLUTE_X_OPCODE: true,
+		LSR_ABSOLUTE_OPCODE: true, LSR_ABSOLUTE_X_OPCODE: true,
+		ORA_ABSOLUTE_OPCODE: true, ORA_ABSOLUTE_X_OPCODE: true, ORA_ABSOLUTE_Y_OPCODE: true,
+		ROL_ABSOLUTE_OPCODE: true, ROL_ABSOLUTE_X_OPCODE: true,
+		ROR_ABSOLUTE_OPCODE: true, ROR_ABSOLUTE_X_OPCODE: true,
+		SBC_ABSOLUTE_OPCODE: true, SBC_ABSOLUTE_X_OPCODE: true, SBC_ABSOLUTE_Y_OPCODE: true,
+		STA_ABSOLUTE_OPCODE: true, STA_ABSOLUTE_X_OPCODE: true, STA_ABSOLUTE_Y_OPCODE: true,
+		STX_ABSOLUTE_OPCODE: true, STY_ABSOLUTE_OPCODE: true, JMP_ABSOLUTE_OPCODE: true, JSR_ABSOLUTE_OPCODE: true, JMP_INDIRECT_OPCODE: true,
+		STA_INDIRECT_X_OPCODE: true, STA_INDIRECT_Y_OPCODE: true,
+	}
+)
+
 // Instructions with multiple addressing modes
 func LDA(addressingMode string) {
 	setFlags := func() {
@@ -14,14 +333,13 @@ func LDA(addressingMode string) {
 		} else {
 			cpu.unsetZeroFlag()
 		}
-		// If bit 7 of accumulator is 1, set the SR negative flag to 1 else set the SR negative flag to 0
-		//if getABit(7) == 1 {
 		if cpu.A&0x80 != 0 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
 		}
 	}
+
 	switch addressingMode {
 	case IMMEDIATE: // Immediate
 		cpu.A = cpu.operand1()
@@ -56,36 +374,46 @@ func LDA(addressingMode string) {
 		setFlags()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
-	case ABSOLUTEX: // Absolute, X
-		// Get the 16bit X indexed absolute memory address
-		address := (int(cpu.operand2())<<8 | int(cpu.operand1())) + int(cpu.X)
-		value := readMemory(uint16(address))
-		// Set accumulator to value
+	case ABSOLUTEX:
+		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
+		address := baseAddress + uint16(cpu.X)
+
+		// Dummy read: occurs if adding X to the low byte of the address crosses a page boundary
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
+		}
+		value := readMemory(address)
 		cpu.A = value
 		setFlags()
-		cpu.updateCycleCounter(4)
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			cpu.updateCycleCounter(5)
+		} else {
+			cpu.updateCycleCounter(4)
+		}
 		cpu.handleState(3)
-	case ABSOLUTEY: // Absolute, Y
-		// Get 16 bit address from operand 1 and operand 2
-		address := (int(cpu.operand2())<<8 | int(cpu.operand1())) + int(cpu.Y)
-		value := readMemory(uint16(address))
-		// Set accumulator to value
+	case ABSOLUTEY:
+		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
+		address := baseAddress + uint16(cpu.Y)
+
+		// Dummy read: occurs if adding Y to the low byte of the address crosses a page boundary
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
+		}
+		value := readMemory(address)
 		cpu.A = value
 		setFlags()
-		cpu.updateCycleCounter(4)
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			cpu.updateCycleCounter(5)
+		} else {
+			cpu.updateCycleCounter(4)
+		}
 		cpu.handleState(3)
-	case INDIRECTX: // Indirect, X
-		// Get the 16bit X indexed zero page indirect address
-		indirectAddress := uint16(int(cpu.operand1()) + int(cpu.X)&0xFF)
-		// Get the value at the indirect address
-		indirectValue := readMemory(indirectAddress)
-		// Get the value at the indirect address + 1
-		indirectValue2 := readMemory(indirectAddress + 1)
-		// Corrected line: Combine the two values to get the address
-		indirectAddress = uint16(int(indirectValue2)<<8 + int(indirectValue))
-		// Get the value at the address
-		value := readMemory(indirectAddress)
-		// Set the accumulator to the value
+	case INDIRECTX:
+		zeroPageAddress := uint16(cpu.operand1()+cpu.X) & 0xFF // zero page wraparound
+		lo := readMemory(zeroPageAddress)
+		hi := readMemory((zeroPageAddress + 1) & 0xFF) // zero page wraparound
+		address := uint16(hi)<<8 | uint16(lo)
+		value := readMemory(address)
 		cpu.A = value
 		setFlags()
 		cpu.updateCycleCounter(6)
@@ -150,13 +478,22 @@ func LDX(addressingMode string) {
 		setFlags()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
-	case ABSOLUTEY: // Absolute, Y
-		// Get 16 bit Y indexed address from operands
-		address := int(cpu.operand2())<<8 | int(cpu.operand1()) + int(cpu.Y)
-		value := readMemory(uint16(address))
+	case ABSOLUTEY:
+		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
+		address := baseAddress + uint16(cpu.Y)
+
+		// Dummy read: occurs if adding Y to the low byte of the address crosses a page boundary
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
+		}
+		value := readMemory(address)
 		cpu.X = value
 		setFlags()
-		cpu.updateCycleCounter(4)
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			cpu.updateCycleCounter(5)
+		} else {
+			cpu.updateCycleCounter(4)
+		}
 		cpu.handleState(3)
 	}
 }
@@ -209,14 +546,22 @@ func LDY(addressingMode string) {
 		setFlags()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
-	case ABSOLUTEX: // Absolute, X
-		// Get the 16bit X indexed absolute memory address
-		address := (int(cpu.operand2())<<8 | int(cpu.operand1())) + int(cpu.X)
-		value := readMemory(uint16(address))
-		// Update Y with the value stored at the address
+	case ABSOLUTEX:
+		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
+		address := baseAddress + uint16(cpu.X)
+
+		// Dummy read: occurs if adding X to the low byte of the address crosses a page boundary
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
+		}
+		value := readMemory(address)
 		cpu.Y = value
 		setFlags()
-		cpu.updateCycleCounter(4)
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			cpu.updateCycleCounter(5)
+		} else {
+			cpu.updateCycleCounter(4)
+		}
 		cpu.handleState(3)
 	}
 }
@@ -238,12 +583,22 @@ func STA(addressingMode string) {
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		address := (uint16(cpu.operand2())<<8 | uint16(cpu.operand1())) + uint16(cpu.X)
+		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
+		address := baseAddress + uint16(cpu.X)
+		// Perform dummy read if page boundary is crossed
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			_ = readMemory(baseAddress&0xFF00 | (address & 0x00FF))
+		}
 		writeMemory(address, cpu.A)
 		cpu.updateCycleCounter(5)
 		cpu.handleState(3)
 	case ABSOLUTEY:
-		address := (uint16(cpu.operand2())<<8 | uint16(cpu.operand1())) + uint16(cpu.Y)
+		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
+		address := baseAddress + uint16(cpu.Y)
+		// Perform dummy read if page boundary is crossed
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			_ = readMemory(baseAddress&0xFF00 | (address & 0x00FF))
+		}
 		writeMemory(address, cpu.A)
 		cpu.updateCycleCounter(5)
 		cpu.handleState(3)
@@ -373,12 +728,20 @@ func CMP(addressingMode string) {
 		value = readMemory(uint16(address))
 		setFlags()
 	case INDIRECTY: // Indirect, Y
-		// Get the address of the operand
+		// Get the zero page address from the operand
 		zeroPageAddress := cpu.operand1()
-		address := uint16(readMemory(uint16(zeroPageAddress))) | uint16(readMemory((uint16(zeroPageAddress)+1)&0xFF))<<8
+		// Fetch the low byte of the address
+		lowByte := readMemory(uint16(zeroPageAddress))
+		// Fetch the high byte of the address from the next page address, wrapping within the zero page
+		highByte := readMemory(uint16(zeroPageAddress+1) & 0x00FF)
+		// Combine the high and low bytes to form the 16-bit address
+		address := uint16(highByte)<<8 | uint16(lowByte)
+		// Add the Y register to the address with proper wrapping around the 16-bit address space
 		finalAddress := (address + uint16(cpu.Y)) & 0xFFFF
+		// Get the value at the final address
 		value = readMemory(finalAddress)
 		setFlags()
+
 	}
 }
 func JMP(addressingMode string) {
@@ -393,22 +756,25 @@ func JMP(addressingMode string) {
 		// Get the 16 bit address from operands
 		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
 		// Set the program counter to the absolute address
-		setPC(address)
+		cpu.setPC(address)
 	case INDIRECT:
 		// Get the 16 bit address from operands
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Handle 6502 page boundary bug
-		loByteAddress := address
-		//hiByteAddress := (address & 0xFF00) | ((address + 1) & 0xFF) // Ensure it wraps within the page
-		hiByteAddress := (address & 0xFF00) | (address & 0x00FF) + 1
-		//indirectAddress := uint16(readMemory(hiByteAddress))<<8 | uint16(readMemory(loByteAddress))
+		loByteAddress := uint16(cpu.operand1()) | uint16(cpu.operand2())<<8
+		// Correctly emulate the 6502 JMP indirect page boundary hardware bug
+		hiByteAddress := (loByteAddress & 0xFF00) | uint16((loByteAddress+1)&0x00FF)
+		// Fetch the address to jump to, considering the page boundary bug
 		indirectAddress := uint16(readMemory(loByteAddress)) | uint16(readMemory(hiByteAddress))<<8
 		// Set the program counter to the indirect address
-		setPC(indirectAddress)
+		cpu.setPC(indirectAddress)
 	}
-	if *klausd && cpu.PC == KlausDInfiniteLoopAddress {
-		if readMemory(0x02) == 0xDE && readMemory(0x03) == 0xB0 {
-			//fmt.println("All tests passed!")
+	if *klausd {
+		//if readMemory(0x02) == 0xDE && readMemory(0x03) == 0xB0 {
+		//	//fmt.println("All tests passed!")
+		//	os.Exit(0)
+		//}
+		//fmt.Fprintf(os.Stderr, "Klaus D. loop detected at address 0x%04X\n", cpu.PC)
+		if cpu.PC == KlausDInfiniteLoopAddress {
+			fmt.Printf("Klaus D. loop detected at address $%04X\n", KlausDInfiniteLoopAddress)
 			os.Exit(0)
 		}
 	}
@@ -621,30 +987,32 @@ func EOR(addressingMode string) {
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case INDIRECTX:
-		// Get the address
-		indirectAddress := int(cpu.operand1()) + int(cpu.X)
-		address := int(readMemory(uint16(indirectAddress))) + int(readMemory(uint16(indirectAddress+1)))<<8
-		// Get the value from the address
-		value = readMemory(uint16(address))
-		// XOR the value with the accumulator
+		// Get the zero page address to use as a pointer
+		zpAddress := cpu.operand1()
+		// Calculate the effective address using X register to get the LSB of the address
+		effAddrLsb := readMemory(uint16(zpAddress+cpu.X) & 0x00FF)
+		// Get the MSB of the address from the next zero page location
+		effAddrMsb := readMemory(uint16(zpAddress+cpu.X+1) & 0x00FF)
+		address := uint16(effAddrMsb)<<8 | uint16(effAddrLsb)
+		// Get the value at the effective address
+		value = readMemory(address)
 		result = cpu.A ^ value
-		// Set the accumulator to the result
 		cpu.A = result
 		setFlags()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case INDIRECTY:
-		// Get the 16bit address
-		address := uint16(int(cpu.operand1()))
-		// Get the indirect address
-		indirectAddress1 := readMemory(address)
-		indirectAddress2 := readMemory(address + 1)
-		indirectAddress := uint16(int(indirectAddress1)+int(indirectAddress2)<<8) + uint16(cpu.Y)
-		// Get the value at the address
-		value = readMemory(indirectAddress)
-		// XOR the value with the accumulator
+		// Get the zero page address to use as a pointer
+		zpAddress := cpu.operand1()
+		// Get the LSB of the effective address from the zero page
+		effAddrLsb := readMemory(uint16(zpAddress))
+		// Get the MSB of the effective address from the next zero page location
+		effAddrMsb := readMemory(uint16(zpAddress+1) & 0x00FF)
+		// Calculate the final address using the Y register
+		finalAddress := uint16(effAddrMsb)<<8 | uint16(effAddrLsb) + uint16(cpu.Y)
+		// Get the value at the final address
+		value = readMemory(finalAddress)
 		result = cpu.A ^ value
-		// Set the accumulator to the result
 		cpu.A = result
 		setFlags()
 		cpu.updateCycleCounter(5)
@@ -727,22 +1095,33 @@ func ORA(addressingMode string) {
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case INDIRECTX:
-		zeroPageAddress := (cpu.operand1() + cpu.X) & 0xFF
-		effectiveAddrLo := readMemory(uint16(zeroPageAddress))
-		effectiveAddrHi := readMemory(uint16((zeroPageAddress + 1) & 0xFF))
-		address := uint16(effectiveAddrHi)<<8 | uint16(effectiveAddrLo)
+		// Get the zero page address to use as a pointer
+		zpAddress := cpu.operand1()
+		// Calculate the effective address using X register to get the LSB of the address
+		effAddrLsb := readMemory(uint16(zpAddress+cpu.X) & 0x00FF)
+		// Get the MSB of the address from the next zero page location
+		effAddrMsb := readMemory(uint16(zpAddress+cpu.X+1) & 0x00FF)
+		address := uint16(effAddrMsb)<<8 | uint16(effAddrLsb)
+		// Get the value at the effective address
 		value = readMemory(address)
-		cpu.A |= value
+		result = cpu.A | value
+		cpu.A = result
 		setFlags()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case INDIRECTY:
-		zeroPageAddress := cpu.operand1()
-		effectiveAddrLo := readMemory(uint16(zeroPageAddress))
-		effectiveAddrHi := readMemory(uint16((zeroPageAddress + 1) & 0xFF))
-		address := (uint16(effectiveAddrHi)<<8 | uint16(effectiveAddrLo)) + uint16(cpu.Y)
-		value = readMemory(address)
-		cpu.A |= value
+		// Get the zero page address to use as a pointer
+		zpAddress := cpu.operand1()
+		// Get the LSB of the effective address from the zero page
+		effAddrLsb := readMemory(uint16(zpAddress))
+		// Get the MSB of the effective address from the next zero page location
+		effAddrMsb := readMemory(uint16(zpAddress+1) & 0x00FF)
+		// Calculate the final address using the Y register
+		finalAddress := uint16(effAddrMsb)<<8 | uint16(effAddrLsb) + uint16(cpu.Y)
+		// Get the value at the final address
+		value = readMemory(finalAddress)
+		result = cpu.A | value
+		cpu.A = result
 		setFlags()
 		cpu.updateCycleCounter(5)
 		cpu.handleState(2)
@@ -991,13 +1370,21 @@ func ADC(addressingMode string) {
 		setFlags()
 	case ABSOLUTEX:
 		// Get 16 bit address from operand1 and operand2
-		address := (uint16(cpu.operand2())<<8 | uint16(cpu.operand1())) + uint16(cpu.X)
+		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
+		// Perform a dummy read at the base address
+		_ = readMemory(baseAddress)
+		// Add the X register to the base address for the actual read
+		address := baseAddress + uint16(cpu.X)
 		// Get value at address
 		value = readMemory(address)
 		setFlags()
 	case ABSOLUTEY:
 		// Get 16 bit address from operand1 and operand2
-		address := (uint16(cpu.operand2())<<8 | uint16(cpu.operand1())) + uint16(cpu.Y)
+		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
+		// Perform a dummy read at the base address
+		_ = readMemory(baseAddress)
+		// Add the Y register to the base address for the actual read
+		address := baseAddress + uint16(cpu.Y)
 		// Get value at address
 		value = readMemory(address)
 		setFlags()
@@ -1026,25 +1413,34 @@ func SBC(addressingMode string) {
 	setFlags := func() {
 		// Check for BCD mode (Decimal flag set)
 		if cpu.getSRBit(3) == 1 { // BCD mode
-
-			temp := (cpu.A & 0x0F) - (value & 0x0F) - (cpu.getSRBit(0) ^ 1)
-			if temp < 0 {
-				temp -= 6
+			lowNibble := (cpu.A & 0x0F) - (value & 0x0F) - (cpu.getSRBit(0) ^ 1)
+			if lowNibble < 0 {
+				lowNibble = (lowNibble - 6) & 0x0F // Only keep the low nibble
 			}
 
-			result = int((cpu.A & 0xF0) - (value & 0xF0) - (temp & 0x0F))
-
-			if result < 0 {
-				result -= 0x60
+			highNibble := (cpu.A & 0xF0) - (value & 0xF0) - (lowNibble & 0x10)
+			if highNibble < 0 {
+				highNibble -= 0x60
 			}
 
+			result = int(highNibble) | int(lowNibble) // Convert to int before combining
+
+			if result >= 0 {
+				cpu.setCarryFlag() // No borrow occurred, set carry
+			} else {
+				cpu.unsetCarryFlag() // Borrow occurred, clear carry
+			}
+
+			result &= 0xFF // Ensure result is only 8 bits
 		} else {
 			// Binary mode
 			result = int(cpu.A) - int(value)
 			if cpu.getSRBit(0) == 0 {
 				result--
 			}
-			if int(cpu.A) >= int(value) {
+
+			// The carry flag in binary mode is the inverse of the borrow indicator
+			if result >= 0 {
 				cpu.setCarryFlag()
 			} else {
 				cpu.unsetCarryFlag()
@@ -1130,24 +1526,31 @@ func ROR(addressingMode string) {
 	var address16 uint16
 
 	setFlags := func() {
-		// Set bit 7 of result and negative flag to the carry flag
-		if cpu.getSRBit(0) == 1 {
-			result |= 0x80
-			cpu.setNegativeFlag()
-		} else {
-			result &= 0x7F
-			cpu.unsetNegativeFlag()
-		}
+		// Store the carry in a temp variable
+		oldCarry := cpu.getSRBit(0)
+
 		// Set carry flag to bit 0 of value
-		if readBit(0, value) == 1 {
+		if (value & 0x01) != 0 {
 			cpu.setCarryFlag()
 		} else {
 			cpu.unsetCarryFlag()
 		}
-		if cpu.A == 0 {
+
+		// Rotate right one bit
+		result = (value >> 1) | (oldCarry << 7)
+
+		// Set zero flag based on the result
+		if result == 0 {
 			cpu.setZeroFlag()
 		} else {
 			cpu.unsetZeroFlag()
+		}
+
+		// Set negative flag based on bit 7 of the result
+		if (result & 0x80) != 0 {
+			cpu.setNegativeFlag()
+		} else {
+			cpu.unsetNegativeFlag()
 		}
 		if addressingMode == ACCUMULATOR {
 			// Store the result in the accumulator
@@ -1214,22 +1617,28 @@ func ROL(addressingMode string) {
 	var address16 uint16
 
 	setFlags := func() {
+		// Store the carry in a temp variable
+		oldCarry := cpu.getSRBit(0)
+
 		// Set SR carry flag to bit 7 of value
-		if readBit(7, value) == 1 {
+		if (value & 0x80) != 0 {
 			cpu.setCarryFlag()
 		} else {
 			cpu.unsetCarryFlag()
 		}
 
-		// Update the zero flag
+		// Rotate left one bit
+		result = (value << 1) | oldCarry
+
+		// Set zero flag based on the result
 		if result == 0 {
 			cpu.setZeroFlag()
 		} else {
 			cpu.unsetZeroFlag()
 		}
 
-		// Update the negative flag
-		if readBit(7, result) == 1 {
+		// Set negative flag based on bit 7 of the result
+		if (result & 0x80) != 0 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
@@ -1310,15 +1719,16 @@ func LSR(addressingMode string) {
 	setFlags := func() {
 		// Reset the SR negative flag
 		cpu.unsetNegativeFlag()
-		// If A is 0 then set SR zero flag else reset it
+
 		// Update the zero flag
-		if cpu.A == 0 {
+		if result == 0 {
 			cpu.setZeroFlag()
 		} else {
 			cpu.unsetZeroFlag()
 		}
+
 		// If bit 0 of value is 1 then set SR carry flag else reset it
-		if readBit(0, value) == 1 {
+		if (value & 0x01) != 0 {
 			cpu.setCarryFlag()
 		} else {
 			cpu.unsetCarryFlag()
@@ -1373,18 +1783,26 @@ func LSR(addressingMode string) {
 		cpu.updateCycleCounter(6)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		// Get the 16bit X indexed absolute memory address
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		address += uint16(cpu.X)
-		// Get the value stored at the address
+		// Dummy read for Absolute,X addressing mode if page boundary is crossed
+		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
+		address := baseAddress + uint16(cpu.X)
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			// Perform a dummy read if a page boundary is crossed
+			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
+		}
 		value = readMemory(address)
-		// Shift the value right 1 bit
 		result = value >> 1
-		// Store the shifted value back in memory
+		// Write the result back to the calculated effective address
 		writeMemory(address, result)
 		setFlags()
-		cpu.updateCycleCounter(7)
+		// Update cycle counter depending on page boundary crossing
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+			cpu.updateCycleCounter(7) // Add 1 if page boundary is crossed
+		} else {
+			cpu.updateCycleCounter(6)
+		}
 		cpu.handleState(3)
+
 	}
 }
 func ASL(addressingMode string) {
@@ -1392,21 +1810,21 @@ func ASL(addressingMode string) {
 
 	setFlags := func() {
 		// Update the zero flag
-		if cpu.A == 0 {
+		if result == 0 {
 			cpu.setZeroFlag()
 		} else {
 			cpu.unsetZeroFlag()
 		}
 
 		// Update the negative flag
-		if readBit(7, cpu.A) == 1 {
+		if (result & 0x80) != 0 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
 		}
 
 		// Set the Carry flag based on the original value's bit 7 before the shift operation
-		if readBit(7, value) == 1 {
+		if (value & 0x80) != 0 {
 			cpu.setCarryFlag()
 		} else {
 			cpu.unsetCarryFlag()
@@ -1477,27 +1895,26 @@ func CPX(addressingMode string) {
 	var value, result byte
 
 	setFlags := func() {
-		// if cpu.X >= value then set carry flag bit 0 to 1 set carry flag bit 0 to 0
+		// Set or clear the carry flag
 		if cpu.X >= value {
 			cpu.setCarryFlag()
-		}
-		// If value> X then reset carry flag
-		if value > cpu.X {
+		} else {
 			cpu.unsetCarryFlag()
 		}
-		// If bit 7 of result is 1 then set negative flag else unset negative flag
-		//if readBit(7, result) == 1 {
+
+		// Set or clear the zero flag
+		if cpu.X == value {
+			cpu.setZeroFlag()
+		} else {
+			cpu.unsetZeroFlag()
+		}
+
+		// Set or clear the negative flag based on the high bit of the subtraction result
+		result = cpu.X - value
 		if result&0x80 != 0 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
-		}
-		// If value == cpu.X then set zero flag else unset zero flag
-		if value == cpu.X {
-			//if result == 0 {
-			cpu.setZeroFlag()
-		} else {
-			cpu.unsetZeroFlag()
 		}
 	}
 	switch addressingMode {
@@ -1533,21 +1950,26 @@ func CPY(addressingMode string) {
 	var value, result byte
 
 	setFlags := func() {
-		// If Y>value then set carry flag to 1 else set carry flag to 0
+		// Set or clear the carry flag
 		if cpu.Y >= value {
 			cpu.setCarryFlag()
-		}
-		// If bit 7 of result is set, set N flag to 1 else reset it
-		if readBit(7, result) == 1 {
-			cpu.setNegativeFlag()
 		} else {
-			cpu.unsetNegativeFlag()
+			cpu.unsetCarryFlag()
 		}
-		// If Y==value then set Z flag to 1 else reset it
+
+		// Set or clear the zero flag
 		if cpu.Y == value {
 			cpu.setZeroFlag()
 		} else {
 			cpu.unsetZeroFlag()
+		}
+
+		// Set or clear the negative flag based on the high bit of the subtraction result
+		result = cpu.Y - value
+		if result&0x80 != 0 {
+			cpu.setNegativeFlag()
+		} else {
+			cpu.unsetNegativeFlag()
 		}
 	}
 	switch addressingMode {
@@ -1592,20 +2014,11 @@ func BRK() {
 	/*
 		BRK - Break Command
 	*/
-	BRKtrue = true
-	if *klausd {
-		//fmt.Printf("Test failed at PC: %04X\t", cpu.PC)
-		// print opcode and disassembledInstruction at PC
-		fmt.Printf("Opcode: %02X\t", readMemory(cpu.PC))
-		fmt.Printf("Disassembled Instruction: %s\n", disassembledInstruction)
-	}
+	cpu.BRKtrue = true
 
-	disassembledInstruction = fmt.Sprintf("BRK\t")
 	disassembleOpcode()
 	cpu.previousPC = cpu.PC
 	cpu.previousOpcode = cpu.opcode()
-	// Increment PC
-	//incPC(1)
 
 	// Decrement SP and Push high byte of (PC+1) onto stack
 	cpu.decSP()
@@ -1630,7 +2043,7 @@ func BRK() {
 	cpu.setInterruptFlag()
 
 	// Set PC to interrupt vector address
-	setPC((uint16(readMemory(IRQVectorAddressHigh)) << 8) | uint16(readMemory(IRQVectorAddressLow)))
+	cpu.setPC((uint16(readMemory(IRQVectorAddressHigh)) << 8) | uint16(readMemory(IRQVectorAddressLow)))
 	cpu.updateCycleCounter(7)
 	cpu.handleState(0)
 }
@@ -1638,7 +2051,7 @@ func CLC() {
 	/*
 		CLC - Clear Carry Flag
 	*/
-	disassembledInstruction = fmt.Sprintf("CLC\t")
+	//cpu.mnemonic = fmt.Sprintf("CLC\t")
 	disassembleOpcode()
 	// Set SR carry flag bit 0 to 0
 	cpu.unsetCarryFlag()
@@ -1649,7 +2062,7 @@ func CLD() {
 	/*
 		CLD - Clear Decimal Mode
 	*/
-	disassembledInstruction = fmt.Sprintf("CLD\t")
+	//cpu.mnemonic = fmt.Sprintf("CLD\t")
 	disassembleOpcode()
 	cpu.unsetDecimalFlag()
 	cpu.updateCycleCounter(2)
@@ -1659,7 +2072,7 @@ func CLI() {
 	/*
 		CLI - Clear Interrupt Disable
 	*/
-	disassembledInstruction = fmt.Sprintf("CLI\t")
+	//cpu.mnemonic = fmt.Sprintf("CLI\t")
 	disassembleOpcode()
 	// Set SR interrupt disable bit 2 to 0
 	cpu.unsetInterruptFlag()
@@ -1670,7 +2083,7 @@ func CLV() {
 	/*
 		CLV - Clear Overflow Flag
 	*/
-	disassembledInstruction = fmt.Sprintf("CLV\t")
+	//cpu.mnemonic = fmt.Sprintf("CLV\t")
 	disassembleOpcode()
 	// Set SR overflow flag bit 6 to 0
 	cpu.unsetOverflowFlag()
@@ -1679,7 +2092,7 @@ func CLV() {
 }
 func DEX() {
 	// DEX - Decrement Index Register X By One
-	disassembledInstruction = fmt.Sprintf("DEX\t")
+	//cpu.mnemonic = fmt.Sprintf("DEX\t")
 	disassembleOpcode()
 
 	// Decrement the X register by 1
@@ -1705,7 +2118,7 @@ func DEY() {
 	/*
 		DEY - Decrement Index Register Y By One
 	*/
-	disassembledInstruction = fmt.Sprintf("DEY\t")
+	//cpu.mnemonic = fmt.Sprintf("DEY\t")
 	disassembleOpcode()
 
 	// Decrement the  Y register by 1
@@ -1729,7 +2142,7 @@ func INX() {
 	/*
 		INX - Increment Index Register X By One
 	*/
-	disassembledInstruction = fmt.Sprintf("INX\t")
+	//cpu.mnemonic = fmt.Sprintf("INX\t")
 	disassembleOpcode()
 
 	// Increment the X register by 1
@@ -1753,7 +2166,7 @@ func INY() {
 	/*
 		INY - Increment Index Register Y By One
 	*/
-	disassembledInstruction = fmt.Sprintf("INY\t")
+	//cpu.mnemonic = fmt.Sprintf("INY\t")
 	disassembleOpcode()
 
 	// Increment the  Y register by 1
@@ -1777,7 +2190,7 @@ func NOP() {
 	/*
 		NOP - No Operation
 	*/
-	disassembledInstruction = fmt.Sprintf("NOP\t")
+	//cpu.mnemonic = fmt.Sprintf("NOP\t")
 	disassembleOpcode()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -1786,7 +2199,7 @@ func PHA() {
 	/*
 		PHA - Push Accumulator On Stack
 	*/
-	disassembledInstruction = fmt.Sprintf("PHA\t")
+	//cpu.mnemonic = fmt.Sprintf("PHA\t")
 	disassembleOpcode()
 
 	// Update memory address pointed to by SP with value stored in accumulator
@@ -1799,15 +2212,14 @@ func PHP() {
 	/*
 	   PHP - Push Processor Status On Stack
 	*/
-	disassembledInstruction = fmt.Sprintf("PHP\t")
 	disassembleOpcode()
 
-	// Set the break flag and the unused bit before pushing
-	cpu.SR |= 1 << 4 // Set break flag
-	cpu.SR |= 1 << 5 // Set unused bit
+	// Set the break flag and the unused bit only for the push operation
+	status := cpu.SR | (1 << 4) // Set break flag
+	status |= (1 << 5)          // Set unused bit
 
-	// Push the SR onto the stack
-	updateStack(cpu.SR)
+	// Push the status onto the stack
+	updateStack(status)
 
 	// Decrement the stack pointer
 	cpu.decSP()
@@ -1818,31 +2230,16 @@ func PLA() {
 	/*
 	   PLA - Pull Accumulator From Stack
 	*/
-	disassembledInstruction = fmt.Sprintf("PLA\t")
 	disassembleOpcode()
 
 	// Increment the stack pointer first
 	cpu.incSP()
 
-	// Ensure all arithmetic is done in uint16
-	expectedAddress := SPBaseAddress + cpu.SP
+	// Read the value from the stack into the accumulator
+	cpu.A = readStack()
 
-	// Now, update accumulator with value stored in memory address pointed to by SP
-	cpu.A = readMemory(expectedAddress)
+	// No flag updates should occur here
 
-	// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
-	if cpu.getABit(7) == 1 {
-		cpu.setNegativeFlag()
-	} else {
-		cpu.unsetNegativeFlag()
-	}
-
-	// If accumulator is 0, set zero SR flag else set zero SR flag to 0
-	if cpu.A == 0 {
-		cpu.setZeroFlag()
-	} else {
-		cpu.unsetZeroFlag()
-	}
 	cpu.updateCycleCounter(4)
 	cpu.handleState(1)
 }
@@ -1850,12 +2247,20 @@ func PLP() {
 	/*
 		PLP - Pull Processor Status From Stack
 	*/
-	disassembledInstruction = fmt.Sprintf("PLP\t")
 	disassembleOpcode()
 
-	// Update SR with the value stored at the address pointed to by SP
-	cpu.SR = readStack()
+	// Read the status from the stack
+	newStatus := readStack()
+
+	// Preserve break flag and unused bit from current status
+	newStatus = (newStatus & 0xCF) | (cpu.SR & 0x30)
+
+	// Update SR with the new status
+	cpu.SR = newStatus
+
+	// Increment the stack pointer after the operation
 	cpu.incSP()
+
 	cpu.updateCycleCounter(4)
 	cpu.handleState(1)
 }
@@ -1864,7 +2269,7 @@ func RTI() {
 	   RTI - Return From Interrupt
 	*/
 
-	disassembledInstruction = fmt.Sprintf("RTI\t")
+	//cpu.mnemonic = fmt.Sprintf("RTI\t")
 	disassembleOpcode()
 
 	cpu.SR = readStack() & 0xCF
@@ -1887,13 +2292,13 @@ func RTI() {
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
 	// Update PC with the value stored in memory at the address pointed to by SP
-	setPC((high << 8) | low)
+	cpu.setPC((high << 8) | low)
 }
 func RTS() {
 	/*
 		RTS - Return From Subroutine
 	*/
-	disassembledInstruction = fmt.Sprintf("RTS\t")
+	//cpu.mnemonic = fmt.Sprintf("RTS\t")
 	disassembleOpcode()
 	//Get low byte of new PC
 	low := uint16(readStack())
@@ -1904,7 +2309,7 @@ func RTS() {
 	cpu.previousPC = cpu.PC
 	cpu.previousOpcode = cpu.opcode()
 	//Update PC with the value stored in memory at the address pointed to by SP
-	setPC((high << 8) | low + 1)
+	cpu.setPC((high << 8) | low + 1)
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
 }
@@ -1912,7 +2317,7 @@ func SEC() {
 	/*
 		SEC - Set Carry Flag
 	*/
-	disassembledInstruction = fmt.Sprintf("SEC\t")
+	//cpu.mnemonic = fmt.Sprintf("SEC\t")
 	disassembleOpcode()
 
 	// Set SR carry flag bit 0 to 1
@@ -1924,7 +2329,7 @@ func SED() {
 	/*
 		SED - Set Decimal Mode
 	*/
-	disassembledInstruction = fmt.Sprintf("SED\t")
+	//cpu.mnemonic = fmt.Sprintf("SED\t")
 	disassembleOpcode()
 
 	// Set SR decimal mode flag to 1
@@ -1936,7 +2341,7 @@ func SEI() {
 	/*
 		SEI - Set Interrupt Disable
 	*/
-	disassembledInstruction = fmt.Sprintf("SEI\t")
+	//cpu.mnemonic = fmt.Sprintf("SEI\t")
 	disassembleOpcode()
 
 	// Set SR interrupt disable bit 2 to 1
@@ -1948,7 +2353,7 @@ func TAX() {
 	/*
 		TAX - Transfer Accumulator To Index X
 	*/
-	disassembledInstruction = fmt.Sprintf("TAX\t")
+	//cpu.mnemonic = fmt.Sprintf("TAX\t")
 	disassembleOpcode()
 
 	// Update X with the value of A
@@ -1972,7 +2377,7 @@ func TAY() {
 	/*
 		TAY - Transfer Accumulator To Index Y
 	*/
-	disassembledInstruction = fmt.Sprintf("TAY\t")
+	//cpu.mnemonic = fmt.Sprintf("TAY\t")
 	disassembleOpcode()
 
 	// Set Y register to the value of the accumulator
@@ -1996,7 +2401,7 @@ func TSX() {
 	/*
 		TSX - Transfer Stack Pointer To Index X
 	*/
-	disassembledInstruction = fmt.Sprintf("TSX\t")
+	//cpu.mnemonic = fmt.Sprintf("TSX\t")
 	disassembleOpcode()
 
 	// Update X with the SP
@@ -2020,7 +2425,7 @@ func TXA() {
 	/*
 		TXA - Transfer Index X To Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("TXA\t")
+	//cpu.mnemonic = fmt.Sprintf("TXA\t")
 	disassembleOpcode()
 
 	// Set accumulator to value of X register
@@ -2044,7 +2449,7 @@ func TXS() {
 	/*
 		TXS - Transfer Index X To Stack Pointer
 	*/
-	disassembledInstruction = fmt.Sprintf("TXS\t")
+	//cpu.mnemonic = fmt.Sprintf("TXS\t")
 	disassembleOpcode()
 
 	// Set stack pointer to value of X register
@@ -2056,7 +2461,7 @@ func TYA() {
 	/*
 		TYA - Transfer Index Y To Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("TYA\t")
+	//cpu.mnemonic = fmt.Sprintf("TYA\t")
 	disassembleOpcode()
 
 	// Set accumulator to value of Y register
@@ -2089,7 +2494,7 @@ func ASL_A() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembledInstruction = fmt.Sprintf("ASL\t")
+	//cpu.mnemonic = fmt.Sprintf("ASL\t")
 	disassembleOpcode()
 	ASL("accumulator")
 }
@@ -2097,7 +2502,7 @@ func LSR_A() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembledInstruction = fmt.Sprintf("LSR\t")
+	//cpu.mnemonic = fmt.Sprintf("LSR\t")
 	disassembleOpcode()
 	LSR("accumulator")
 }
@@ -2105,7 +2510,7 @@ func ROL_A() {
 	/*
 		ROL - Rotate Left
 	*/
-	disassembledInstruction = fmt.Sprintf("ROL\t")
+	//cpu.mnemonic = fmt.Sprintf("ROL\t")
 	disassembleOpcode()
 	ROL("accumulator")
 }
@@ -2113,7 +2518,7 @@ func ROR_A() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembledInstruction = fmt.Sprintf("ROR\t")
+	//cpu.mnemonic = fmt.Sprintf("ROR\t")
 	disassembleOpcode()
 	ROR("accumulator")
 }
@@ -2131,7 +2536,7 @@ func ADC_I() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembledInstruction = fmt.Sprintf("ADC #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ADC #$%02X", cpu.operand1())
 	disassembleOpcode()
 
 	ADC("immediate")
@@ -2140,7 +2545,7 @@ func AND_I() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("AND #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("AND #$%02X", cpu.operand1())
 	disassembleOpcode()
 	AND("immediate")
 }
@@ -2148,7 +2553,7 @@ func CMP_I() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("CMP #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CMP #$%02X", cpu.operand1())
 	disassembleOpcode()
 	CMP("immediate")
 }
@@ -2156,7 +2561,7 @@ func CPX_I() {
 	/*
 		CPX - Compare Index Register X To Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("CPX #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CPX #$%02X", cpu.operand1())
 	disassembleOpcode()
 
 	CPX("immediate")
@@ -2165,7 +2570,7 @@ func CPY_I() {
 	/*
 		CPY - Compare Index Register Y To Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("CPY #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CPY #$%02X", cpu.operand1())
 	disassembleOpcode()
 	CPY("immediate")
 }
@@ -2173,7 +2578,7 @@ func EOR_I() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("EOR #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("EOR #$%02X", cpu.operand1())
 	disassembleOpcode()
 	EOR("immediate")
 }
@@ -2181,7 +2586,7 @@ func LDA_I() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDA #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDA #$%02X", cpu.operand1())
 	disassembleOpcode()
 	LDA("immediate")
 }
@@ -2189,7 +2594,7 @@ func LDX_I() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDX #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDX #$%02X", cpu.operand1())
 	disassembleOpcode()
 	LDX("immediate")
 }
@@ -2197,7 +2602,7 @@ func LDY_I() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDY #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDY #$%02X", cpu.operand1())
 	disassembleOpcode()
 	LDY("immediate")
 }
@@ -2205,7 +2610,7 @@ func ORA_I() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("ORA #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ORA #$%02X", cpu.operand1())
 	disassembleOpcode()
 	ORA("immediate")
 }
@@ -2213,7 +2618,7 @@ func SBC_I() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembledInstruction = fmt.Sprintf("SBC #$%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("SBC #$%02X", cpu.operand1())
 	disassembleOpcode()
 	SBC("immediate")
 }
@@ -2230,7 +2635,7 @@ func ADC_Z() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembledInstruction = fmt.Sprintf("ADC $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ADC $%02X", cpu.operand1())
 	disassembleOpcode()
 	ADC("zeropage")
 }
@@ -2238,7 +2643,7 @@ func AND_Z() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("AND $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("AND $%02X", cpu.operand1())
 	disassembleOpcode()
 	AND("zeropage")
 }
@@ -2246,7 +2651,7 @@ func ASL_Z() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembledInstruction = fmt.Sprintf("ASL $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ASL $%02X", cpu.operand1())
 	disassembleOpcode()
 
 	ASL("zeropage")
@@ -2255,7 +2660,7 @@ func BIT_Z() {
 	/*
 		BIT - Test Bits in Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("BIT $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("BIT $%02X", cpu.operand1())
 	disassembleOpcode()
 	BIT("zeropage")
 }
@@ -2263,7 +2668,7 @@ func CMP_Z() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("CMP $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CMP $%02X", cpu.operand1())
 	disassembleOpcode()
 	CMP("zeropage")
 }
@@ -2271,7 +2676,7 @@ func CPX_Z() {
 	/*
 		CPX - Compare Index Register X To Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("CPX $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CPX $%02X", cpu.operand1())
 	disassembleOpcode()
 	CPX("zeropage")
 }
@@ -2279,7 +2684,7 @@ func CPY_Z() {
 	/*
 		CPY - Compare Index Register Y To Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("CPY $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CPY $%02X", cpu.operand1())
 	disassembleOpcode()
 	CPY("zeropage")
 }
@@ -2287,7 +2692,7 @@ func DEC_Z() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	disassembledInstruction = fmt.Sprintf("DEC $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("DEC $%02X", cpu.operand1())
 	disassembleOpcode()
 	DEC("zeropage")
 }
@@ -2295,7 +2700,7 @@ func EOR_Z() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("EOR $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("EOR $%02X", cpu.operand1())
 	disassembleOpcode()
 	EOR("zeropage")
 }
@@ -2303,7 +2708,7 @@ func INC_Z() {
 	/*
 		INC - Increment Memory By One
 	*/
-	disassembledInstruction = fmt.Sprintf("INC $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("INC $%02X", cpu.operand1())
 	disassembleOpcode()
 	INC("zeropage")
 }
@@ -2311,7 +2716,7 @@ func LDA_Z() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDA $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDA $%02X", cpu.operand1())
 	disassembleOpcode()
 	LDA("zeropage")
 }
@@ -2319,7 +2724,7 @@ func LDX_Z() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDX $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDX $%02X", cpu.operand1())
 	disassembleOpcode()
 	LDX("zeropage")
 }
@@ -2327,7 +2732,7 @@ func LDY_Z() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDY $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDY $%02X", cpu.operand1())
 	disassembleOpcode()
 	LDY("zeropage")
 }
@@ -2335,7 +2740,7 @@ func LSR_Z() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembledInstruction = fmt.Sprintf("LSR $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LSR $%02X", cpu.operand1())
 	disassembleOpcode()
 	LSR("zeropage")
 }
@@ -2343,7 +2748,7 @@ func ORA_Z() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("ORA $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ORA $%02X", cpu.operand1())
 	disassembleOpcode()
 	ORA("zeropage")
 }
@@ -2351,7 +2756,7 @@ func ROL_Z() {
 	/*
 		ROL - Rotate Left
 	*/
-	disassembledInstruction = fmt.Sprintf("ROL $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ROL $%02X", cpu.operand1())
 	disassembleOpcode()
 	ROL("zeropage")
 }
@@ -2359,7 +2764,7 @@ func ROR_Z() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembledInstruction = fmt.Sprintf("ROR $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ROR $%02X", cpu.operand1())
 	disassembleOpcode()
 
 	ROR("zeropage")
@@ -2368,7 +2773,7 @@ func SBC_Z() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembledInstruction = fmt.Sprintf("SBC $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("SBC $%02X", cpu.operand1())
 	disassembleOpcode()
 	SBC("zeropage")
 }
@@ -2376,7 +2781,7 @@ func STA_Z() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STA $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STA $%02X", cpu.operand1())
 	disassembleOpcode()
 	STA("zeropage")
 }
@@ -2384,7 +2789,7 @@ func STX_Z() {
 	/*
 		STX - Store Index Register X In Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STX $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STX $%02X", cpu.operand1())
 	disassembleOpcode()
 	STX("zeropage")
 }
@@ -2392,7 +2797,7 @@ func STY_Z() {
 	/*
 		STY - Store Index Register Y In Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STY $%02X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STY $%02X", cpu.operand1())
 	disassembleOpcode()
 	STY("zeropage")
 }
@@ -2409,7 +2814,7 @@ func ADC_ZX() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembledInstruction = fmt.Sprintf("ADC $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ADC $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ADC("zeropagex")
 }
@@ -2417,7 +2822,7 @@ func AND_ZX() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("AND $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("AND $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	AND("zeropagex")
 }
@@ -2425,7 +2830,7 @@ func ASL_ZX() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembledInstruction = fmt.Sprintf("ASL $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ASL $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ASL("zeropagex")
 }
@@ -2433,7 +2838,7 @@ func CMP_ZX() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("CMP $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CMP $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	CMP("zeropagex")
 }
@@ -2441,7 +2846,7 @@ func DEC_ZX() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	disassembledInstruction = fmt.Sprintf("DEC $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("DEC $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	DEC("zeropagex")
 }
@@ -2449,7 +2854,7 @@ func LDA_ZX() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDA $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDA $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	LDA("zeropagex")
 }
@@ -2457,7 +2862,7 @@ func LDY_ZX() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDY $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDY $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	LDY("zeropagex")
 }
@@ -2465,7 +2870,7 @@ func LSR_ZX() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembledInstruction = fmt.Sprintf("LSR $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LSR $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	LSR("zeropagex")
 }
@@ -2473,7 +2878,7 @@ func ORA_ZX() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("ORA $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ORA $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ORA("zeropagex")
 }
@@ -2481,7 +2886,7 @@ func ROL_ZX() {
 	/*
 		ROL - Rotate Left
 	*/
-	disassembledInstruction = fmt.Sprintf("ROL $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ROL $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ROL("zeropagex")
 }
@@ -2489,7 +2894,7 @@ func ROR_ZX() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembledInstruction = fmt.Sprintf("ROR $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ROR $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ROR("zeropagex")
 }
@@ -2497,7 +2902,7 @@ func EOR_ZX() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("EOR $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("EOR $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	EOR("zeropagex")
 }
@@ -2505,7 +2910,7 @@ func INC_ZX() {
 	/*
 		INC - Increment Memory By One
 	*/
-	disassembledInstruction = fmt.Sprintf("INC $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("INC $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	INC("zeropagex")
 }
@@ -2513,7 +2918,7 @@ func SBC_ZX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembledInstruction = fmt.Sprintf("SBC $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("SBC $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	SBC("zeropagex")
 }
@@ -2521,7 +2926,7 @@ func STA_ZX() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STA $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STA $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	STA("zeropagex")
 }
@@ -2529,7 +2934,7 @@ func STY_ZX() {
 	/*
 		STY - Store Index Register Y In Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STY $%02X,X", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STY $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	STY("zeropagex")
 }
@@ -2546,7 +2951,7 @@ func LDX_ZY() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDX $%02X,Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDX $%02X,Y", cpu.operand1())
 	disassembleOpcode()
 	LDX("zeropagey")
 }
@@ -2554,7 +2959,7 @@ func STX_ZY() {
 	/*
 		STX - Store Index Register X In Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STX $%02X,Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STX $%02X,Y", cpu.operand1())
 	disassembleOpcode()
 	STX("zeropagey")
 }
@@ -2571,7 +2976,7 @@ func ADC_IX() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembledInstruction = fmt.Sprintf("ADC ($%02X,X)", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ADC ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	ADC("indirectx")
 }
@@ -2579,7 +2984,7 @@ func AND_IX() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("AND ($%02X,X)", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("AND ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	AND("indirectx")
 }
@@ -2587,7 +2992,7 @@ func CMP_IX() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("CMP ($%02X,X)", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CMP ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	CMP("indirectx")
 }
@@ -2595,7 +3000,7 @@ func EOR_IX() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("EOR ($%02X,X)", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("EOR ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	EOR("indirectx")
 }
@@ -2603,7 +3008,7 @@ func LDA_IX() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDA ($%02X,X)", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDA ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	LDA("indirectx")
 }
@@ -2611,7 +3016,7 @@ func ORA_IX() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("ORA ($%02X,X)", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ORA ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	ORA("indirectx")
 }
@@ -2619,7 +3024,7 @@ func SBC_IX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembledInstruction = fmt.Sprintf("SBC ($%02X,X)", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("SBC ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	SBC("indirectx")
 }
@@ -2627,7 +3032,7 @@ func STA_IX() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STA ($%02X,X)", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STA ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	STA("indirectx")
 }
@@ -2644,7 +3049,7 @@ func ADC_IY() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembledInstruction = fmt.Sprintf("ADC ($%02X),Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ADC ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	ADC("indirecty")
 }
@@ -2652,7 +3057,7 @@ func AND_IY() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("AND ($%02X),Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("AND ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	AND("indirecty")
 }
@@ -2660,7 +3065,7 @@ func CMP_IY() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("CMP ($%02X),Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CMP ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	CMP("indirecty")
 }
@@ -2668,7 +3073,7 @@ func EOR_IY() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("EOR ($%02X),Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("EOR ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	EOR("indirecty")
 }
@@ -2676,7 +3081,7 @@ func LDA_IY() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDA ($%02X),Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDA ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	LDA("indirecty")
 }
@@ -2684,7 +3089,7 @@ func ORA_IY() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("ORA ($%02X),Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ORA ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	ORA("indirecty")
 }
@@ -2692,7 +3097,7 @@ func SBC_IY() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembledInstruction = fmt.Sprintf("SBC ($%02X),Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("SBC ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	SBC("indirecty")
 }
@@ -2700,7 +3105,7 @@ func STA_IY() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STA ($%02X),Y", cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STA ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	STA("indirecty")
 }
@@ -2719,7 +3124,6 @@ func BPL_R() {
 	/*
 		BPL - Branch on Result Plus
 	*/
-	disassembledInstruction = fmt.Sprintf("BPL $%02X", (cpu.PC+2+uint16(cpu.operand1()))&0xFF)
 	disassembleOpcode()
 	offset := cpu.operand1()
 	signedOffset := int8(offset)
@@ -2727,182 +3131,180 @@ func BPL_R() {
 	targetAddress := cpu.PC + 2 + uint16(signedOffset)
 	// If N flag is not set, branch to address
 	if cpu.getSRBit(7) == 0 {
-		// Branch
-		setPC(targetAddress)
-		cpu.updateCycleCounter(1)
-		//cpu.handleState(0)
-		instructionCounter++
+		oldPC := cpu.PC
+		cpu.PC = targetAddress
+		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
+		cpu.incrementCycleCountForBranch(oldPC)
+		cpu.instructionCounter++ // Increment the instruction counter if branch is taken
 	} else {
 		// Don't branch
-		// Increment the instruction counter by 2
-		cpu.updateCycleCounter(1)
+		cpu.updateCycleCounter(2) // Two cycles when branch is not taken
 		cpu.handleState(2)
 	}
 }
 func BMI_R() {
 	/*
-		BMI - Branch on Result Minus
+	   BMI - Branch on Result Minus
 	*/
-	disassembledInstruction = fmt.Sprintf("BMI $%02X", (cpu.PC+2+uint16(cpu.operand1()))&0xFFFF)
 	disassembleOpcode()
-	// Get offset from operand
-	offset := int8(cpu.operand1())
+	offset := int8(cpu.operand1()) // Get offset from operand
+
 	// If N flag is set, branch to address
 	if cpu.getSRBit(7) == 1 {
-		// Branch
-		// Add offset to PC (already incremented by 2)
-		setPC(cpu.PC + 2 + uint16(offset))
+		oldPC := cpu.PC
+		targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+
+		cpu.PC = targetAddress
+		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
+
+		// Increment the cycle count for branch and page crossing
+		cpu.incrementCycleCountForBranch(oldPC)
 	} else {
-		// Don't branch
-		setPC(cpu.PC + 2)
+		// Don't branch, skip to the next instruction
+		cpu.incPC(2)
+		cpu.updateCycleCounter(2) // Two cycles when branch is not taken
 	}
 }
 func BVC_R() {
 	/*
-		BVC - Branch on Overflow Clear
+	   BVC - Branch on Overflow Clear
 	*/
-	disassembledInstruction = fmt.Sprintf("BVC $%02X", cpu.PC+2+uint16(cpu.operand1()))
 	disassembleOpcode()
-	// Get offset from operand
-	offset := cpu.operand1()
+	offset := int8(cpu.operand1()) // Get offset from operand
+
 	// If overflow flag is not set, branch to address
 	if cpu.getSRBit(6) == 0 {
-		cpu.updateCycleCounter(1)
-		cpu.handleState(0)
-		// Branch
-		// Add offset to lower 8bits of PC
-		setPC(cpu.PC + 3 + uint16(offset)&0xFF)
-		// If the offset is negative, decrement the PC by 1
-		// If bit 7 is unset then it's negative
-		if readBit(7, offset) == 0 {
-			decPC(1)
-		}
+		oldPC := cpu.PC
+		targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+
+		cpu.PC = targetAddress
+		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
+
+		// Increment the cycle count for branch and page crossing
+		cpu.incrementCycleCountForBranch(oldPC)
 	} else {
-		// Don't branch
-		cpu.updateCycleCounter(1)
-		cpu.handleState(2)
+		// Don't branch, skip to the next instruction
+		cpu.incPC(2)
+		cpu.updateCycleCounter(2) // Two cycles when branch is not taken
 	}
 }
 func BVS_R() {
 	/*
-		BVS - Branch on Overflow Set
+	   BVS - Branch on Overflow Set
 	*/
-	disassembledInstruction = fmt.Sprintf("BVS $%02X", cpu.PC+2+uint16(cpu.operand1()))
 	disassembleOpcode()
-	// Get offset from operand
-	offset := cpu.operand1()
+	offset := int8(cpu.operand1()) // Get offset from operand
+
 	// If overflow flag is set, branch to address
 	if cpu.getSRBit(6) == 1 {
-		cpu.updateCycleCounter(1)
-		cpu.handleState(0)
-		// Branch
-		// Add offset to lower 8bits of PC
-		setPC(cpu.PC + 3 + uint16(offset)&0xFF)
-		// If the offset is negative, decrement the PC by 1
-		// If bit 7 is unset then it's negative
-		if readBit(7, offset) == 0 {
-			decPC(1)
-		}
+		oldPC := cpu.PC
+		targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+
+		cpu.PC = targetAddress
+		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
+
+		// Increment the cycle count for branch and page crossing
+		cpu.incrementCycleCountForBranch(oldPC)
 	} else {
-		// Don't branch
-		cpu.updateCycleCounter(1)
-		cpu.handleState(2)
+		// Don't branch, skip to the next instruction
+		cpu.incPC(2)
+		cpu.updateCycleCounter(2) // Two cycles when branch is not taken
 	}
 }
 func BCC_R() {
 	/*
-		BCC - Branch on Carry Clear
+	   BCC - Branch on Carry Clear
 	*/
-	disassembledInstruction = fmt.Sprintf("BCC $%02X", cpu.PC+2+uint16(cpu.operand1()))
 	disassembleOpcode()
-	cpu.previousPC = cpu.PC
-	cpu.previousOpcode = cpu.opcode()
-	cpu.previousOperand1 = cpu.operand1()
-	// Get offset from operand
-	offset := int8(cpu.operand1())
-	target := cpu.PC + 2 + uint16(offset)
+
+	offset := int8(cpu.operand1())                             // Get offset from operand
+	targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+
+	// If carry flag is clear, branch to address
 	if cpu.getSRBit(0) == 0 {
-		setPC(target)
+		oldPC := cpu.PC
+		cpu.PC = targetAddress
+
+		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
+
+		// Increment the cycle count for branch and page crossing
+		cpu.incrementCycleCountForBranch(oldPC)
 	} else {
-		// Don't branch
-		cpu.updateCycleCounter(1)
-		cpu.handleState(2)
+		// Don't branch, skip to the next instruction
+		cpu.incPC(2)
+		cpu.updateCycleCounter(2) // Two cycles when branch is not taken
 	}
 }
 func BCS_R() {
 	/*
-		BCS - Branch on Carry Set
+	   BCS - Branch on Carry Set
 	*/
-	disassembledInstruction = fmt.Sprintf("BCS $%02X", (cpu.PC+2+uint16(cpu.operand1()))&0xFF)
 	disassembleOpcode()
-	// Get offset from operand
-	offset := cpu.operand1()
+
+	offset := int8(cpu.operand1())                             // Get offset as signed 8-bit integer
+	targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+
 	// If carry flag is set, branch to address
 	if cpu.getSRBit(0) == 1 {
-		cpu.updateCycleCounter(1)
-		cpu.handleState(0)
-		// Branch
-		// Add offset to lower 8bits of PC
-		setPC(cpu.PC + 3 + uint16(offset)&0xFF)
-		// If the offset is negative, decrement the PC by 1
-		// If bit 7 is unset then it's negative
-		if readBit(7, offset) == 0 {
-			decPC(1)
-		}
+		oldPC := cpu.PC
+		cpu.PC = targetAddress
+
+		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
+
+		// Increment the cycle count for branch and page crossing
+		cpu.incrementCycleCountForBranch(oldPC)
 	} else {
-		// Don't branch
-		cpu.updateCycleCounter(1)
-		cpu.handleState(2)
+		// Don't branch, skip to the next instruction
+		cpu.incPC(2)
+		cpu.updateCycleCounter(2) // Two cycles when branch is not taken
 	}
 }
 func BNE_R() {
 	/*
-		BNE - Branch on Result Not Zero
+	   BNE - Branch on Result Not Zero
 	*/
-	disassembledInstruction = fmt.Sprintf("BNE $%04X", cpu.PC+2+uint16(cpu.operand1()))
 	disassembleOpcode()
-	// Fetch offset from operand
-	offset := int8(cpu.operand1()) // Cast to signed 8-bit
+
+	offset := int8(cpu.operand1())                             // Cast to signed 8-bit to handle negative offsets
+	targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+
 	// Check Z flag to determine if branching is needed
 	if cpu.getSRBit(1) == 0 {
-		// Calculate the branch target address
-		targetAddr := cpu.PC + 2 + uint16(offset)
-		// Check if the branch crosses a page boundary
-		if (cpu.PC & 0xFF00) != (targetAddr & 0xFF00) {
-			cpu.updateCycleCounter(1)
-			cpu.handleState(2)
-		} else {
-			cpu.updateCycleCounter(1)
-			cpu.handleState(1)
-		}
-		// Update the program counter
-		setPC(targetAddr & 0xFFFF)
+		oldPC := cpu.PC
+		cpu.PC = targetAddress
+
+		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
+
+		// Increment the cycle count for branch and page crossing
+		cpu.incrementCycleCountForBranch(oldPC)
 	} else {
-		// If Z flag is set, don't branch
-		cpu.updateCycleCounter(1)
-		cpu.handleState(2)
+		// If Z flag is set, don't branch, skip to the next instruction
+		cpu.incPC(2)
+		cpu.updateCycleCounter(2) // Two cycles when branch is not taken
 	}
 }
 func BEQ_R() {
 	/*
 	   BEQ - Branch on Result Zero
 	*/
-	disassembledInstruction = fmt.Sprintf("BEQ $%04X", cpu.PC+2+uint16(cpu.operand1()))
 	disassembleOpcode()
 
-	// Get offset from address in operand
-	offset := int8(cpu.operand1()) // Cast to signed 8-bit integer to handle negative offsets
+	offset := int8(cpu.operand1())                             // Cast to signed 8-bit to handle negative offsets
+	targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
 
 	// If Z flag is set, branch to address
 	if cpu.getSRBit(1) == 1 {
-		cpu.updateCycleCounter(1)
-		cpu.handleState(0)
-		// Add 2 to PC (1 for opcode, 1 for operand) and then add offset
-		setPC(cpu.PC + 2 + uint16(offset))
+		oldPC := cpu.PC
+		cpu.PC = targetAddress
+
+		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
+
+		// Increment the cycle count for branch and page crossing
+		cpu.incrementCycleCountForBranch(oldPC)
 	} else {
-		// Don't branch
-		cpu.updateCycleCounter(1)
-		cpu.handleState(2)
+		// If Z flag is not set, don't branch, skip to the next instruction
+		cpu.incPC(2)
+		cpu.updateCycleCounter(2) // Two cycles when branch is not taken
 	}
 }
 
@@ -2919,7 +3321,7 @@ func ADC_ABS() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembledInstruction = fmt.Sprintf("ADC $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ADC $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ADC("absolute")
 }
@@ -2927,7 +3329,7 @@ func AND_ABS() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("AND $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("AND $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	AND("absolute")
 }
@@ -2935,7 +3337,7 @@ func ASL_ABS() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembledInstruction = fmt.Sprintf("ASL $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ASL $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ASL("absolute")
 }
@@ -2943,7 +3345,7 @@ func BIT_ABS() {
 	/*
 		BIT - Test Bits in Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("BIT $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("BIT $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	BIT("absolute")
 }
@@ -2951,7 +3353,7 @@ func CMP_ABS() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("CMP $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CMP $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CMP("absolute")
 }
@@ -2959,7 +3361,7 @@ func CPX_ABS() {
 	/*
 		CPX - Compare Index Register X To Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("CPX $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CPX $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CPX("absolute")
 }
@@ -2967,7 +3369,7 @@ func CPY_ABS() {
 	/*
 		CPY - Compare Index Register Y To Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("CPY $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CPY $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CPY("absolute")
 }
@@ -2975,7 +3377,7 @@ func DEC_ABS() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	disassembledInstruction = fmt.Sprintf("DEC $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("DEC $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	DEC("absolute")
 }
@@ -2983,7 +3385,7 @@ func EOR_ABS() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("EOR $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("EOR $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	EOR("absolute")
 }
@@ -2991,7 +3393,7 @@ func INC_ABS() {
 	/*
 		INC - Increment Memory By One
 	*/
-	disassembledInstruction = fmt.Sprintf("INC $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("INC $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	INC("absolute")
 }
@@ -2999,7 +3401,7 @@ func JMP_ABS() {
 	/*
 		JMP - JMP Absolute
 	*/
-	disassembledInstruction = fmt.Sprintf("JMP $%04X", int(cpu.operand2())<<8|int(cpu.operand1()))
+	//cpu.mnemonic = fmt.Sprintf("JMP $%04X", int(cpu.operand2())<<8|int(cpu.operand1()))
 	disassembleOpcode()
 	// For AllSuiteA.bin 6502 opcode test suite
 	if *allsuitea && readMemory(0x210) == 0xFF {
@@ -3012,7 +3414,7 @@ func JSR_ABS() {
 	/*
 		JSR - Jump To Subroutine
 	*/
-	disassembledInstruction = fmt.Sprintf("JSR $%04X", int(cpu.operand2())<<8|int(cpu.operand1()))
+	//cpu.mnemonic = fmt.Sprintf("JSR $%04X", int(cpu.operand2())<<8|int(cpu.operand1()))
 	disassembleOpcode()
 	// First, push the high byte
 	cpu.decSP()
@@ -3025,7 +3427,7 @@ func JSR_ABS() {
 	cpu.previousOperand1 = cpu.operand1()
 	cpu.previousOperand2 = cpu.operand2()
 	// Now, jump to the subroutine address specified by the operands
-	setPC(uint16(cpu.operand2())<<8 | uint16(cpu.operand1()))
+	cpu.setPC(uint16(cpu.operand2())<<8 | uint16(cpu.operand1()))
 	cpu.updateCycleCounter(1)
 	cpu.handleState(0)
 }
@@ -3033,7 +3435,7 @@ func LDA_ABS() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDA $%04X", uint16(cpu.operand2())<<8|uint16(cpu.operand1()))
+	//cpu.mnemonic = fmt.Sprintf("LDA $%04X", uint16(cpu.operand2())<<8|uint16(cpu.operand1()))
 	disassembleOpcode()
 	LDA("absolute")
 }
@@ -3041,7 +3443,7 @@ func LDX_ABS() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDX $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDX $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDX("absolute")
 }
@@ -3049,7 +3451,7 @@ func LDY_ABS() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDY $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDY $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDY("absolute")
 }
@@ -3057,7 +3459,7 @@ func LSR_ABS() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembledInstruction = fmt.Sprintf("LSR $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LSR $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LSR("absolute")
 }
@@ -3065,7 +3467,7 @@ func ORA_ABS() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("ORA $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ORA $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ORA("absolute")
 }
@@ -3073,7 +3475,7 @@ func ROL_ABS() {
 	/*
 		ROL - Rotate Left
 	*/
-	disassembledInstruction = fmt.Sprintf("ROL $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ROL $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ROL("absolute")
 }
@@ -3081,7 +3483,7 @@ func ROR_ABS() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembledInstruction = fmt.Sprintf("ROR $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ROR $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ROR("absolute")
 }
@@ -3089,7 +3491,7 @@ func SBC_ABS() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembledInstruction = fmt.Sprintf("SBC $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("SBC $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	SBC("absolute")
 }
@@ -3097,7 +3499,7 @@ func STA_ABS() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STA $%04X", uint16(cpu.operand2())<<8|uint16(cpu.operand1()))
+	//cpu.mnemonic = fmt.Sprintf("STA $%04X", uint16(cpu.operand2())<<8|uint16(cpu.operand1()))
 	disassembleOpcode()
 	STA("absolute")
 }
@@ -3105,7 +3507,7 @@ func STX_ABS() {
 	/*
 		STX - Store Index Register X In Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STX $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STX $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	STX("absolute")
 }
@@ -3113,7 +3515,7 @@ func STY_ABS() {
 	/*
 		STY - Store Index Register Y In Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STY $%02X%02X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STY $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	STY("absolute")
 }
@@ -3135,7 +3537,7 @@ func ADC_ABX() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembledInstruction = fmt.Sprintf("ADC $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ADC $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ADC("absolutex")
 }
@@ -3143,7 +3545,7 @@ func AND_ABX() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("AND $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("AND $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	AND("absolutex")
 }
@@ -3151,7 +3553,7 @@ func ASL_ABX() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembledInstruction = fmt.Sprintf("ASL $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ASL $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ASL("absolutex")
 }
@@ -3159,7 +3561,7 @@ func CMP_ABX() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("CMP $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CMP $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CMP("absolutex")
 }
@@ -3167,7 +3569,7 @@ func DEC_ABX() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	disassembledInstruction = fmt.Sprintf("DEC $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("DEC $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	DEC("absolutex")
 }
@@ -3175,7 +3577,7 @@ func EOR_ABX() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("EOR $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("EOR $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	EOR("absolutex")
 }
@@ -3183,7 +3585,7 @@ func INC_ABX() {
 	/*
 		INC - Increment Memory By One
 	*/
-	disassembledInstruction = fmt.Sprintf("INC $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("INC $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	INC("absolutex")
 }
@@ -3191,7 +3593,7 @@ func LDA_ABX() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDA $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDA $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDA("absolutex")
 }
@@ -3199,7 +3601,7 @@ func LDY_ABX() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDY $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDY $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDY("absolutex")
 }
@@ -3207,7 +3609,7 @@ func LSR_ABX() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembledInstruction = fmt.Sprintf("LSR $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LSR $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LSR("absolutex")
 }
@@ -3215,14 +3617,14 @@ func ORA_ABX() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("ORA $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ORA $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ORA("absolutex")
 }
 func ROL_ABX() {
 	/*
 	 */
-	disassembledInstruction = fmt.Sprintf("ROL $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ROL $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ROL("absolutex")
 }
@@ -3230,7 +3632,7 @@ func ROR_ABX() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembledInstruction = fmt.Sprintf("ROR $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ROR $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ROR("absolutex")
 }
@@ -3238,7 +3640,7 @@ func SBC_ABX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembledInstruction = fmt.Sprintf("SBC $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("SBC $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	SBC("absolutex")
 }
@@ -3246,7 +3648,7 @@ func STA_ABX() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STA $%02X%02X,X", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STA $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	STA("absolutex")
 }
@@ -3267,7 +3669,7 @@ func ADC_ABY() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembledInstruction = fmt.Sprintf("ADC $%04X,Y", int(cpu.operand2())<<8|int(cpu.operand1()))
+	//cpu.mnemonic = fmt.Sprintf("ADC $%04X,Y", int(cpu.operand2())<<8|int(cpu.operand1()))
 	disassembleOpcode()
 	ADC("absolutey")
 }
@@ -3275,7 +3677,7 @@ func AND_ABY() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("AND $%02X%02X,Y", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("AND $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	AND("absolutey")
 }
@@ -3283,7 +3685,7 @@ func CMP_ABY() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("CMP $%02X%02X,Y", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("CMP $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CMP("absolutey")
 }
@@ -3291,7 +3693,7 @@ func EOR_ABY() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("EOR $%02X%02X,Y", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("EOR $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	EOR("absolutey")
 }
@@ -3299,7 +3701,7 @@ func LDA_ABY() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDA $%02X%02X,Y", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDA $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDA("absolutey")
 }
@@ -3307,7 +3709,7 @@ func LDX_ABY() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("LDX $%02X%02X,Y", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("LDX $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDX("absolutey")
 }
@@ -3315,7 +3717,7 @@ func ORA_ABY() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembledInstruction = fmt.Sprintf("ORA $%02X%02X,Y", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("ORA $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ORA("absolutey")
 }
@@ -3323,7 +3725,7 @@ func SBC_ABY() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembledInstruction = fmt.Sprintf("SBC $%02X%02X,Y", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("SBC $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	SBC("absolutey")
 }
@@ -3331,7 +3733,7 @@ func STA_ABY() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembledInstruction = fmt.Sprintf("STA $%02X%02X,Y", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("STA $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	STA("absolutey")
 }
@@ -3341,7 +3743,7 @@ func JMP_IND() {
 	/*
 		JMP - JMP Indirect
 	*/
-	disassembledInstruction = fmt.Sprintf("JMP ($%02X%02X)", cpu.operand2(), cpu.operand1())
+	//cpu.mnemonic = fmt.Sprintf("JMP ($%02X%02X)", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	JMP("indirect")
 }

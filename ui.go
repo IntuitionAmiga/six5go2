@@ -20,40 +20,14 @@ func userInterface() {
 
 	// Create CPU State Panel
 	cpuState := tview.NewTextView()
-	go func() {
-		ticker := time.NewTicker(time.Millisecond) // Update every 500ms
-		for range ticker.C {
-			app.QueueUpdateDraw(func() {
-				formattedText := fmt.Sprintf("A:$%02X X:$%02X Y:$%02X SP:$%04X", cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.SP)
-				cpuState.SetText(formattedText)
-
-			})
-		}
-	}()
 	cpuState.SetBorder(true).SetTitle(" CPU State ")
 
 	// Create Trace Panel
 	trace := tview.NewTextView().SetText("Execution and disassembly")
-	go func() {
-		ticker := time.NewTicker(time.Millisecond) // Update every 500ms
-		for range ticker.C {
-			app.QueueUpdateDraw(func() {
-				traceLine := executionTrace()
-				formattedText := fmt.Sprintf("%s", traceLine)
-				trace.SetText(formattedText)
-			})
-		}
-	}()
 	trace.SetBorder(true).SetTitle(" Trace ")
 
 	// Create Emulated Display Area
 	display := tview.NewTextView().SetText("\n\t\tCOMMODORE BASIC V3.5 60671 BYTES FREE\n\t\t3-PLUS-1 ON KEY F1\n\n\t\tREADY.\n\n")
-	go func() {
-		for {
-			renderASCII(&ted, app, display)   // Assuming ted is an instance of your TED struct
-			time.Sleep(16 * time.Millisecond) // Approx. 60 FPS
-		}
-	}()
 	display.SetBorder(true).SetTitle(" Plus/4 Display ")
 	display.SetBackgroundColor(tcell.NewRGBColor(181, 155, 255))
 
@@ -63,47 +37,56 @@ func userInterface() {
 
 	// Create SRFlags Panel
 	srFlags := tview.NewTextView().SetText("SR and Stack Contents")
-	go func() {
-		ticker := time.NewTicker(time.Millisecond) // Update every 500ms
-		for range ticker.C {
-			app.QueueUpdateDraw(func() {
-				statusLine := statusFlags()
-				stackLine := fmt.Sprintf("\nStack: $%04X", readStack())
-				formattedText := fmt.Sprintf("%s\n", statusLine+stackLine)
-				srFlags.SetText(formattedText)
-
-			})
-		}
-	}()
 	srFlags.SetBorder(true).SetTitle(" Status Register & Stack ")
 
 	// Create Counters Panel
 	counters := tview.NewTextView().SetText("Cycle and Instruction Counters")
-	go func() {
-		ticker := time.NewTicker(time.Millisecond) // Update every 500ms
-		for range ticker.C {
-			app.QueueUpdateDraw(func() {
-				instructionsLine := instructionCount()
-				cyclesLine := fmt.Sprintf("\nCPU Cycles:\t\t$%08X ", cpu.cycleCounter)
-				timeSpentLine := fmt.Sprintf("\nInstr Time:\t %v ", cpu.cpuTimeSpent)
-				formattedText := fmt.Sprintf("%s\n", instructionsLine+cyclesLine+timeSpentLine)
-				counters.SetText(formattedText)
-			})
-		}
-	}()
 	counters.SetBorder(true).SetTitle(" Counters ")
 
 	// Create Disassembly Panel
 	disassembly := tview.NewTextView().SetText("Disassembly")
+	disassembly.SetBorder(true).SetTitle(" Disassembly ")
+
+	// Create a ticker to update the UI
 	go func() {
-		ticker := time.NewTicker(time.Millisecond) // Update every 500ms
+		ticker := time.NewTicker(500 * time.Millisecond) // Common ticker for all updates
+		defer ticker.Stop()
+
 		for range ticker.C {
 			app.QueueUpdateDraw(func() {
-				disassembly.SetText(disassembledInstruction)
+				// Update CPU State Panel
+				formattedText := fmt.Sprintf("A:$%02X X:$%02X Y:$%02X SP:$%04X", cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.SP)
+				cpuState.SetText(formattedText)
+
+				// Update Trace Panel
+				//formattedTrace := "$" + fmt.Sprintf("%s", cpu.traceLine)[2:len(cpu.traceLine)-1]
+				formattedTrace := "$"
+				if len(cpu.traceLine) >= 3 {
+					formattedTrace += fmt.Sprintf("%s", cpu.traceLine)[2 : len(cpu.traceLine)-1]
+				} else {
+					// Handle the case where cpu.traceLine is too short
+					// You might want to log an error or handle this situation differently
+					formattedTrace += "Error: traceLine too short"
+				}
+
+				trace.SetText(formattedTrace)
+
+				// Update SRFlags Panel
+				statusLine := statusFlags()
+				stackLine := fmt.Sprintf("\nStack: $%04X", readStack())
+				srFlags.SetText(statusLine + stackLine)
+
+				// Update Counters Panel
+				instructionsLine := instructionCount()
+				cyclesLine := fmt.Sprintf("\nCPU Cycles:\t\t$%08X ", cpu.cycleCounter)
+				timeSpentLine := fmt.Sprintf("\nInstr Time:\t %v ", cpu.cpuTimeSpent)
+				counters.SetText(instructionsLine + cyclesLine + timeSpentLine)
+
+				// Update Disassembly Panel
+				disassembly.SetText(getMnemonic(cpu.opcode()))
 			})
 		}
 	}()
-	disassembly.SetBorder(true).SetTitle(" Disassembly ")
 
 	// Create layout
 	grid := tview.NewGrid().
@@ -147,7 +130,6 @@ func userInterface() {
 				breakpointHalted = false // Reset the flag
 				messageView.SetText("")  // Clear the message
 			}
-
 		case 'm':
 			// Create modal
 			modal := tview.NewTextView().SetText("Memory Monitor").
@@ -233,17 +215,13 @@ func userInterface() {
 						pages.RemovePage("gotoAddressForm")
 						app.SetFocus(modal)
 					})
-					// existing code for formGrid, etc.
-
 					// Create a new grid layout for the form, specifying its size
 					formGrid := tview.NewGrid().
 						SetRows(10).
 						SetColumns(45).
 						AddItem(form, 0, 0, 1, 1, 0, 0, true)
-
 					// Add this new grid layout as a new page
 					pages.AddPage("gotoAddressForm", formGrid, true, true)
-
 					// Set focus to the new form grid layout
 					app.SetFocus(formGrid)
 				case tcell.KeyCtrlF:
@@ -295,11 +273,10 @@ func userInterface() {
 					app.SetFocus(formGrid)
 
 				}
-
 				return event
 			})
 
-			// Goroutine to update the TextView
+			// Goroutine to update the Memory View
 			go func() {
 				for {
 					select {
@@ -488,7 +465,6 @@ func stringToHexSpace(str string) string {
 	}
 	return hexStr
 }
-
 func findStringInMemory(search string, memory []byte, searchForward bool) int {
 	if search == "" {
 		return -1
