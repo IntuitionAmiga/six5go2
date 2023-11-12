@@ -59,16 +59,9 @@ func userInterface() {
 				cpuState.SetText(formattedText)
 
 				// Update Trace Panel
-				//formattedTrace := "$" + fmt.Sprintf("%s", cpu.traceLine)[2:len(cpu.traceLine)-1]
-				formattedTrace := "$"
-				if len(cpu.traceLine) >= 3 {
-					formattedTrace += fmt.Sprintf("%s", cpu.traceLine)[2 : len(cpu.traceLine)-1]
-				} else {
-					// Handle the case where cpu.traceLine is too short
-					// You might want to log an error or handle this situation differently
-					formattedTrace += "Error: traceLine too short"
-				}
-
+				//formattedTrace := fmt.Sprintf("%s", cpu.traceLine)[2 : len(cpu.traceLine)-1]
+				formattedTrace := fmt.Sprintf("%s", cpu.traceLine)
+				//trace.SetText(cpu.traceLine)
 				trace.SetText(formattedTrace)
 
 				// Update SRFlags Panel
@@ -83,7 +76,7 @@ func userInterface() {
 				counters.SetText(instructionsLine + cyclesLine + timeSpentLine)
 
 				// Update Disassembly Panel
-				disassembly.SetText(getMnemonic(cpu.opcode()))
+				disassembly.SetText(cpu.disassembledInstruction)
 			})
 		}
 	}()

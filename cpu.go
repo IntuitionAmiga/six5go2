@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"sync"
 	"time"
 )
@@ -27,43 +25,43 @@ const (
 	// const VBLANK_CYCLES = 29833 // For NTSC
 
 	//cpuSpeedHz uint64 = 1790000 // 1790000 Hz for a NTSC 7501/8501
-	//cpuSpeedHz uint64 = 1760000 // 1760000 Hz for a PAL 7501/8501
-	//cpuSpeedHz uint64 = 7500 // Run it slow whilst debugging!
-	cpuSpeedHz uint64 = 4000000000000 // 2 GHz
+	cpuSpeedHz uint64 = 1760000 // 1760000 Hz for a PAL 7501/8501
+	//cpuSpeedHz uint64 = 75 // Run it slow whilst debugging!
+	//cpuSpeedHz uint64 = 4000000000000 // 4 GHz to speed up debugging! :)
 )
 
 type CPU struct {
-	A                  byte   // Accumulator
-	X                  byte   // X register
-	Y                  byte   // Y register
-	PC                 uint16 // Program Counter
-	SP                 uint16 // Stack Pointer
-	SR                 byte   // Status Register
-	previousPC         uint16
-	previousOpcode     byte
-	previousOperand1   byte
-	previousOperand2   byte
-	cycleCounter       uint64
-	cycleStartTime     time.Time     // High-resolution timer
-	cpuTimeSpent       time.Duration // Time spent executing instructions
-	vblankCycleCounter uint64
-	traceLine          string
-	irq                bool
-	nmi                bool
-	reset              bool
-	traceMutex         sync.Mutex
-	instructionCounter uint32
-	BRKtrue            bool
-	//mnemonic           string
+	A                       byte   // Accumulator
+	X                       byte   // X register
+	Y                       byte   // Y register
+	PC                      uint16 // Program Counter
+	SP                      uint16 // Stack Pointer
+	SR                      byte   // Status Register
+	preOpPC                 uint16
+	preOpOpcode             byte
+	preOpOperand1           byte
+	preOpOperand2           byte
+	preOpSP                 uint16
+	cycleCounter            uint64
+	cycleStartTime          time.Time     // High-resolution timer
+	cpuTimeSpent            time.Duration // Time spent executing instructions
+	vblankCycleCounter      uint64
+	traceLine               string
+	irq                     bool
+	nmi                     bool
+	reset                   bool
+	traceMutex              sync.Mutex
+	instructionCounter      uint32
+	disassembledInstruction string
 }
 
 var (
 	cpu              CPU
-	cycleTime        time.Duration = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
+	cycleTime        = time.Second / time.Duration(cpuSpeedHz) // time per cycle in nanoseconds
 	breakpointsMutex sync.Mutex
-	breakpoints           = make(map[uint16]bool)
-	breakpointHit         = make(chan uint16, 1)
-	breakpointHalted bool = false
+	breakpoints      = make(map[uint16]bool)
+	breakpointHit    = make(chan uint16, 1)
+	breakpointHalted = false
 )
 
 func (cpu *CPU) opcode() byte {
@@ -110,7 +108,7 @@ func (cpu *CPU) setPC(newAddress uint16) {
 }
 
 func (cpu *CPU) handleIRQ() {
-	fmt.Fprintf(os.Stderr, "Debug: Entering handleIRQ() at PC: $%04X, cycleCounter is %d\n", cpu.PC, cpu.cycleCounter)
+	//fmt.Fprintf(os.Stderr, "Debug: Entering handleIRQ() at PC: $%04X, cycleCounter is %d\n", cpu.PC, cpu.cycleCounter)
 	if cpu.getSRBit(2) == 1 {
 		//fmt.println("Debug: Interrupt disabled. Exiting handleIRQ()")
 		return
@@ -162,13 +160,8 @@ func (cpu *CPU) handleState(amount int) {
 	if amount != 0 {
 		cpu.instructionCounter++
 	}
-	// Check for VBLANK
-	//if cpu.vblankCycleCounter >= VBLANK_CYCLES {
-	//	fmt.Printf("VBLANK triggered. Resetting vblankCycleCounter.\n")
-	//	cpu.irq = true             // Trigger IRQ
-	//	cpu.vblankCycleCounter = 0 // Reset cycle counter
-	//}
-	if cpu.irq {
+	plus4SystemInterrupts()
+	if cpu.irq && cpu.getSRBit(2) == 0 {
 		cpu.handleIRQ()
 	}
 	if cpu.nmi {
@@ -176,6 +169,15 @@ func (cpu *CPU) handleState(amount int) {
 	}
 	if cpu.reset {
 		cpu.handleRESET()
+	}
+}
+
+func plus4SystemInterrupts() {
+	// Check for VBLANK
+	if cpu.vblankCycleCounter >= VBLANK_CYCLES {
+		//fmt.Printf("VBLANK triggered. Resetting vblankCycleCounter.\n")
+		cpu.irq = true             // Trigger IRQ
+		cpu.vblankCycleCounter = 0 // Reset cycle counter
 	}
 }
 
@@ -211,7 +213,8 @@ func (cpu *CPU) cycleEnd() {
 func (cpu *CPU) resetCPU() {
 	cpu.cycleCounter = 0
 	cpu.SP = SPBaseAddress
-	cpu.SR = 0b00110110
+	cpu.SR = 0b00100000
+	//cpu.SR = 0b00000010
 	if *klausd {
 		cpu.setPC(0x400)
 	} else {
@@ -280,6 +283,12 @@ func (cpu *CPU) unsetCarryFlag() {
 }
 func (cpu *CPU) startCPU() {
 	for uint(cpu.PC) < 0xFFFF {
+		cpu.preOpPC = cpu.PC
+		cpu.preOpOpcode = cpu.opcode()
+		cpu.preOpOperand1 = cpu.operand1()
+		cpu.preOpOperand2 = cpu.operand2()
+		cpu.preOpSP = cpu.SP
+
 		breakpointsMutex.Lock()
 		_, exists := breakpoints[cpu.PC]
 		breakpointsMutex.Unlock()
@@ -1023,6 +1032,9 @@ func (cpu *CPU) startCPU() {
 		}
 		if *plus4 {
 			plus4KernalRoutines()
+			ted.Timer1Counter++
+			ted.Timer2Counter++
+			ted.Timer3Counter++
 		}
 		executionTrace()
 	}

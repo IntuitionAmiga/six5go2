@@ -2,7 +2,7 @@ package main
 
 // Constants for fixed addresses and TED specific addresses
 const (
-	SPBaseAddress          uint16 = 0x0100
+	SPBaseAddress          uint16 = 0xFF
 	NMIVectorAddressLow    uint16 = 0xFFFA
 	NMIVectorAddressHigh   uint16 = 0xFFFB
 	RESETVectorAddressLow  uint16 = 0xFFFC
@@ -16,12 +16,16 @@ const (
 var memory [65536]byte // Memory
 
 func readMemory(address uint16) byte {
+	var value byte
 	if address >= TED_REG_START && address <= TED_REG_END {
-		return ted.readTEDReg(address)
+		value = ted.readTEDReg(address)
 	} else {
-		return memory[address]
+		value = memory[address]
 	}
+
+	return value
 }
+
 func writeMemory(address uint16, value byte) {
 	//fmt.Printf("IRQVectorAddress: %04X\n", IRQVectorAddress)
 	//fmt.Printf("Content of memory at IRQVectorAddress: %04X\n", memory[IRQVectorAddress])
@@ -54,8 +58,8 @@ func readBit(bit byte, value byte) int {
 	return int((value >> bit) & 1)
 }
 func readStack() byte {
-	return readMemory(SPBaseAddress + cpu.SP)
+	return readMemory(SPBaseAddress + cpu.preOpSP)
 }
 func updateStack(value byte) {
-	writeMemory(SPBaseAddress+cpu.SP, value)
+	writeMemory(SPBaseAddress+cpu.preOpSP, value)
 }

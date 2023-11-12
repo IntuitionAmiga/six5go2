@@ -392,17 +392,21 @@ func LDA(addressingMode string) {
 		}
 		cpu.handleState(3)
 	case ABSOLUTEY:
+		// Fetch the low and high bytes of the address and form the 16-bit address
 		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		address := baseAddress + uint16(cpu.Y)
 
-		// Dummy read: occurs if adding Y to the low byte of the address crosses a page boundary
-		if (baseAddress & 0xFF00) != (address & 0xFF00) {
-			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
-		}
-		value := readMemory(address)
+		// Add the Y register to the base address to get the final address
+		finalAddress := baseAddress + uint16(cpu.Y)
+
+		// Read the value from the calculated memory address
+		value := readMemory(finalAddress)
+
+		// Load the value into the accumulator
 		cpu.A = value
 		setFlags()
-		if (baseAddress & 0xFF00) != (address & 0xFF00) {
+		// Update cycle counter, adjust as needed for your emulator's cycle timing
+		// Add an extra cycle if page boundary is crossed
+		if (baseAddress & 0xFF00) != (finalAddress & 0xFF00) {
 			cpu.updateCycleCounter(5)
 		} else {
 			cpu.updateCycleCounter(4)
@@ -745,10 +749,6 @@ func CMP(addressingMode string) {
 	}
 }
 func JMP(addressingMode string) {
-	cpu.previousPC = cpu.PC
-	cpu.previousOpcode = cpu.opcode()
-	cpu.previousOperand1 = cpu.operand1()
-	cpu.previousOperand2 = cpu.operand2()
 	cpu.updateCycleCounter(3)
 	cpu.handleState(0)
 	switch addressingMode {
@@ -2014,11 +2014,8 @@ func BRK() {
 	/*
 		BRK - Break Command
 	*/
-	cpu.BRKtrue = true
 
 	disassembleOpcode()
-	cpu.previousPC = cpu.PC
-	cpu.previousOpcode = cpu.opcode()
 
 	// Decrement SP and Push high byte of (PC+1) onto stack
 	cpu.decSP()
@@ -2035,7 +2032,7 @@ func BRK() {
 	cpu.decSP()
 	updateStack(modifiedSR)
 
-	// Decrement SP and Store SR on stack
+	// Decrement SP and Store SR on stack\
 	cpu.decSP()
 	updateStack(cpu.SR)
 
@@ -2051,7 +2048,6 @@ func CLC() {
 	/*
 		CLC - Clear Carry Flag
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CLC\t")
 	disassembleOpcode()
 	// Set SR carry flag bit 0 to 0
 	cpu.unsetCarryFlag()
@@ -2062,7 +2058,6 @@ func CLD() {
 	/*
 		CLD - Clear Decimal Mode
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CLD\t")
 	disassembleOpcode()
 	cpu.unsetDecimalFlag()
 	cpu.updateCycleCounter(2)
@@ -2072,7 +2067,6 @@ func CLI() {
 	/*
 		CLI - Clear Interrupt Disable
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CLI\t")
 	disassembleOpcode()
 	// Set SR interrupt disable bit 2 to 0
 	cpu.unsetInterruptFlag()
@@ -2083,7 +2077,6 @@ func CLV() {
 	/*
 		CLV - Clear Overflow Flag
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CLV\t")
 	disassembleOpcode()
 	// Set SR overflow flag bit 6 to 0
 	cpu.unsetOverflowFlag()
@@ -2092,7 +2085,6 @@ func CLV() {
 }
 func DEX() {
 	// DEX - Decrement Index Register X By One
-	//cpu.mnemonic = fmt.Sprintf("DEX\t")
 	disassembleOpcode()
 
 	// Decrement the X register by 1
@@ -2118,7 +2110,6 @@ func DEY() {
 	/*
 		DEY - Decrement Index Register Y By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("DEY\t")
 	disassembleOpcode()
 
 	// Decrement the  Y register by 1
@@ -2142,7 +2133,6 @@ func INX() {
 	/*
 		INX - Increment Index Register X By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("INX\t")
 	disassembleOpcode()
 
 	// Increment the X register by 1
@@ -2166,7 +2156,6 @@ func INY() {
 	/*
 		INY - Increment Index Register Y By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("INY\t")
 	disassembleOpcode()
 
 	// Increment the  Y register by 1
@@ -2190,7 +2179,6 @@ func NOP() {
 	/*
 		NOP - No Operation
 	*/
-	//cpu.mnemonic = fmt.Sprintf("NOP\t")
 	disassembleOpcode()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -2199,7 +2187,6 @@ func PHA() {
 	/*
 		PHA - Push Accumulator On Stack
 	*/
-	//cpu.mnemonic = fmt.Sprintf("PHA\t")
 	disassembleOpcode()
 
 	// Update memory address pointed to by SP with value stored in accumulator
@@ -2269,7 +2256,6 @@ func RTI() {
 	   RTI - Return From Interrupt
 	*/
 
-	//cpu.mnemonic = fmt.Sprintf("RTI\t")
 	disassembleOpcode()
 
 	cpu.SR = readStack() & 0xCF
@@ -2287,8 +2273,6 @@ func RTI() {
 	// Get high byte of PC
 	high := uint16(readStack())
 
-	cpu.previousPC = cpu.PC
-	cpu.previousOpcode = cpu.opcode()
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
 	// Update PC with the value stored in memory at the address pointed to by SP
@@ -2298,7 +2282,6 @@ func RTS() {
 	/*
 		RTS - Return From Subroutine
 	*/
-	//cpu.mnemonic = fmt.Sprintf("RTS\t")
 	disassembleOpcode()
 	//Get low byte of new PC
 	low := uint16(readStack())
@@ -2306,10 +2289,10 @@ func RTS() {
 	cpu.incSP()
 	//Get high byte of new PC
 	high := uint16(readStack())
-	cpu.previousPC = cpu.PC
-	cpu.previousOpcode = cpu.opcode()
+
 	//Update PC with the value stored in memory at the address pointed to by SP
-	cpu.setPC((high << 8) | low + 1)
+	//cpu.setPC((high << 8) | low + 1)
+	cpu.setPC(((high << 8) | low) + 1)
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
 }
@@ -2317,7 +2300,6 @@ func SEC() {
 	/*
 		SEC - Set Carry Flag
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SEC\t")
 	disassembleOpcode()
 
 	// Set SR carry flag bit 0 to 1
@@ -2329,7 +2311,6 @@ func SED() {
 	/*
 		SED - Set Decimal Mode
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SED\t")
 	disassembleOpcode()
 
 	// Set SR decimal mode flag to 1
@@ -2341,7 +2322,6 @@ func SEI() {
 	/*
 		SEI - Set Interrupt Disable
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SEI\t")
 	disassembleOpcode()
 
 	// Set SR interrupt disable bit 2 to 1
@@ -2353,7 +2333,6 @@ func TAX() {
 	/*
 		TAX - Transfer Accumulator To Index X
 	*/
-	//cpu.mnemonic = fmt.Sprintf("TAX\t")
 	disassembleOpcode()
 
 	// Update X with the value of A
@@ -2377,7 +2356,6 @@ func TAY() {
 	/*
 		TAY - Transfer Accumulator To Index Y
 	*/
-	//cpu.mnemonic = fmt.Sprintf("TAY\t")
 	disassembleOpcode()
 
 	// Set Y register to the value of the accumulator
@@ -2401,7 +2379,6 @@ func TSX() {
 	/*
 		TSX - Transfer Stack Pointer To Index X
 	*/
-	//cpu.mnemonic = fmt.Sprintf("TSX\t")
 	disassembleOpcode()
 
 	// Update X with the SP
@@ -2425,7 +2402,6 @@ func TXA() {
 	/*
 		TXA - Transfer Index X To Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("TXA\t")
 	disassembleOpcode()
 
 	// Set accumulator to value of X register
@@ -2449,7 +2425,6 @@ func TXS() {
 	/*
 		TXS - Transfer Index X To Stack Pointer
 	*/
-	//cpu.mnemonic = fmt.Sprintf("TXS\t")
 	disassembleOpcode()
 
 	// Set stack pointer to value of X register
@@ -2461,7 +2436,6 @@ func TYA() {
 	/*
 		TYA - Transfer Index Y To Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("TYA\t")
 	disassembleOpcode()
 
 	// Set accumulator to value of Y register
@@ -2494,7 +2468,6 @@ func ASL_A() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ASL\t")
 	disassembleOpcode()
 	ASL("accumulator")
 }
@@ -2502,7 +2475,6 @@ func LSR_A() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LSR\t")
 	disassembleOpcode()
 	LSR("accumulator")
 }
@@ -2510,7 +2482,6 @@ func ROL_A() {
 	/*
 		ROL - Rotate Left
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ROL\t")
 	disassembleOpcode()
 	ROL("accumulator")
 }
@@ -2518,7 +2489,6 @@ func ROR_A() {
 	/*
 		ROR - Rotate Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ROR\t")
 	disassembleOpcode()
 	ROR("accumulator")
 }
@@ -2536,7 +2506,6 @@ func ADC_I() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ADC #$%02X", cpu.operand1())
 	disassembleOpcode()
 
 	ADC("immediate")
@@ -2545,7 +2514,6 @@ func AND_I() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("AND #$%02X", cpu.operand1())
 	disassembleOpcode()
 	AND("immediate")
 }
@@ -2553,7 +2521,6 @@ func CMP_I() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CMP #$%02X", cpu.operand1())
 	disassembleOpcode()
 	CMP("immediate")
 }
@@ -2561,7 +2528,6 @@ func CPX_I() {
 	/*
 		CPX - Compare Index Register X To Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CPX #$%02X", cpu.operand1())
 	disassembleOpcode()
 
 	CPX("immediate")
@@ -2570,7 +2536,6 @@ func CPY_I() {
 	/*
 		CPY - Compare Index Register Y To Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CPY #$%02X", cpu.operand1())
 	disassembleOpcode()
 	CPY("immediate")
 }
@@ -2578,7 +2543,6 @@ func EOR_I() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("EOR #$%02X", cpu.operand1())
 	disassembleOpcode()
 	EOR("immediate")
 }
@@ -2586,7 +2550,6 @@ func LDA_I() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDA #$%02X", cpu.operand1())
 	disassembleOpcode()
 	LDA("immediate")
 }
@@ -2594,7 +2557,6 @@ func LDX_I() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDX #$%02X", cpu.operand1())
 	disassembleOpcode()
 	LDX("immediate")
 }
@@ -2602,7 +2564,6 @@ func LDY_I() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDY #$%02X", cpu.operand1())
 	disassembleOpcode()
 	LDY("immediate")
 }
@@ -2610,7 +2571,6 @@ func ORA_I() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ORA #$%02X", cpu.operand1())
 	disassembleOpcode()
 	ORA("immediate")
 }
@@ -2618,7 +2578,6 @@ func SBC_I() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SBC #$%02X", cpu.operand1())
 	disassembleOpcode()
 	SBC("immediate")
 }
@@ -2635,7 +2594,6 @@ func ADC_Z() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ADC $%02X", cpu.operand1())
 	disassembleOpcode()
 	ADC("zeropage")
 }
@@ -2643,7 +2601,6 @@ func AND_Z() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("AND $%02X", cpu.operand1())
 	disassembleOpcode()
 	AND("zeropage")
 }
@@ -2651,7 +2608,6 @@ func ASL_Z() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ASL $%02X", cpu.operand1())
 	disassembleOpcode()
 
 	ASL("zeropage")
@@ -2660,7 +2616,6 @@ func BIT_Z() {
 	/*
 		BIT - Test Bits in Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("BIT $%02X", cpu.operand1())
 	disassembleOpcode()
 	BIT("zeropage")
 }
@@ -2668,7 +2623,6 @@ func CMP_Z() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CMP $%02X", cpu.operand1())
 	disassembleOpcode()
 	CMP("zeropage")
 }
@@ -2676,7 +2630,6 @@ func CPX_Z() {
 	/*
 		CPX - Compare Index Register X To Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CPX $%02X", cpu.operand1())
 	disassembleOpcode()
 	CPX("zeropage")
 }
@@ -2684,7 +2637,6 @@ func CPY_Z() {
 	/*
 		CPY - Compare Index Register Y To Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CPY $%02X", cpu.operand1())
 	disassembleOpcode()
 	CPY("zeropage")
 }
@@ -2692,7 +2644,6 @@ func DEC_Z() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("DEC $%02X", cpu.operand1())
 	disassembleOpcode()
 	DEC("zeropage")
 }
@@ -2700,7 +2651,6 @@ func EOR_Z() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("EOR $%02X", cpu.operand1())
 	disassembleOpcode()
 	EOR("zeropage")
 }
@@ -2708,7 +2658,6 @@ func INC_Z() {
 	/*
 		INC - Increment Memory By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("INC $%02X", cpu.operand1())
 	disassembleOpcode()
 	INC("zeropage")
 }
@@ -2716,7 +2665,6 @@ func LDA_Z() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDA $%02X", cpu.operand1())
 	disassembleOpcode()
 	LDA("zeropage")
 }
@@ -2724,7 +2672,6 @@ func LDX_Z() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDX $%02X", cpu.operand1())
 	disassembleOpcode()
 	LDX("zeropage")
 }
@@ -2732,7 +2679,6 @@ func LDY_Z() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDY $%02X", cpu.operand1())
 	disassembleOpcode()
 	LDY("zeropage")
 }
@@ -2740,7 +2686,6 @@ func LSR_Z() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LSR $%02X", cpu.operand1())
 	disassembleOpcode()
 	LSR("zeropage")
 }
@@ -2748,7 +2693,6 @@ func ORA_Z() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ORA $%02X", cpu.operand1())
 	disassembleOpcode()
 	ORA("zeropage")
 }
@@ -2756,7 +2700,6 @@ func ROL_Z() {
 	/*
 		ROL - Rotate Left
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ROL $%02X", cpu.operand1())
 	disassembleOpcode()
 	ROL("zeropage")
 }
@@ -2764,7 +2707,6 @@ func ROR_Z() {
 	/*
 		ROR - Rotate Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ROR $%02X", cpu.operand1())
 	disassembleOpcode()
 
 	ROR("zeropage")
@@ -2773,7 +2715,6 @@ func SBC_Z() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SBC $%02X", cpu.operand1())
 	disassembleOpcode()
 	SBC("zeropage")
 }
@@ -2781,7 +2722,6 @@ func STA_Z() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STA $%02X", cpu.operand1())
 	disassembleOpcode()
 	STA("zeropage")
 }
@@ -2789,7 +2729,6 @@ func STX_Z() {
 	/*
 		STX - Store Index Register X In Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STX $%02X", cpu.operand1())
 	disassembleOpcode()
 	STX("zeropage")
 }
@@ -2797,7 +2736,6 @@ func STY_Z() {
 	/*
 		STY - Store Index Register Y In Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STY $%02X", cpu.operand1())
 	disassembleOpcode()
 	STY("zeropage")
 }
@@ -2814,7 +2752,6 @@ func ADC_ZX() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ADC $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ADC("zeropagex")
 }
@@ -2822,7 +2759,6 @@ func AND_ZX() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("AND $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	AND("zeropagex")
 }
@@ -2830,7 +2766,6 @@ func ASL_ZX() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ASL $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ASL("zeropagex")
 }
@@ -2838,7 +2773,6 @@ func CMP_ZX() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CMP $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	CMP("zeropagex")
 }
@@ -2846,7 +2780,6 @@ func DEC_ZX() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("DEC $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	DEC("zeropagex")
 }
@@ -2854,7 +2787,6 @@ func LDA_ZX() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDA $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	LDA("zeropagex")
 }
@@ -2862,7 +2794,6 @@ func LDY_ZX() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDY $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	LDY("zeropagex")
 }
@@ -2870,7 +2801,6 @@ func LSR_ZX() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LSR $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	LSR("zeropagex")
 }
@@ -2878,7 +2808,6 @@ func ORA_ZX() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ORA $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ORA("zeropagex")
 }
@@ -2886,7 +2815,6 @@ func ROL_ZX() {
 	/*
 		ROL - Rotate Left
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ROL $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ROL("zeropagex")
 }
@@ -2894,7 +2822,6 @@ func ROR_ZX() {
 	/*
 		ROR - Rotate Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ROR $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	ROR("zeropagex")
 }
@@ -2902,7 +2829,6 @@ func EOR_ZX() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("EOR $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	EOR("zeropagex")
 }
@@ -2910,7 +2836,6 @@ func INC_ZX() {
 	/*
 		INC - Increment Memory By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("INC $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	INC("zeropagex")
 }
@@ -2918,7 +2843,6 @@ func SBC_ZX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SBC $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	SBC("zeropagex")
 }
@@ -2926,7 +2850,6 @@ func STA_ZX() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STA $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	STA("zeropagex")
 }
@@ -2934,7 +2857,6 @@ func STY_ZX() {
 	/*
 		STY - Store Index Register Y In Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STY $%02X,X", cpu.operand1())
 	disassembleOpcode()
 	STY("zeropagex")
 }
@@ -2951,7 +2873,6 @@ func LDX_ZY() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDX $%02X,Y", cpu.operand1())
 	disassembleOpcode()
 	LDX("zeropagey")
 }
@@ -2959,7 +2880,6 @@ func STX_ZY() {
 	/*
 		STX - Store Index Register X In Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STX $%02X,Y", cpu.operand1())
 	disassembleOpcode()
 	STX("zeropagey")
 }
@@ -2976,7 +2896,6 @@ func ADC_IX() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ADC ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	ADC("indirectx")
 }
@@ -2984,7 +2903,6 @@ func AND_IX() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("AND ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	AND("indirectx")
 }
@@ -2992,7 +2910,6 @@ func CMP_IX() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CMP ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	CMP("indirectx")
 }
@@ -3000,7 +2917,6 @@ func EOR_IX() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("EOR ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	EOR("indirectx")
 }
@@ -3008,7 +2924,6 @@ func LDA_IX() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDA ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	LDA("indirectx")
 }
@@ -3016,7 +2931,6 @@ func ORA_IX() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ORA ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	ORA("indirectx")
 }
@@ -3024,7 +2938,6 @@ func SBC_IX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SBC ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	SBC("indirectx")
 }
@@ -3032,7 +2945,6 @@ func STA_IX() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STA ($%02X,X)", cpu.operand1())
 	disassembleOpcode()
 	STA("indirectx")
 }
@@ -3049,7 +2961,6 @@ func ADC_IY() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ADC ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	ADC("indirecty")
 }
@@ -3057,7 +2968,6 @@ func AND_IY() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("AND ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	AND("indirecty")
 }
@@ -3065,7 +2975,6 @@ func CMP_IY() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CMP ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	CMP("indirecty")
 }
@@ -3073,7 +2982,6 @@ func EOR_IY() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("EOR ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	EOR("indirecty")
 }
@@ -3081,7 +2989,6 @@ func LDA_IY() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDA ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	LDA("indirecty")
 }
@@ -3089,7 +2996,6 @@ func ORA_IY() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ORA ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	ORA("indirecty")
 }
@@ -3097,7 +3003,6 @@ func SBC_IY() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SBC ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	SBC("indirecty")
 }
@@ -3105,7 +3010,6 @@ func STA_IY() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STA ($%02X),Y", cpu.operand1())
 	disassembleOpcode()
 	STA("indirecty")
 }
@@ -3272,9 +3176,7 @@ func BNE_R() {
 	if cpu.getSRBit(1) == 0 {
 		oldPC := cpu.PC
 		cpu.PC = targetAddress
-
 		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
-
 		// Increment the cycle count for branch and page crossing
 		cpu.incrementCycleCountForBranch(oldPC)
 	} else {
@@ -3321,7 +3223,6 @@ func ADC_ABS() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ADC $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ADC("absolute")
 }
@@ -3329,7 +3230,6 @@ func AND_ABS() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("AND $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	AND("absolute")
 }
@@ -3337,7 +3237,6 @@ func ASL_ABS() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ASL $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ASL("absolute")
 }
@@ -3345,7 +3244,6 @@ func BIT_ABS() {
 	/*
 		BIT - Test Bits in Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("BIT $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	BIT("absolute")
 }
@@ -3353,7 +3251,6 @@ func CMP_ABS() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CMP $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CMP("absolute")
 }
@@ -3361,7 +3258,6 @@ func CPX_ABS() {
 	/*
 		CPX - Compare Index Register X To Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CPX $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CPX("absolute")
 }
@@ -3369,7 +3265,6 @@ func CPY_ABS() {
 	/*
 		CPY - Compare Index Register Y To Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CPY $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CPY("absolute")
 }
@@ -3377,7 +3272,6 @@ func DEC_ABS() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("DEC $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	DEC("absolute")
 }
@@ -3385,7 +3279,6 @@ func EOR_ABS() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("EOR $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	EOR("absolute")
 }
@@ -3393,7 +3286,6 @@ func INC_ABS() {
 	/*
 		INC - Increment Memory By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("INC $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	INC("absolute")
 }
@@ -3401,7 +3293,6 @@ func JMP_ABS() {
 	/*
 		JMP - JMP Absolute
 	*/
-	//cpu.mnemonic = fmt.Sprintf("JMP $%04X", int(cpu.operand2())<<8|int(cpu.operand1()))
 	disassembleOpcode()
 	// For AllSuiteA.bin 6502 opcode test suite
 	if *allsuitea && readMemory(0x210) == 0xFF {
@@ -3414,18 +3305,13 @@ func JSR_ABS() {
 	/*
 		JSR - Jump To Subroutine
 	*/
-	//cpu.mnemonic = fmt.Sprintf("JSR $%04X", int(cpu.operand2())<<8|int(cpu.operand1()))
 	disassembleOpcode()
 	// First, push the high byte
 	cpu.decSP()
 	updateStack(byte(cpu.PC >> 8))
 	cpu.decSP()
-	updateStack(byte((cpu.PC)&0xFF) + 2)
+	updateStack(byte((cpu.PC)&0xFF) + 1)
 
-	cpu.previousPC = cpu.PC
-	cpu.previousOpcode = cpu.opcode()
-	cpu.previousOperand1 = cpu.operand1()
-	cpu.previousOperand2 = cpu.operand2()
 	// Now, jump to the subroutine address specified by the operands
 	cpu.setPC(uint16(cpu.operand2())<<8 | uint16(cpu.operand1()))
 	cpu.updateCycleCounter(1)
@@ -3435,7 +3321,6 @@ func LDA_ABS() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDA $%04X", uint16(cpu.operand2())<<8|uint16(cpu.operand1()))
 	disassembleOpcode()
 	LDA("absolute")
 }
@@ -3443,7 +3328,6 @@ func LDX_ABS() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDX $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDX("absolute")
 }
@@ -3451,7 +3335,6 @@ func LDY_ABS() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDY $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDY("absolute")
 }
@@ -3459,7 +3342,6 @@ func LSR_ABS() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LSR $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LSR("absolute")
 }
@@ -3467,7 +3349,6 @@ func ORA_ABS() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ORA $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ORA("absolute")
 }
@@ -3475,7 +3356,6 @@ func ROL_ABS() {
 	/*
 		ROL - Rotate Left
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ROL $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ROL("absolute")
 }
@@ -3483,7 +3363,6 @@ func ROR_ABS() {
 	/*
 		ROR - Rotate Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ROR $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ROR("absolute")
 }
@@ -3491,7 +3370,6 @@ func SBC_ABS() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SBC $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	SBC("absolute")
 }
@@ -3499,7 +3377,6 @@ func STA_ABS() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STA $%04X", uint16(cpu.operand2())<<8|uint16(cpu.operand1()))
 	disassembleOpcode()
 	STA("absolute")
 }
@@ -3507,7 +3384,6 @@ func STX_ABS() {
 	/*
 		STX - Store Index Register X In Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STX $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	STX("absolute")
 }
@@ -3515,7 +3391,6 @@ func STY_ABS() {
 	/*
 		STY - Store Index Register Y In Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STY $%02X%02X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	STY("absolute")
 }
@@ -3537,7 +3412,6 @@ func ADC_ABX() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ADC $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ADC("absolutex")
 }
@@ -3545,7 +3419,6 @@ func AND_ABX() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("AND $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	AND("absolutex")
 }
@@ -3553,7 +3426,6 @@ func ASL_ABX() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ASL $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ASL("absolutex")
 }
@@ -3561,7 +3433,6 @@ func CMP_ABX() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CMP $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CMP("absolutex")
 }
@@ -3569,7 +3440,6 @@ func DEC_ABX() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("DEC $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	DEC("absolutex")
 }
@@ -3577,7 +3447,6 @@ func EOR_ABX() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("EOR $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	EOR("absolutex")
 }
@@ -3585,7 +3454,6 @@ func INC_ABX() {
 	/*
 		INC - Increment Memory By One
 	*/
-	//cpu.mnemonic = fmt.Sprintf("INC $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	INC("absolutex")
 }
@@ -3593,7 +3461,6 @@ func LDA_ABX() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDA $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDA("absolutex")
 }
@@ -3601,7 +3468,6 @@ func LDY_ABX() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDY $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDY("absolutex")
 }
@@ -3609,7 +3475,6 @@ func LSR_ABX() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LSR $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LSR("absolutex")
 }
@@ -3617,14 +3482,12 @@ func ORA_ABX() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ORA $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ORA("absolutex")
 }
 func ROL_ABX() {
 	/*
 	 */
-	//cpu.mnemonic = fmt.Sprintf("ROL $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ROL("absolutex")
 }
@@ -3632,7 +3495,6 @@ func ROR_ABX() {
 	/*
 		ROR - Rotate Right
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ROR $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ROR("absolutex")
 }
@@ -3640,7 +3502,6 @@ func SBC_ABX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SBC $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	SBC("absolutex")
 }
@@ -3648,7 +3509,6 @@ func STA_ABX() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STA $%02X%02X,X", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	STA("absolutex")
 }
@@ -3669,7 +3529,6 @@ func ADC_ABY() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ADC $%04X,Y", int(cpu.operand2())<<8|int(cpu.operand1()))
 	disassembleOpcode()
 	ADC("absolutey")
 }
@@ -3677,7 +3536,6 @@ func AND_ABY() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("AND $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	AND("absolutey")
 }
@@ -3685,7 +3543,6 @@ func CMP_ABY() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("CMP $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	CMP("absolutey")
 }
@@ -3693,7 +3550,6 @@ func EOR_ABY() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("EOR $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	EOR("absolutey")
 }
@@ -3701,7 +3557,6 @@ func LDA_ABY() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDA $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDA("absolutey")
 }
@@ -3709,7 +3564,6 @@ func LDX_ABY() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("LDX $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	LDX("absolutey")
 }
@@ -3717,7 +3571,6 @@ func ORA_ABY() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	//cpu.mnemonic = fmt.Sprintf("ORA $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	ORA("absolutey")
 }
@@ -3725,7 +3578,6 @@ func SBC_ABY() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	//cpu.mnemonic = fmt.Sprintf("SBC $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	SBC("absolutey")
 }
@@ -3733,7 +3585,6 @@ func STA_ABY() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	//cpu.mnemonic = fmt.Sprintf("STA $%02X%02X,Y", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	STA("absolutey")
 }
@@ -3743,7 +3594,6 @@ func JMP_IND() {
 	/*
 		JMP - JMP Indirect
 	*/
-	//cpu.mnemonic = fmt.Sprintf("JMP ($%02X%02X)", cpu.operand2(), cpu.operand1())
 	disassembleOpcode()
 	JMP("indirect")
 }

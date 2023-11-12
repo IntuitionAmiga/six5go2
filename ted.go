@@ -30,6 +30,11 @@ type TED struct {
 	TED_KEYBOARD_LINE9 byte
 
 	Framebuffer [320][200]byte
+
+	// Timer registers
+	Timer1Counter uint16 // Timer 1 counter
+	Timer2Counter uint16 // Timer 2 counter
+	Timer3Counter uint16 // Timer 3 counter
 }
 
 var ted TED
@@ -62,6 +67,13 @@ const (
 	TED_KEYBOARD_LINE7 = 0xFD17
 	TED_KEYBOARD_LINE8 = 0xFD18
 	TED_KEYBOARD_LINE9 = 0xFD19
+
+	TIMER1_LOW  = 0xFF00
+	TIMER1_HIGH = 0xFF01
+	TIMER2_LOW  = 0xFF02
+	TIMER2_HIGH = 0xFF03
+	TIMER3_LOW  = 0xFF04
+	TIMER3_HIGH = 0xFF05
 )
 
 func (ted *TED) resetTED() {
@@ -177,6 +189,18 @@ func (ted *TED) readTEDReg(address uint16) byte {
 	case TED_KEYBOARD_LINE9:
 		//fmt.Printf("Reading TED register %04X TED_KEYBOARD_LINE9\n", address)
 		return ted.TED_KEYBOARD_LINE9
+	case TIMER1_LOW:
+		return byte(ted.Timer1Counter & 0xFF)
+	case TIMER1_HIGH:
+		return byte(ted.Timer1Counter >> 8)
+	case TIMER2_LOW:
+		return byte(ted.Timer2Counter & 0xFF)
+	case TIMER2_HIGH:
+		return byte(ted.Timer2Counter >> 8)
+	case TIMER3_LOW:
+		return byte(ted.Timer3Counter & 0xFF)
+	case TIMER3_HIGH:
+		return byte(ted.Timer3Counter >> 8)
 	default:
 		return 0
 	}
@@ -275,6 +299,18 @@ func (ted *TED) writeTEDReg(address uint16, value byte) {
 	case TED_KEYBOARD_LINE9:
 		//fmt.Printf("Writing %02X to TED register %04X TED_KEYBOARD_LINE9\n", value, address)
 		ted.TED_KEYBOARD_LINE9 = value
+	case TIMER1_LOW:
+		ted.Timer1Counter = (ted.Timer1Counter & 0xFF00) | uint16(value)
+	case TIMER1_HIGH:
+		ted.Timer1Counter = (ted.Timer1Counter & 0x00FF) | (uint16(value) << 8)
+	case TIMER2_LOW:
+		ted.Timer2Counter = (ted.Timer2Counter & 0xFF00) | uint16(value)
+	case TIMER2_HIGH:
+		ted.Timer2Counter = (ted.Timer2Counter & 0x00FF) | (uint16(value) << 8)
+	case TIMER3_LOW:
+		ted.Timer3Counter = (ted.Timer3Counter & 0xFF00) | uint16(value)
+	case TIMER3_HIGH:
+		ted.Timer3Counter = (ted.Timer3Counter & 0x00FF) | (uint16(value) << 8)
 	default:
 		return
 	}
