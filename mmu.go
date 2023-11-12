@@ -61,5 +61,5 @@ func readStack() byte {
 	return readMemory(SPBaseAddress + cpu.preOpSP)
 }
 func updateStack(value byte) {
-	writeMemory(SPBaseAddress+cpu.preOpSP, value)
+	writeMemory(SPBaseAddress+cpu.SP, value)
 }
