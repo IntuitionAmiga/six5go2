@@ -25,28 +25,34 @@ const (
 	// const VBLANK_CYCLES = 29833 // For NTSC
 
 	//cpuSpeedHz uint64 = 1790000 // 1790000 Hz for a NTSC 7501/8501
-	cpuSpeedHz uint64 = 1760000 // 1760000 Hz for a PAL 7501/8501
-	//cpuSpeedHz uint64 = 75 // Run it slow whilst debugging!
-	//cpuSpeedHz uint64 = 4000000000000 // 4 GHz to speed up debugging! :)
+	//cpuSpeedHz uint64 = 1760000 // 1760000 Hz for a PAL 7501/8501
+	//cpuSpeedHz uint64 = 7500 // Run it slow whilst debugging!
+	cpuSpeedHz uint64 = 4000000000000 // 4 GHz to speed up debugging! :)
 )
 
 type CPU struct {
-	A                       byte   // Accumulator
-	X                       byte   // X register
-	Y                       byte   // Y register
-	PC                      uint16 // Program Counter
-	SP                      uint16 // Stack Pointer
-	SR                      byte   // Status Register
-	preOpPC                 uint16
-	preOpOpcode             byte
-	preOpOperand1           byte
-	preOpOperand2           byte
-	preOpSP                 uint16
+	A             byte   // Accumulator
+	X             byte   // X register
+	Y             byte   // Y register
+	PC            uint16 // Program Counter
+	SP            uint16 // Stack Pointer
+	SR            byte   // Status Register
+	preOpPC       uint16
+	preOpOpcode   byte
+	preOpOperand1 byte
+	preOpOperand2 byte
+	preOpSP       uint16
+	preOpA        byte
+	preOpX        byte
+	preOpY        byte
+	preOpSR       byte
+
 	cycleCounter            uint64
 	cycleStartTime          time.Time     // High-resolution timer
 	cpuTimeSpent            time.Duration // Time spent executing instructions
 	vblankCycleCounter      uint64
 	traceLine               string
+	nextTraceLine           string
 	irq                     bool
 	nmi                     bool
 	reset                   bool
@@ -115,13 +121,13 @@ func (cpu *CPU) handleIRQ() {
 	}
 	//fmt.println("Debug: Interrupt enabled. Continuing...")
 	// Push PC onto stack
-	updateStack(byte(cpu.PC >> 8)) // high byte
+	cpu.updateStack(byte(cpu.PC >> 8)) // high byte
 	cpu.decSP()
-	updateStack(byte(cpu.PC & 0xFF)) // low byte
+	cpu.updateStack(byte(cpu.PC & 0xFF)) // low byte
 	cpu.decSP()
 	//fmt.Printf("Debug: PC pushed to stack. SP: %X\n", cpu.SP)
 	// Push SR onto stack
-	updateStack(cpu.SR)
+	cpu.updateStack(cpu.SR)
 	cpu.decSP()
 	//fmt.Printf("Debug: PC pushed to stack. SP: %X\n", cpu.SP)
 	// Set interrupt flag
@@ -137,12 +143,12 @@ func (cpu *CPU) handleIRQ() {
 }
 func (cpu *CPU) handleNMI() {
 	// Push PC onto stack
-	updateStack(byte(cpu.PC >> 8)) // high byte
+	cpu.updateStack(byte(cpu.PC >> 8)) // high byte
 	cpu.decSP()
-	updateStack(byte(cpu.PC & 0xFF)) // low byte
+	cpu.updateStack(byte(cpu.PC & 0xFF)) // low byte
 	cpu.decSP()
 	// Push SR onto stack
-	updateStack(cpu.SR)
+	cpu.updateStack(cpu.SR)
 	cpu.decSP()
 	// Set PC to NMI Service Routine address
 	lowByte := readMemory(NMIVectorAddressLow)
@@ -213,8 +219,8 @@ func (cpu *CPU) cycleEnd() {
 func (cpu *CPU) resetCPU() {
 	cpu.cycleCounter = 0
 	cpu.SP = SPBaseAddress
-	cpu.SR = 0b00100000
-	//cpu.SR = 0b00000010
+	cpu.SR = 0b01100010
+
 	if *klausd {
 		cpu.setPC(0x400)
 	} else {
@@ -288,15 +294,19 @@ func (cpu *CPU) startCPU() {
 		cpu.preOpOperand1 = cpu.operand1()
 		cpu.preOpOperand2 = cpu.operand2()
 		cpu.preOpSP = cpu.SP
+		cpu.preOpA = cpu.A
+		cpu.preOpX = cpu.X
+		cpu.preOpY = cpu.Y
+		cpu.preOpSR = cpu.SR
 
 		breakpointsMutex.Lock()
-		_, exists := breakpoints[cpu.PC]
+		_, exists := breakpoints[cpu.preOpPC]
 		breakpointsMutex.Unlock()
 		if exists {
-			breakpointHalted = true  // Indicate that we're halted at a breakpoint
-			breakpointHit <- cpu.PC  // Signal that a breakpoint has been hit
-			<-breakpointHit          // Wait here until we receive a signal to continue
-			breakpointHalted = false // Reset the flag as we're continuing
+			breakpointHalted = true      // Indicate that we're halted at a breakpoint
+			breakpointHit <- cpu.preOpPC // Signal that a breakpoint has been hit
+			<-breakpointHit              // Wait here until we receive a signal to continue
+			breakpointHalted = false     // Reset the flag as we're continuing
 		}
 
 		//  1 byte instructions with no operands
@@ -1036,6 +1046,8 @@ func (cpu *CPU) startCPU() {
 			ted.Timer2Counter++
 			ted.Timer3Counter++
 		}
+		//fmt.Fprintf(os.Stderr, "Debug: At PC $%04X/preOpPC $%04X memory[0x0314] is %04X\n", cpu.PC, cpu.preOpPC, memory[0x0314])
+
 		executionTrace()
 	}
 }

@@ -168,8 +168,8 @@ func loadROMs() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Fprintf(f, "|  PC  | OP |OPERANDS|    DISASSEMBLY   | \t REGISTERS\t  |  STACK  | SR FLAGS | INST COUNT | CYCLE COUNT | TIME SPENT  |\n")
-		fmt.Fprintf(f, "|------|----|--------|------------------|-------------------------|---------|----------|------------|-------------|-------------|\n")
+		fmt.Fprintf(f, "|   PC  | OP |OPERANDS|    DISASSEMBLY   | \t REGISTERS\t  |  STACK  | SR FLAGS | INST COUNT | CYCLE COUNT | TIME SPENT  |\n")
+		fmt.Fprintf(f, "|-------|----|--------|------------------|-------------------------|---------|----------|------------|-------------|-------------|\n")
 		f.Sync()
 		f.Close()
 	}
@@ -240,48 +240,48 @@ func plus4KernalRoutines() {
 }
 func disassembleOpcode() {
 	if *disassemble {
-		fmt.Printf("%s\n", getMnemonic(cpu.opcode()))
+		fmt.Printf("%s\n", getMnemonic(cpu.preOpOpcode))
 	}
 }
 func boilerPlate() {
 	os.Remove("trace.txt")
-
 	// Clear the screen and move cursor to top left
 	fmt.Printf("\033[2J")
 	fmt.Printf("\033[0;0H")
-
 	fmt.Printf("Six5go2 v2.0 - 6502 Emulator and Disassembler in Golang (c) 2022-2023 Zayn Otley\n\n")
 	fmt.Printf("https://github.com/intuitionamiga/six5go2/tree/v2\n\n")
 	flag.Parse()
-
 	if len(os.Args) < 2 {
 		fmt.Printf("Usage: %s [options]\n", os.Args[0])
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
-
 	fmt.Printf("Size of addressable memory is %v ($%04X) bytes\n\n", len(memory), len(memory)-1)
 }
 
 func executionTrace() string {
 	cpu.traceLine = fmt.Sprintf("| $%04X | %02X | ", cpu.preOpPC, cpu.preOpOpcode)
+	cpu.nextTraceLine = fmt.Sprintf("| $%04X | %02X | ", cpu.PC, cpu.opcode())
 	cpu.disassembledInstruction = getMnemonic(cpu.preOpOpcode)
 	switch {
 	case oneByteInstructions[cpu.preOpOpcode]:
 		cpu.traceLine += "       |"
+		cpu.nextTraceLine += "	   |"
 	case twoByteInstructions[cpu.preOpOpcode]:
 		cpu.traceLine += fmt.Sprintf("%02X     |", cpu.preOpOperand1)
+		cpu.nextTraceLine += fmt.Sprintf("%02X     |", cpu.operand1())
 	case threeByteInstructions[cpu.preOpOpcode]:
 		cpu.traceLine += fmt.Sprintf("%02X %02X  |", cpu.preOpOperand1, cpu.preOpOperand2)
+		cpu.nextTraceLine += fmt.Sprintf("%02X %02X  |", cpu.operand1(), cpu.operand2())
 	default:
 		cpu.traceLine += "???    |" // Unknown instruction size
+		cpu.nextTraceLine += "???    |"
 	}
 	if *traceLog {
-		writeTraceToFile(cpu.traceLine, getMnemonic(cpu.preOpOpcode), cpu.A, cpu.X, cpu.Y, cpu.SP, readStack())
+		writeTraceToFile(cpu.traceLine, cpu.disassembledInstruction, cpu.A, cpu.X, cpu.Y, cpu.SP, cpu.readStack())
 	}
 	return cpu.traceLine
 }
-
 func writeTraceToFile(traceLine, disassembledInstruction string, A, X, Y byte, SP uint16, stackValue byte) {
 	// Open the file for appending. Create it if it doesn't exist.
 	f, err := os.OpenFile("trace.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -292,7 +292,6 @@ func writeTraceToFile(traceLine, disassembledInstruction string, A, X, Y byte, S
 	// Create the full trace line with additional information including SR flags
 	fullTraceLine := fmt.Sprintf("%s\t%s\t| A:%02X X:%02X Y:%02X SP:$%04X | $%04X | %s | %04X | %04X | %v |\n",
 		traceLine, disassembledInstruction, A, X, Y, SP, stackValue, getSRFlags(), cpu.instructionCounter, cpu.cycleCounter, cpu.cpuTimeSpent)
-
 	// Write the full trace line to the file
 	if _, err := f.WriteString(fullTraceLine); err != nil {
 		log.Fatalf("Failed to write to trace file: %v", err)
@@ -301,7 +300,6 @@ func writeTraceToFile(traceLine, disassembledInstruction string, A, X, Y byte, S
 func getSRFlags() string {
 	// Using a string builder to efficiently build the SR flags string
 	var SRFlagsBuilder strings.Builder
-
 	// Append the N flag or '-' accordingly
 	if cpu.getSRBit(7) == 1 {
 		SRFlagsBuilder.WriteString("N")
@@ -346,7 +344,6 @@ func getSRFlags() string {
 	} else {
 		SRFlagsBuilder.WriteString("-")
 	}
-
 	return SRFlagsBuilder.String()
 }
 func instructionCount() string {
@@ -404,70 +401,55 @@ func statusFlags() string {
 }
 func getMnemonic(opcode byte) string {
 	mnemonic, exists := opcodeMnemonics[opcode]
-
 	if !exists {
 		return "???"
 	}
-
 	var address uint16
-
 	// Determine the addressing mode and format the full disassembly accordingly
 	switch opcode {
 	// Immediate
 	case 0x69, 0x29, 0xC9, 0xE0, 0xC0, 0x49, 0xA9, 0xA2, 0xA0, 0x09, 0xE9:
 		return fmt.Sprintf("%s #$%02X", mnemonic, cpu.preOpOperand1)
-
 	// Zero Page
 	case 0x65, 0x25, 0x05, 0x24, 0xA5, 0xA6, 0xA4, 0x06, 0x46, 0xE6, 0xC6, 0x85, 0x86, 0x84:
 		return fmt.Sprintf("%s $%02X", mnemonic, cpu.preOpOperand1)
-
 	// Zero Page,X
 	case 0x75, 0x35, 0x15, 0xB5, 0xB4, 0x16, 0x56, 0xF6, 0xD6, 0x95, 0x94:
 		return fmt.Sprintf("%s $%02X,X", mnemonic, cpu.preOpOperand1)
-
 	// Zero Page,Y
 	case 0xB6, 0x96:
 		return fmt.Sprintf("%s $%02X,Y", mnemonic, cpu.preOpOperand1)
-
 	// Absolute
 	case 0x6D, 0x2D, 0x0D, 0x2C, 0xAD, 0xAE, 0xAC, 0x0E, 0x4E, 0xEE, 0xCE, 0x8D, 0x8E, 0x8C, 0x4C, 0x20:
 		address = uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
 		return fmt.Sprintf("%s $%04X", mnemonic, address)
-
 	// Absolute,X
 	case 0x7D, 0x3D, 0x1D, 0xBD, 0xBC, 0x1E, 0x5E, 0xFE, 0xDE, 0x9D:
 		address = uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
 		return fmt.Sprintf("%s $%04X,X", mnemonic, address)
-
 	// Absolute,Y
 	case 0x79, 0x39, 0x19, 0xB9, 0xBE, 0x99, 0x91, 0xD9:
 		address = uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
 		return fmt.Sprintf("%s $%04X,Y", mnemonic, address)
-
 	// Indirect,X
 	case 0x61, 0x21, 0x41, 0xA1, 0x01, 0xE1:
 		return fmt.Sprintf("%s ($%02X,X)", mnemonic, cpu.preOpOperand1)
-
 	// Indirect,Y
 	case 0x71, 0x31, 0x51, 0xB1, 0x11, 0xF1:
 		return fmt.Sprintf("%s ($%02X),Y", mnemonic, cpu.preOpOperand1)
-
 	// Relative (for branch instructions)
 	case 0x90, 0xB0, 0xF0, 0x30, 0xD0, 0x10, 0x50, 0x70:
 		return fmt.Sprintf("%s $%02X", mnemonic, cpu.preOpOperand1)
-
 	// Indirect (only JMP has this addressing mode)
 	case 0x6C:
 		address = uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
 		return fmt.Sprintf("%s ($%04X)", mnemonic, address)
-
 	// Accumulator or Implied
 	case 0x0A, 0x4A, 0x2A, 0x6A, 0xEA, 0x40, 0x60, 0x18, 0xD8, 0x58, 0xB8, 0xCA, 0x88, 0xE8, 0xC8, 0x48, 0x08, 0x68, 0x28, 0x78, 0xAA, 0xA8, 0xBA, 0x8A, 0x9A, 0x98:
 		if opcode == 0x0A || opcode == 0x4A || opcode == 0x2A || opcode == 0x6A {
 			return fmt.Sprintf("%s A", mnemonic)
 		}
 		return mnemonic // Implied
-
 	default:
 		return fmt.Sprintf("%s ???", mnemonic)
 	}

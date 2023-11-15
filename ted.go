@@ -213,7 +213,7 @@ func (ted *TED) writeTEDReg(address uint16, value byte) {
 	case TED_CTRL_REG_1:
 		//fmt.Printf("Writing %02X to TED register %04X TED_CTRL_REG_1\n", value, address)
 		ted.TED_CTRL_REG_1 = value
-		if readBit(0, value) == 1 {
+		if cpu.readBit(0, value) == 1 {
 			//fmt.println("IRQ request!")
 			cpu.irq = true
 		} else {

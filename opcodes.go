@@ -326,65 +326,46 @@ var (
 
 // Instructions with multiple addressing modes
 func LDA(addressingMode string) {
+	var address uint16
+	var value byte
 	setFlags := func() {
 		// If A is zero, set the SR Zero flag to 1 else set SR Zero flag to 0
-		if cpu.A == 0 {
+		if cpu.preOpA == 0 {
 			cpu.setZeroFlag()
 		} else {
 			cpu.unsetZeroFlag()
 		}
-		if cpu.A&0x80 != 0 {
+		if cpu.preOpA&0x80 != 0 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
 		}
 	}
-
 	switch addressingMode {
-	case IMMEDIATE: // Immediate
-		cpu.A = cpu.operand1()
-		setFlags()
+	case IMMEDIATE:
+		value = cpu.ImmediateAddressing()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(2)
-	case ZEROPAGE: // Zero Page
-		// Get address
-		address := cpu.operand1()
-		// Get value from memory at address
-		value := readMemory(uint16(address))
-		// Set accumulator to value
-		cpu.A = value
-		setFlags()
+	case ZEROPAGE:
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
-	case ZEROPAGEX: // Zero Page, X
-		// Get address
-		address := cpu.operand1() + cpu.X
-		value := readMemory(uint16(address))
-		// Set accumulator to value
-		cpu.A = value
-		setFlags()
+	case ZEROPAGEX:
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(2)
 	case ABSOLUTE: // Absolute
-		// Get 16 bit address from operand 1 and operand 2
-		address := int(cpu.operand2())<<8 | int(cpu.operand1())
-		value := readMemory(uint16(address))
-		// Set accumulator to value
-		cpu.A = value
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		address := baseAddress + uint16(cpu.X)
-
+		baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+		address = cpu.AbsoluteXAddressing()
 		// Dummy read: occurs if adding X to the low byte of the address crosses a page boundary
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
 		}
-		value := readMemory(address)
-		cpu.A = value
-		setFlags()
+		value = readMemory(address)
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			cpu.updateCycleCounter(5)
 		} else {
@@ -392,48 +373,34 @@ func LDA(addressingMode string) {
 		}
 		cpu.handleState(3)
 	case ABSOLUTEY:
-		// Fetch the low and high bytes of the address and form the 16-bit address
-		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-
-		// Add the Y register to the base address to get the final address
-		finalAddress := baseAddress + uint16(cpu.Y)
-
-		// Read the value from the calculated memory address
-		value := readMemory(finalAddress)
-
-		// Load the value into the accumulator
-		cpu.A = value
+		baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+		address = cpu.AbsoluteYAddressing()
 		setFlags()
-		// Update cycle counter, adjust as needed for your emulator's cycle timing
 		// Add an extra cycle if page boundary is crossed
-		if (baseAddress & 0xFF00) != (finalAddress & 0xFF00) {
+		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			cpu.updateCycleCounter(5)
 		} else {
 			cpu.updateCycleCounter(4)
 		}
 		cpu.handleState(3)
 	case INDIRECTX:
-		zeroPageAddress := uint16(cpu.operand1()+cpu.X) & 0xFF // zero page wraparound
-		lo := readMemory(zeroPageAddress)
-		hi := readMemory((zeroPageAddress + 1) & 0xFF) // zero page wraparound
-		address := uint16(hi)<<8 | uint16(lo)
-		value := readMemory(address)
-		cpu.A = value
-		setFlags()
+		address = cpu.IndirectXAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case INDIRECTY:
-		zeroPageAddress := cpu.operand1()
-		address := uint16(readMemory(uint16(zeroPageAddress))) | uint16(readMemory((uint16(zeroPageAddress)+1)&0xFF))<<8
-		finalAddress := (address + uint16(cpu.Y)) & 0xFFFF
-		value := readMemory(finalAddress)
-		cpu.A = value
-		setFlags()
+		address = cpu.IndirectYAddressing()
 		cpu.updateCycleCounter(5)
 		cpu.handleState(2)
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	cpu.A = value
+	setFlags()
 }
 func LDX(addressingMode string) {
+	var address uint16
+	var value byte
 	setFlags := func() {
 		// If bit 7 of X is set, set the SR negative flag else reset it to 0
 		if cpu.getXBit(7) == 1 {
@@ -449,50 +416,30 @@ func LDX(addressingMode string) {
 		}
 	}
 	switch addressingMode {
-	case IMMEDIATE: // Immediate
-		// Load the value of the cpu.operand1() into the X register.
-		cpu.X = cpu.operand1()
-		setFlags()
+	case IMMEDIATE:
+		value = cpu.ImmediateAddressing()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(2)
-	case ZEROPAGE: // Zero Page
-		// Get address
-		address := cpu.operand1()
-		value := readMemory(uint16(address))
-		// Load the value at the address into X
-		cpu.X = value
-		setFlags()
+	case ZEROPAGE:
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
-	case ZEROPAGEY: // Zero Page, Y
-		// Get Y indexed Zero Page address
-		address := cpu.operand1() + cpu.Y
-		value := readMemory(uint16(address))
-		// Load the X register with the Y indexed value in the operand
-		cpu.X = value
-		setFlags()
+	case ZEROPAGEY:
+		address = cpu.ZeroPageYAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(2)
-	case ABSOLUTE: // Absolute
-		// Get 16 bit address from operands
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		value := readMemory(address)
-		// Update X with the value stored at the address in the operands
-		cpu.X = value
-		setFlags()
+	case ABSOLUTE:
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEY:
-		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		address := baseAddress + uint16(cpu.Y)
-
+		baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+		//address := baseAddress + uint16(cpu.Y)
+		address = cpu.AbsoluteYAddressing()
 		// Dummy read: occurs if adding Y to the low byte of the address crosses a page boundary
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
 		}
-		value := readMemory(address)
-		cpu.X = value
-		setFlags()
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			cpu.updateCycleCounter(5)
 		} else {
@@ -500,8 +447,15 @@ func LDX(addressingMode string) {
 		}
 		cpu.handleState(3)
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	cpu.X = value
+	setFlags()
 }
 func LDY(addressingMode string) {
+	var address uint16
+	var value byte
 	setFlags := func() {
 		// If bit 7 of Y is set, set the SR negative flag else reset it to 0
 		if cpu.getYBit(7) == 1 {
@@ -517,50 +471,29 @@ func LDY(addressingMode string) {
 		}
 	}
 	switch addressingMode {
-	case IMMEDIATE: // Immediate
-		// Load the value of the cpu.operand1() into the Y register.
-		cpu.Y = cpu.operand1()
-		setFlags()
+	case IMMEDIATE:
+		value = cpu.ImmediateAddressing()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(2)
 	case ZEROPAGE: // Zero Page
-		// Get address
-		address := cpu.operand1()
-		value := readMemory(uint16(address))
-		// Load the value at the address into Y
-		cpu.Y = value
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ZEROPAGEX: // Zero Page, X
-		// Get the X indexed address
-		address := cpu.operand1() + cpu.X
-		value := readMemory(uint16(address))
-		// Load the Y register with the X indexed value in the operand
-		cpu.Y = value
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(2)
 	case ABSOLUTE: // Absolute
-		// Get 16 bit address from operands
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		value := readMemory(address)
-		// Update Y with the value stored at the address in the operands
-		cpu.Y = value
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		address := baseAddress + uint16(cpu.X)
-
+		baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+		address = cpu.AbsoluteXAddressing()
 		// Dummy read: occurs if adding X to the low byte of the address crosses a page boundary
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
 		}
-		value := readMemory(address)
-		cpu.Y = value
-		setFlags()
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			cpu.updateCycleCounter(5)
 		} else {
@@ -568,102 +501,100 @@ func LDY(addressingMode string) {
 		}
 		cpu.handleState(3)
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	cpu.Y = value
+	setFlags()
 }
 func STA(addressingMode string) {
+	var address uint16
 	switch addressingMode {
 	case ZEROPAGE:
-		address := cpu.operand1()
-		writeMemory(uint16(address), cpu.A)
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ZEROPAGEX:
-		address := (cpu.operand1() + cpu.X) & 0xFF // Ensure wraparound in Zero Page
-		writeMemory(uint16(address), cpu.A)
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		writeMemory(address, cpu.A)
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		address := baseAddress + uint16(cpu.X)
+		baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+		address = cpu.AbsoluteXAddressing()
 		// Perform dummy read if page boundary is crossed
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			_ = readMemory(baseAddress&0xFF00 | (address & 0x00FF))
 		}
-		writeMemory(address, cpu.A)
 		cpu.updateCycleCounter(5)
 		cpu.handleState(3)
 	case ABSOLUTEY:
-		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		address := baseAddress + uint16(cpu.Y)
+		baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+		address = cpu.AbsoluteYAddressing()
 		// Perform dummy read if page boundary is crossed
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			_ = readMemory(baseAddress&0xFF00 | (address & 0x00FF))
 		}
-		writeMemory(address, cpu.A)
 		cpu.updateCycleCounter(5)
 		cpu.handleState(3)
 	case INDIRECTX:
-		zeroPageAddress := (cpu.operand1() + cpu.X) & 0xFF
-		address := uint16(readMemory(uint16(zeroPageAddress))) | uint16(readMemory((uint16(zeroPageAddress)+1)&0xFF))<<8
-		writeMemory(address, cpu.A)
+		address = cpu.IndirectXAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case INDIRECTY:
-		zeroPageAddress := cpu.operand1()
-		address := uint16(readMemory(uint16(zeroPageAddress))) | uint16(readMemory((uint16(zeroPageAddress)+1)&0xFF))<<8
-		finalAddress := (address + uint16(cpu.Y)) & 0xFFFF
-		writeMemory(finalAddress, cpu.A)
+		address = cpu.IndirectYAddressing()
+		//finalAddress := (address + uint16(cpu.preOpY)) & 0xFFFF
+		//writeMemory(finalAddress, cpu.preOpA)
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	}
+	writeMemory(address, cpu.preOpA)
 }
 func STX(addressingMode string) {
+	var address uint16
 	switch addressingMode {
 	case ZEROPAGE:
-		address := cpu.operand1()
-		writeMemory(uint16(address), cpu.X)
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ZEROPAGEY:
-		address := (cpu.operand1() + cpu.Y) & 0xFF
-		writeMemory(uint16(address), cpu.X)
+		address = cpu.ZeroPageYAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		writeMemory(address, cpu.X)
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	}
+	writeMemory(address, cpu.preOpX)
 }
 func STY(addressingMode string) {
+	var address uint16
 	switch addressingMode {
 	case ZEROPAGE:
-		address := cpu.operand1()
-		writeMemory(uint16(address), cpu.Y)
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ZEROPAGEX:
-		address := (cpu.operand1() + cpu.X) & 0xFF
-		writeMemory(uint16(address), cpu.Y)
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		writeMemory(address, cpu.Y)
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	}
+	writeMemory(address, cpu.preOpY)
 }
 func CMP(addressingMode string) {
 	var value, result byte
+	var address uint16
 	setFlags := func() {
 		// Subtract the value from the accumulator
-		result = cpu.A - value
+		result = cpu.preOpA - value
 		// If the result is 0, set the zero flag
 		if result == 0 {
 			cpu.setZeroFlag()
@@ -671,13 +602,13 @@ func CMP(addressingMode string) {
 			cpu.unsetZeroFlag()
 		}
 		// If bit 7 of the result is set, set the negative flag
-		if readBit(7, result) == 1 {
+		if cpu.readBit(7, result) == 1 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
 		}
 		// If the value is less than or equal to the accumulator, set the carry flag, else reset it
-		if value <= cpu.A {
+		if value <= cpu.preOpA {
 			cpu.setCarryFlag()
 		} else {
 			cpu.unsetCarryFlag()
@@ -691,81 +622,35 @@ func CMP(addressingMode string) {
 		}
 	}
 	switch addressingMode {
-	case IMMEDIATE: // Immediate
-		// Get value from cpu.operand1()
-		value = cpu.operand1()
-		setFlags()
-	case ZEROPAGE: // Zero Page
-		// Get address
-		address := cpu.operand1()
-		// Subtract the operand from the accumulator
-		value = readMemory(uint16(address))
-		setFlags()
-	case ZEROPAGEX: // Zero Page, X
-		// Get address
-		address := cpu.operand1() + cpu.X
-		// Get value at address
-		value = readMemory(uint16(address))
-		setFlags()
-	case ABSOLUTE: // Absolute
-		// Get 16bit absolute address
-		address := int(cpu.operand2())<<8 | int(cpu.operand1())
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		setFlags()
-	case ABSOLUTEX: // Absolute, X
-		// Get address
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1()) + uint16(cpu.X)
-		// Get value at address
-		value = readMemory(address)
-		setFlags()
-	case ABSOLUTEY: // Absolute, Y
-		// Get address
-		address := int(cpu.operand2())<<8 | int(cpu.operand1()) + int(cpu.Y)
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		setFlags()
+	case IMMEDIATE:
+		value = cpu.ImmediateAddressing()
+	case ZEROPAGE:
+		address = cpu.ZeroPageAddressing()
+	case ZEROPAGEX:
+		address = cpu.ZeroPageXAddressing()
+	case ABSOLUTE:
+		address = cpu.AbsoluteAddressing()
+	case ABSOLUTEX:
+		address = cpu.AbsoluteXAddressing()
+	case ABSOLUTEY:
+		address = cpu.AbsoluteYAddressing()
 	case INDIRECTX: // Indirect, X
-		// Get the address of the operand
-		address := int(cpu.operand1()) + int(cpu.X)
-		// Get the value of the operand
-		value = readMemory(uint16(address))
-		setFlags()
-	case INDIRECTY: // Indirect, Y
-		// Get the zero page address from the operand
-		zeroPageAddress := cpu.operand1()
-		// Fetch the low byte of the address
-		lowByte := readMemory(uint16(zeroPageAddress))
-		// Fetch the high byte of the address from the next page address, wrapping within the zero page
-		highByte := readMemory(uint16(zeroPageAddress+1) & 0x00FF)
-		// Combine the high and low bytes to form the 16-bit address
-		address := uint16(highByte)<<8 | uint16(lowByte)
-		// Add the Y register to the address with proper wrapping around the 16-bit address space
-		finalAddress := (address + uint16(cpu.Y)) & 0xFFFF
-		// Get the value at the final address
-		value = readMemory(finalAddress)
-		setFlags()
-
+		address = cpu.IndirectXAddressing()
+	case INDIRECTY:
+		address = cpu.IndirectYAddressing()
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	setFlags()
 }
 func JMP(addressingMode string) {
-	cpu.updateCycleCounter(3)
-	cpu.handleState(0)
+	var address uint16
 	switch addressingMode {
 	case ABSOLUTE:
-		// Get the 16 bit address from operands
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Set the program counter to the absolute address
-		cpu.setPC(address)
+		address = cpu.AbsoluteAddressing()
 	case INDIRECT:
-		// Get the 16 bit address from operands
-		loByteAddress := uint16(cpu.operand1()) | uint16(cpu.operand2())<<8
-		// Correctly emulate the 6502 JMP indirect page boundary hardware bug
-		hiByteAddress := (loByteAddress & 0xFF00) | uint16((loByteAddress+1)&0x00FF)
-		// Fetch the address to jump to, considering the page boundary bug
-		indirectAddress := uint16(readMemory(loByteAddress)) | uint16(readMemory(hiByteAddress))<<8
-		// Set the program counter to the indirect address
-		cpu.setPC(indirectAddress)
+		address = cpu.IndirectAddressing()
 	}
 	if *klausd {
 		//if readMemory(0x02) == 0xDE && readMemory(0x03) == 0xB0 {
@@ -778,9 +663,13 @@ func JMP(addressingMode string) {
 			os.Exit(0)
 		}
 	}
+	cpu.setPC(address)
+	cpu.updateCycleCounter(3)
+	cpu.handleState(0)
 }
 func AND(addressingMode string) {
 	var value, result byte
+	var address uint16
 	setFlags := func() {
 		// If the result is 0, set the zero flag
 		if result == 0 {
@@ -789,7 +678,7 @@ func AND(addressingMode string) {
 			cpu.unsetZeroFlag()
 		}
 		// If bit 7 of the result is set, set the negative flag
-		if readBit(7, result) == 1 {
+		if cpu.readBit(7, result) == 1 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
@@ -797,109 +686,49 @@ func AND(addressingMode string) {
 	}
 	switch addressingMode {
 	case IMMEDIATE:
-		// Get the value from the operand
-		value = cpu.operand1()
-		// AND the value with the accumulator
-		result = cpu.A & value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		value = cpu.ImmediateAddressing()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(2)
 	case ZEROPAGE:
-		// Get the address from the operand
-		address := cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// AND the value with the accumulator
-		result = cpu.A & value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ZEROPAGEX:
-		// Get address
-		address := cpu.operand1() + cpu.X
-		// Get value at address
-		value = readMemory(uint16(address))
-		// AND the value with the accumulator
-		result = cpu.A & value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get value at address
-		value = readMemory(address)
-		// AND the value with the accumulator
-		result = cpu.A & value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		// Get address
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1()) + uint16(cpu.X)
-		// Get value at address
-		value = readMemory(address)
-		// AND the value with the accumulator
-		result = cpu.A & value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEY:
-		// Get the address
-		address := int(cpu.operand2())<<8 | int(cpu.operand1()) + int(cpu.Y)
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// AND the value with the accumulator
-		result = cpu.A & value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.AbsoluteYAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case INDIRECTX:
-		// Get the address
-		indirectAddress := int(cpu.operand1()) + int(cpu.X)
-		address := int(readMemory(uint16(indirectAddress))) + int(readMemory(uint16(indirectAddress+1)))<<8
-		// Get the value from the address
-		value = readMemory(uint16(address))
-		// AND the value with the accumulator
-		result = cpu.A & value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.IndirectXAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case INDIRECTY:
-		// Get the 16bit address
-		address := uint16(int(cpu.operand1()))
-		// Get the indirect address
-		indirectAddress1 := readMemory(address)
-		indirectAddress2 := readMemory(address + 1)
-		//indirectAddress := uint16(int(indirectAddress1)+int(indirectAddress2)<<8) + uint16(cpu.Y)
-		indirectAddress := uint16(int(indirectAddress1)+int(indirectAddress2)<<8) + uint16(cpu.Y)
-		// Get the value at the address
-		value = readMemory(indirectAddress)
-		// AND the value with the accumulator
-		result = cpu.A & value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.IndirectYAddressing()
 		cpu.updateCycleCounter(5)
 		cpu.handleState(2)
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	// AND the value with the accumulator
+	result = cpu.A & value
+	cpu.A = result
+	setFlags()
 }
 func EOR(addressingMode string) {
 	var value, result byte
+	var address uint16
 	setFlags := func() {
 		// If the result is 0, set the zero flag
 		if result == 0 {
@@ -908,7 +737,7 @@ func EOR(addressingMode string) {
 			cpu.unsetZeroFlag()
 		}
 		// If bit 7 of the result is set, set the negative flag
-		//if readBit(7, result) == 1 {
+		//if cpu.readBit(7, result) == 1 {
 		if result&0x80 != 0 {
 			cpu.setNegativeFlag()
 		} else {
@@ -917,110 +746,49 @@ func EOR(addressingMode string) {
 	}
 	switch addressingMode {
 	case IMMEDIATE:
-		// Get the value from the operand
-		value = cpu.operand1()
-		// XOR the value with the accumulator
-		result = cpu.A ^ value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		value = cpu.ImmediateAddressing()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(2)
 	case ZEROPAGE:
-		// Get the address from the operand
-		address := cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// XOR the value with the accumulator
-		result = cpu.A ^ value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ZEROPAGEX:
-		// Get address
-		address := cpu.operand1() + cpu.X
-		// Get value at address
-		value = readMemory(uint16(address))
-		// XOR the value with the accumulator
-		result = cpu.A ^ value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get value at address
-		value = readMemory(address)
-		// XOR the value with the accumulator
-		result = cpu.A ^ value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		// Get address
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1()) + uint16(cpu.X)
-		// Get value at address
-		value = readMemory(address)
-		// XOR the value with the accumulator
-		result = cpu.A ^ value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEY:
-		// Get the address
-		address := int(cpu.operand2())<<8 | int(cpu.operand1()) + int(cpu.Y)
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// XOR the value with the accumulator
-		result = cpu.A ^ value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.AbsoluteYAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case INDIRECTX:
-		// Get the zero page address to use as a pointer
-		zpAddress := cpu.operand1()
-		// Calculate the effective address using X register to get the LSB of the address
-		effAddrLsb := readMemory(uint16(zpAddress+cpu.X) & 0x00FF)
-		// Get the MSB of the address from the next zero page location
-		effAddrMsb := readMemory(uint16(zpAddress+cpu.X+1) & 0x00FF)
-		address := uint16(effAddrMsb)<<8 | uint16(effAddrLsb)
-		// Get the value at the effective address
-		value = readMemory(address)
-		result = cpu.A ^ value
-		cpu.A = result
-		setFlags()
+		address = cpu.IndirectXAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case INDIRECTY:
-		// Get the zero page address to use as a pointer
-		zpAddress := cpu.operand1()
-		// Get the LSB of the effective address from the zero page
-		effAddrLsb := readMemory(uint16(zpAddress))
-		// Get the MSB of the effective address from the next zero page location
-		effAddrMsb := readMemory(uint16(zpAddress+1) & 0x00FF)
-		// Calculate the final address using the Y register
-		finalAddress := uint16(effAddrMsb)<<8 | uint16(effAddrLsb) + uint16(cpu.Y)
-		// Get the value at the final address
-		value = readMemory(finalAddress)
-		result = cpu.A ^ value
-		cpu.A = result
-		setFlags()
+		address = cpu.IndirectYAddressing()
 		cpu.updateCycleCounter(5)
 		cpu.handleState(2)
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	// XOR the value with the accumulator
+	result = cpu.A ^ value
+	cpu.A = result
+	setFlags()
 }
 func ORA(addressingMode string) {
 	var value, result byte
+	var address uint16
 	setFlags := func() {
 		// If the result is 0, set the zero flag
 		if result == 0 {
@@ -1029,115 +797,64 @@ func ORA(addressingMode string) {
 			cpu.unsetZeroFlag()
 		}
 		// If bit 7 of the result is set, set the negative flag
-		if readBit(7, result) == 1 {
+		if cpu.readBit(7, result) == 1 {
 			cpu.setNegativeFlag()
 		}
 	}
 	switch addressingMode {
 	case IMMEDIATE:
-		// Get the value from the operand
-		value = cpu.operand1()
-		// OR the value with the accumulator
-		result = cpu.A | value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		value = cpu.ImmediateAddressing()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(2)
 	case ZEROPAGE:
-		// Get the address from the operand
-		address := cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// OR the value with the accumulator
-		result = cpu.A | value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ZEROPAGEX:
-		// Get address
-		address := cpu.operand1() + cpu.X
-		// Get value at address
-		value = readMemory(uint16(address))
-		// OR the value with the accumulator
-		result = cpu.A | value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get value at address
-		value = readMemory(address)
-		// OR the value with the accumulator
-		result = cpu.A | value
-		// Set the accumulator to the result
-		cpu.A = result
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		address := (uint16(cpu.operand1()) + uint16(cpu.X)) | uint16(cpu.operand2())<<8
-		value = readMemory(address)
-		cpu.A |= value
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case ABSOLUTEY:
-		address := (uint16(cpu.operand1()) + uint16(cpu.Y)) | uint16(cpu.operand2())<<8
-		value = readMemory(address)
-		cpu.A |= value
-		setFlags()
+		address = cpu.AbsoluteYAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	case INDIRECTX:
-		// Get the zero page address to use as a pointer
-		zpAddress := cpu.operand1()
-		// Calculate the effective address using X register to get the LSB of the address
-		effAddrLsb := readMemory(uint16(zpAddress+cpu.X) & 0x00FF)
-		// Get the MSB of the address from the next zero page location
-		effAddrMsb := readMemory(uint16(zpAddress+cpu.X+1) & 0x00FF)
-		address := uint16(effAddrMsb)<<8 | uint16(effAddrLsb)
-		// Get the value at the effective address
-		value = readMemory(address)
-		result = cpu.A | value
-		cpu.A = result
-		setFlags()
+		address = cpu.IndirectXAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case INDIRECTY:
-		// Get the zero page address to use as a pointer
-		zpAddress := cpu.operand1()
-		// Get the LSB of the effective address from the zero page
-		effAddrLsb := readMemory(uint16(zpAddress))
-		// Get the MSB of the effective address from the next zero page location
-		effAddrMsb := readMemory(uint16(zpAddress+1) & 0x00FF)
-		// Calculate the final address using the Y register
-		finalAddress := uint16(effAddrMsb)<<8 | uint16(effAddrLsb) + uint16(cpu.Y)
-		// Get the value at the final address
-		value = readMemory(finalAddress)
-		result = cpu.A | value
-		cpu.A = result
-		setFlags()
+		address = cpu.IndirectYAddressing()
 		cpu.updateCycleCounter(5)
 		cpu.handleState(2)
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	// OR the value with the accumulator
+	result = cpu.preOpA | value
+	cpu.A = result
+	setFlags()
 }
 func BIT(addressingMode string) {
 	var value, result byte
+	var address uint16
 	setFlags := func() {
 		// Set Negative flag to bit 7 of the value
-		if readBit(7, value) == 1 {
+		if cpu.readBit(7, value) == 1 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
 		}
 		// Set Overflow flag to bit 6 of the value
-		if readBit(6, value) == 1 {
+		if cpu.readBit(6, value) == 1 {
 			cpu.setOverflowFlag()
 		} else {
 			cpu.unsetOverflowFlag()
@@ -1151,34 +868,27 @@ func BIT(addressingMode string) {
 	}
 	switch addressingMode {
 	case ZEROPAGE:
-		// Get the address from the operand
-		address := cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// AND the value with the accumulator
-		result = cpu.A & value
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get value at address
-		value = readMemory(address)
-		// AND the value with the accumulator
-		result = cpu.A & value
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(4)
 		cpu.handleState(3)
 	}
+	value = readMemory(address)
+	// AND the value with the accumulator
+	result = cpu.preOpA & value
+	cpu.A = result
+	setFlags()
 }
 func INC(addressingMode string) {
 	var address uint16
-	var result byte
+	var result, value byte
 
 	setFlags := func() {
 		// Fetch the value from the address
-		value := readMemory(address)
+		value = readMemory(address)
 		// Increment the value (wrapping around for 8-bit values)
 		result = value + 1
 		// Write the result back to memory
@@ -1200,38 +910,31 @@ func INC(addressingMode string) {
 	}
 	switch addressingMode {
 	case ZEROPAGE:
-		// Get the address from the operand
-		address = uint16(cpu.operand1())
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(5)
 		cpu.handleState(2)
 	case ZEROPAGEX:
-		// Get the address from the operand with X offset
-		address = uint16(cpu.operand1() + cpu.X)
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get 16-bit address from operand1 and operand2
-		address = uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		// Get 16-bit address from operand1 and operand2 with X offset
-		address = (uint16(cpu.operand2())<<8 | uint16(cpu.operand1())) + uint16(cpu.X)
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
 		cpu.updateCycleCounter(7)
 		cpu.handleState(3)
 	}
+	setFlags()
 }
 func DEC(addressingMode string) {
 	var address uint16
-	var result byte
+	var result, value byte
 
 	setFlags := func() {
 		// Fetch the value from the address
-		value := readMemory(address)
+		value = readMemory(address)
 		// Decrement the value (wrapping around for 8-bit values)
 		result = value - 1
 		// Write the result back to memory
@@ -1239,7 +942,7 @@ func DEC(addressingMode string) {
 
 		// Update status flags
 		// If bit 7 of the result is set, set the negative flag
-		//if readBit(7, result) == 1 {
+		//if cpu.readBit(7, result) == 1 {
 		if result&0x80 != 0 {
 			cpu.setNegativeFlag()
 		} else {
@@ -1254,49 +957,43 @@ func DEC(addressingMode string) {
 	}
 	switch addressingMode {
 	case ZEROPAGE:
-		// Get the address from the operand
-		address = uint16(cpu.operand1())
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(5)
 		cpu.handleState(2)
 	case ZEROPAGEX:
-		// Get the address from the operand with X offset
-		address = uint16(cpu.operand1() + cpu.X)
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get 16-bit address from operand1 and operand2
-		address = uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		// Get 16-bit address from operand1 and operand2 with X offset
-		address = (uint16(cpu.operand2())<<8 | uint16(cpu.operand1())) + uint16(cpu.X)
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
 		cpu.updateCycleCounter(7)
 		cpu.handleState(3)
 	}
+	setFlags()
 }
 func ADC(addressingMode string) {
 	var value byte
 	var result int
+	var address uint16
 
 	setFlags := func() {
 		// Binary mode is the default
-		tmpResult := int(cpu.A) + int(value)
+		tmpResult := int(cpu.preOpA) + int(value)
 		if cpu.getSRBit(0) == 1 {
 			tmpResult++
 		}
 
 		if cpu.getSRBit(3) == 1 { // BCD mode
-			temp := (cpu.A & 0x0F) + (value & 0x0F) + cpu.getSRBit(0)
+			temp := (cpu.preOpA & 0x0F) + (value & 0x0F) + cpu.getSRBit(0)
 			if temp > 9 {
 				temp += 6
 			}
 
-			result = int((cpu.A & 0xF0) + (value & 0xF0) + (temp & 0x0F))
+			result = int((cpu.preOpA & 0xF0) + (value & 0xF0) + (temp & 0x0F))
 
 			if result > 0x99 {
 				result += 0x60
@@ -1312,7 +1009,7 @@ func ADC(addressingMode string) {
 		}
 
 		// Handle V (overflow) flag
-		if (int(cpu.A)^int(value))&0x80 == 0 && (int(cpu.A)^tmpResult)&0x80 != 0 {
+		if (int(cpu.preOpA)^int(value))&0x80 == 0 && (int(cpu.preOpA)^tmpResult)&0x80 != 0 {
 			cpu.setOverflowFlag()
 		} else {
 			cpu.unsetOverflowFlag()
@@ -1335,7 +1032,6 @@ func ADC(addressingMode string) {
 
 		cpu.A = byte(result)
 
-		// Your addressing mode cycle counts remain the same
 		if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
 			cpu.updateCycleCounter(2)
 			cpu.handleState(2)
@@ -1347,78 +1043,45 @@ func ADC(addressingMode string) {
 	}
 	switch addressingMode {
 	case IMMEDIATE:
-		// Get the value from the operand
-		value = cpu.operand1()
-		setFlags()
+		value = cpu.ImmediateAddressing()
 	case ZEROPAGE:
-		// Get the address from the operand
-		address := cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 	case ZEROPAGEX:
-		// Get the address from the operand
-		address := cpu.operand1() + cpu.X
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 	case ABSOLUTE:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get value at address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 	case ABSOLUTEX:
-		// Get 16 bit address from operand1 and operand2
-		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Perform a dummy read at the base address
-		_ = readMemory(baseAddress)
-		// Add the X register to the base address for the actual read
-		address := baseAddress + uint16(cpu.X)
-		// Get value at address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
+		//Perform a dummy read of the address then fetch value
+		_ = readMemory(address)
 	case ABSOLUTEY:
-		// Get 16 bit address from operand1 and operand2
-		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Perform a dummy read at the base address
-		_ = readMemory(baseAddress)
-		// Add the Y register to the base address for the actual read
-		address := baseAddress + uint16(cpu.Y)
-		// Get value at address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.AbsoluteYAddressing()
+		// Perform a dummy read of the address then fetch value
+		_ = readMemory(address)
 	case INDIRECTX:
-		// Get the indirect address from the operand
-		indirectAddress := cpu.operand1() + cpu.X
-		// Get the address from the indirect address
-		address := uint16(readMemory(uint16(indirectAddress+1)))<<8 | uint16(readMemory(uint16(indirectAddress)))
-		// Get the value at the address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.IndirectXAddressing()
 	case INDIRECTY:
-		// Get the indirect address from the operand
-		indirectAddress := cpu.operand1()
-		// Get the address from the indirect address
-		address := uint16(readMemory(uint16(indirectAddress+1)))<<8 | uint16(readMemory(uint16(indirectAddress))) + uint16(cpu.Y)
-		// Get the value at the address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.IndirectYAddressing()
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	setFlags()
 }
 func SBC(addressingMode string) {
 	var value byte
 	var result int
+	var address uint16
 
 	setFlags := func() {
 		// Check for BCD mode (Decimal flag set)
 		if cpu.getSRBit(3) == 1 { // BCD mode
-			lowNibble := (cpu.A & 0x0F) - (value & 0x0F) - (cpu.getSRBit(0) ^ 1)
+			lowNibble := (cpu.preOpA & 0x0F) - (value & 0x0F) - (cpu.getSRBit(0) ^ 1)
 			if lowNibble < 0 {
 				lowNibble = (lowNibble - 6) & 0x0F // Only keep the low nibble
 			}
 
-			highNibble := (cpu.A & 0xF0) - (value & 0xF0) - (lowNibble & 0x10)
+			highNibble := (cpu.preOpA & 0xF0) - (value & 0xF0) - (lowNibble & 0x10)
 			if highNibble < 0 {
 				highNibble -= 0x60
 			}
@@ -1434,7 +1097,7 @@ func SBC(addressingMode string) {
 			result &= 0xFF // Ensure result is only 8 bits
 		} else {
 			// Binary mode
-			result = int(cpu.A) - int(value)
+			result = int(cpu.preOpA) - int(value)
 			if cpu.getSRBit(0) == 0 {
 				result--
 			}
@@ -1447,8 +1110,7 @@ func SBC(addressingMode string) {
 			}
 		}
 
-		// Negative, and Zero flag checks remain the same
-		if readBit(7, byte(result)) == 1 {
+		if cpu.readBit(7, byte(result)) == 1 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
@@ -1458,7 +1120,6 @@ func SBC(addressingMode string) {
 		}
 		cpu.A = byte(result)
 
-		// Your addressing mode cycle counts remain the same
 		if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
 			cpu.updateCycleCounter(2)
 			cpu.handleState(2)
@@ -1470,60 +1131,31 @@ func SBC(addressingMode string) {
 	}
 	switch addressingMode {
 	case IMMEDIATE:
-		// Get the value from the operand
-		value = cpu.operand1()
-		setFlags()
+		value = cpu.ImmediateAddressing()
 	case ZEROPAGE:
-		// Get the address from the operand
-		address := cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 	case ZEROPAGEX:
-		// Get the address from the operand
-		address := cpu.operand1() + cpu.X
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 	case ABSOLUTE:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get value at address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 	case ABSOLUTEX:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1()) + uint16(cpu.X)
-		// Get value at address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
 	case ABSOLUTEY:
-		// Get 16 bit address from operand1 and operand2
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1()) + uint16(cpu.Y)
-		// Get value at address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.AbsoluteYAddressing()
 	case INDIRECTX:
-		// Get the indirect address from the operand
-		indirectAddress := cpu.operand1() + cpu.X
-		// Get the address from the indirect address
-		address := uint16(readMemory(uint16(indirectAddress+1)))<<8 | uint16(readMemory(uint16(indirectAddress)))
-		// Get the value at the address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.IndirectXAddressing()
 	case INDIRECTY:
-		// Get the indirect address from the operand
-		indirectAddress := cpu.operand1()
-		// Get the address from the indirect address
-		address := uint16(readMemory(uint16(indirectAddress+1)))<<8 | uint16(readMemory(uint16(indirectAddress))) + uint16(cpu.Y)
-		// Get the value at the address
-		value = readMemory(address)
+		address = cpu.IndirectYAddressing()
 		setFlags()
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	setFlags()
 }
 func ROR(addressingMode string) {
-	var address, value, result byte
-	var address16 uint16
+	var value, result byte
+	var address uint16
 
 	setFlags := func() {
 		// Store the carry in a temp variable
@@ -1560,61 +1192,38 @@ func ROR(addressingMode string) {
 		}
 		if addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX {
 			// Store the value back into memory
-			writeMemory(uint16(address), result)
+			writeMemory(address, result)
 			cpu.updateCycleCounter(5)
 			cpu.handleState(2)
 		}
 		if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX {
 			// Store the value back into memory
-			writeMemory(address16, result)
+			writeMemory(address, result)
 			cpu.updateCycleCounter(6)
 			cpu.handleState(3)
 		}
 	}
 	switch addressingMode {
 	case ACCUMULATOR:
-		// Get value from accumulator
-		value = cpu.A
-		// Rotate right one bit
-		result = value >> 1
-		setFlags()
+		value = cpu.preOpA
 	case ZEROPAGE:
-		// Get address
-		address = cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// Shift the value right 1 bit
-		result = value >> 1
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 	case ZEROPAGEX:
-		// Get X indexed zero page address
-		address = cpu.operand1() + cpu.X
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// Shift the value right 1 bit
-		result = value >> 1
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 	case ABSOLUTE:
-		// Get 16 bit address from operands
-		address16 = uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get the value stored at the address in the operands
-		value = readMemory(address16)
-		// Shift the value right 1 bit
-		result = value >> 1
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 	case ABSOLUTEX:
-		// Get 16 bit address
-		address16 = uint16(cpu.operand2())<<8 | uint16(cpu.operand1()) + uint16(cpu.X)
-		// Get value stored at address
-		value = readMemory(address16)
-		// Shift right the value by 1 bit
-		result = value >> 1
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
 	}
+	if addressingMode != ACCUMULATOR {
+		value = readMemory(address)
+	}
+	result = (value >> 1)
+	setFlags()
 }
 func ROL(addressingMode string) {
-	var address, value, result byte
-	var address16 uint16
+	var value, result byte
+	var address uint16
 
 	setFlags := func() {
 		// Store the carry in a temp variable
@@ -1651,13 +1260,13 @@ func ROL(addressingMode string) {
 		}
 		if addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX {
 			// Store the value back into memory
-			writeMemory(uint16(address), result)
+			writeMemory(address, result)
 			cpu.updateCycleCounter(5)
 			cpu.handleState(2)
 		}
 		if addressingMode == ABSOLUTE || addressingMode == ABSOLUTEX {
 			// Store the value back into memory
-			writeMemory(address16, result)
+			writeMemory(address, result)
 			cpu.updateCycleCounter(6)
 			cpu.handleState(3)
 		}
@@ -1665,56 +1274,26 @@ func ROL(addressingMode string) {
 	switch addressingMode {
 	case ACCUMULATOR:
 		// Get the value of the accumulator
-		value = cpu.A
-		// Shift the value left 1 bit
-		result = value << 1
-		// Update bit 0 of result with the value of the carry flag
-		result = (result & 0xFE) | cpu.getSRBit(0)
-		setFlags()
+		value = cpu.preOpA
 	case ZEROPAGE:
-		// Get address
-		address = cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// Shift the value left 1 bit
-		result = value << 1
-		// Update bit 0 of result with the value of the carry flag
-		result = (result & 0xFE) | cpu.getSRBit(0)
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 	case ZEROPAGEX:
-		// Get X indexed zero page address
-		address = cpu.operand1() + cpu.X
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// Shift the value left 1 bit
-		result = value << 1
-		// Update bit 0 of result with the value of the carry flag
-		result = (result & 0xFE) | cpu.getSRBit(0)
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 	case ABSOLUTE:
-		// Get 16 bit address from operands
-		address16 = uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get the value stored at the address in the operands
-		value = readMemory(address16)
-		// Shift the value left 1 bit
-		result = value << 1
-		// Update bit 0 of result with the value of the carry flag
-		result = (result & 0xFE) | cpu.getSRBit(0)
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 	case ABSOLUTEX:
-		// Get 16bit X indexed absolute memory address
-		address16 = uint16(cpu.operand2())<<8 | uint16(cpu.operand1()) + uint16(cpu.X)
-		// Get the value stored at the address
-		value = readMemory(address16)
-		// Shift the value left 1 bit
-		result = value << 1
-		// Update bit 0 of result with the value of the carry flag
-		result = (result & 0xFE) | cpu.getSRBit(0)
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
 	}
+	if addressingMode != ACCUMULATOR {
+		value = readMemory(address)
+	}
+	result = value << 1
+	result = (result & 0xFE) | cpu.getSRBit(0)
+	setFlags()
 }
 func LSR(addressingMode string) {
 	var value, result byte
+	var address uint16
 
 	setFlags := func() {
 		// Reset the SR negative flag
@@ -1738,63 +1317,33 @@ func LSR(addressingMode string) {
 	switch addressingMode {
 	case ACCUMULATOR:
 		// Get the value of the accumulator
-		value = cpu.A
+		value = cpu.preOpA
 		// Shift the value right 1 bit
 		result = value >> 1
 		// Store the result back into the accumulator
 		cpu.A = result
-		setFlags()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(1)
 	case ZEROPAGE:
-		// Get address
-		address := cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// Shift the value right 1 bit
-		result = value >> 1
-		// Store the value back into memory
-		writeMemory(uint16(address), result)
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(5)
 		cpu.handleState(2)
 	case ZEROPAGEX:
-		// Get the X indexed address
-		address := cpu.operand1() + cpu.X
-		// Get the value at the X indexed address
-		value = readMemory(uint16(address))
-		// Shift the value right 1 bit
-		result = value >> 1
-		// Store the shifted value in memory
-		writeMemory(uint16(address), result)
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get 16 bit address from operands
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get the value stored at the address in the operands
-		value = readMemory(address)
-		// Shift the value right 1 bit
-		result = value >> 1
-		// Store the shifted value back in memory
-		writeMemory(address, result)
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(3)
 	case ABSOLUTEX:
 		// Dummy read for Absolute,X addressing mode if page boundary is crossed
-		baseAddress := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		address := baseAddress + uint16(cpu.X)
+		baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+		address := cpu.AbsoluteXAddressing()
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			// Perform a dummy read if a page boundary is crossed
 			readMemory(baseAddress&0xFF00 | (address & 0x00FF))
 		}
-		value = readMemory(address)
-		result = value >> 1
-		// Write the result back to the calculated effective address
-		writeMemory(address, result)
-		setFlags()
 		// Update cycle counter depending on page boundary crossing
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			cpu.updateCycleCounter(7) // Add 1 if page boundary is crossed
@@ -1802,11 +1351,17 @@ func LSR(addressingMode string) {
 			cpu.updateCycleCounter(6)
 		}
 		cpu.handleState(3)
-
 	}
+	if addressingMode != ACCUMULATOR {
+		value = readMemory(address)
+		result = value >> 1
+		writeMemory(address, result)
+	}
+	setFlags()
 }
 func ASL(addressingMode string) {
 	var value, result byte
+	var address uint16
 
 	setFlags := func() {
 		// Update the zero flag
@@ -1833,84 +1388,58 @@ func ASL(addressingMode string) {
 	switch addressingMode {
 	case ACCUMULATOR:
 		// Set value to accumulator
-		value = cpu.A
+		value = cpu.preOpA
 		// Shift the value left 1 bit
 		result = value << 1
 		// Update the accumulator with the result
 		cpu.A = result
-		setFlags()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(1)
 	case ZEROPAGE:
-		// Get address
-		address := cpu.operand1()
-		// Get the value at the address
-		value = readMemory(uint16(address))
-		// Shift the value left 1 bit
-		result = value << 1
-		// Store the value back into memory
-		writeMemory(uint16(address), result)
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(5)
 		cpu.handleState(2)
 	case ZEROPAGEX:
-		// Get the X indexed address
-		address := cpu.operand1() + cpu.X
-		// Get the value at the X indexed address
-		value = readMemory(uint16(address))
-		// Shift the value left 1 bit
-		result = value << 1
-		// Store the shifted value in memory
-		writeMemory(uint16(address), result)
-		setFlags()
+		address = cpu.ZeroPageXAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get 16 bit address from operands
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get the value stored at the address in the operands
-		value = readMemory(address)
-		// Shift the value left 1 bit
-		result = value << 1
-		// Store the shifted value back in memory
-		writeMemory(address, result)
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(6)
 		cpu.handleState(3)
 	case ABSOLUTEX:
-		// Get the 16bit X indexed absolute memory address
-		address := int(cpu.operand2())<<8 | int(cpu.operand1()) + int(cpu.X)
-		// Get the value stored at the address
-		value = readMemory(uint16(address))
-		// Shift the value left 1 bit
-		result = value << 1
-		// Store the shifted value back in memory
-		writeMemory(uint16(address), result)
-		setFlags()
+		address = cpu.AbsoluteXAddressing()
 		cpu.updateCycleCounter(7)
 		cpu.handleState(3)
 	}
+	if addressingMode != ACCUMULATOR {
+		value = readMemory(address)
+		result = value << 1
+		writeMemory(address, result)
+	}
+	setFlags()
 }
 func CPX(addressingMode string) {
 	var value, result byte
+	var address uint16
 
 	setFlags := func() {
 		// Set or clear the carry flag
-		if cpu.X >= value {
+		if cpu.preOpX >= value {
 			cpu.setCarryFlag()
 		} else {
 			cpu.unsetCarryFlag()
 		}
 
 		// Set or clear the zero flag
-		if cpu.X == value {
+		if cpu.preOpX == value {
 			cpu.setZeroFlag()
 		} else {
 			cpu.unsetZeroFlag()
 		}
 
 		// Set or clear the negative flag based on the high bit of the subtraction result
-		result = cpu.X - value
+		result = cpu.preOpX - value
 		if result&0x80 != 0 {
 			cpu.setNegativeFlag()
 		} else {
@@ -1919,53 +1448,44 @@ func CPX(addressingMode string) {
 	}
 	switch addressingMode {
 	case IMMEDIATE:
-		// Get value from operand1
-		value = cpu.operand1()
-		// Compare X with value
-		result = cpu.X - value
-		setFlags()
+		value = cpu.ImmediateAddressing()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(2)
 	case ZEROPAGE:
-		// Get address
-		address := cpu.operand1()
-		// Get value at address
-		value = readMemory(uint16(address))
-		// Store result of X-memory stored at cpu.operand1() in result variable
-		result = cpu.X - value
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get address
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get value at address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(3)
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	setFlags()
 }
 func CPY(addressingMode string) {
 	var value, result byte
+	var address uint16
 
 	setFlags := func() {
 		// Set or clear the carry flag
-		if cpu.Y >= value {
+		if cpu.preOpY >= value {
 			cpu.setCarryFlag()
 		} else {
 			cpu.unsetCarryFlag()
 		}
 
 		// Set or clear the zero flag
-		if cpu.Y == value {
+		if cpu.preOpY == value {
 			cpu.setZeroFlag()
 		} else {
 			cpu.unsetZeroFlag()
 		}
 
 		// Set or clear the negative flag based on the high bit of the subtraction result
-		result = cpu.Y - value
+		result = cpu.preOpY - value
 		if result&0x80 != 0 {
 			cpu.setNegativeFlag()
 		} else {
@@ -1974,32 +1494,22 @@ func CPY(addressingMode string) {
 	}
 	switch addressingMode {
 	case IMMEDIATE:
-		// Get value from operand1
-		value = cpu.operand1()
-		// Subtract operand from Y
-		result = cpu.Y - cpu.operand1()
-		setFlags()
+		value = cpu.ImmediateAddressing()
 		cpu.updateCycleCounter(2)
 		cpu.handleState(2)
 	case ZEROPAGE:
-		// Get address
-		address := cpu.operand1()
-		// Get value at address
-		value = readMemory(uint16(address))
-		// Store result of Y-memory stored at cpu.operand1() in result variable
-		result = cpu.Y - value
-		setFlags()
+		address = cpu.ZeroPageAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(2)
 	case ABSOLUTE:
-		// Get address
-		address := uint16(cpu.operand2())<<8 | uint16(cpu.operand1())
-		// Get value at address
-		value = readMemory(address)
-		setFlags()
+		address = cpu.AbsoluteAddressing()
 		cpu.updateCycleCounter(3)
 		cpu.handleState(3)
 	}
+	if addressingMode != IMMEDIATE {
+		value = readMemory(address)
+	}
+	setFlags()
 }
 
 // 1 byte instructions with no operands
@@ -2011,36 +1521,35 @@ func CPY(addressingMode string) {
 	Bytes: 1
 */
 func BRK() {
-	/*
-		BRK - Break Command
-	*/
+	// BRK - Break Command
 
 	disassembleOpcode()
 
-	// Decrement SP and Push high byte of (PC+1) onto stack
-	cpu.decSP()
-	updateStack(byte((cpu.PC + 1) >> 8))
+	// Increment PC by 1 as BRK is a 2-byte instruction (opcode + padding byte)
+	nextPC := cpu.preOpPC + 1
 
-	// Decrement SP and Push low byte of (PC+1) onto stack
+	// Push high byte of next PC onto stack
 	cpu.decSP()
-	updateStack(byte((cpu.PC + 1) & 0xFF))
+	cpu.updateStack(byte(nextPC >> 8))
 
-	// Set a modified SR with the B flag for the pushed value
-	modifiedSR := cpu.SR | 0x10
-	// Decrement SP and Store modified SR on stack
-	cpu.setBreakFlag()
+	// Push low byte of next PC onto stack
 	cpu.decSP()
-	updateStack(modifiedSR)
+	cpu.updateStack(byte(nextPC & 0xFF))
 
-	// Decrement SP and Store SR on stack\
+	// Modify status register: set break flag and push onto stack
+	modifiedSR := cpu.preOpSR | 0x10 // Set break flag
 	cpu.decSP()
-	updateStack(cpu.SR)
+	cpu.updateStack(modifiedSR)
 
-	// Set SR interrupt disable bit to 1
+	// Set interrupt disable flag to prevent further interrupts
 	cpu.setInterruptFlag()
 
-	// Set PC to interrupt vector address
-	cpu.setPC((uint16(readMemory(IRQVectorAddressHigh)) << 8) | uint16(readMemory(IRQVectorAddressLow)))
+	// Load the IRQ/BRK vector into PC to jump to the interrupt service routine
+	irqVectorLow := readMemory(IRQVectorAddressLow)
+	irqVectorHigh := readMemory(IRQVectorAddressHigh)
+	cpu.setPC((uint16(irqVectorHigh) << 8) | uint16(irqVectorLow))
+
+	// Update cycle counter and state
 	cpu.updateCycleCounter(7)
 	cpu.handleState(0)
 }
@@ -2049,7 +1558,6 @@ func CLC() {
 		CLC - Clear Carry Flag
 	*/
 	disassembleOpcode()
-	// Set SR carry flag bit 0 to 0
 	cpu.unsetCarryFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -2068,7 +1576,6 @@ func CLI() {
 		CLI - Clear Interrupt Disable
 	*/
 	disassembleOpcode()
-	// Set SR interrupt disable bit 2 to 0
 	cpu.unsetInterruptFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -2078,25 +1585,23 @@ func CLV() {
 		CLV - Clear Overflow Flag
 	*/
 	disassembleOpcode()
-	// Set SR overflow flag bit 6 to 0
 	cpu.unsetOverflowFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
 }
 func DEX() {
-	// DEX - Decrement Index Register X By One
+	/*
+		DEX - Decrement Index Register X By One
+	*/
 	disassembleOpcode()
-
-	// Decrement the X register by 1
-	cpu.X--
-
+	// Decrement the X register by 1, with underflow handling
+	cpu.X = (cpu.preOpX - 1) & 0xFF
 	// Update the Negative Flag based on the new value of X
 	if cpu.X&0x80 != 0 {
 		cpu.setNegativeFlag()
 	} else {
 		cpu.unsetNegativeFlag()
 	}
-
 	// Update the Zero Flag based on the new value of X
 	if cpu.X == 0 {
 		cpu.setZeroFlag()
@@ -2108,19 +1613,18 @@ func DEX() {
 }
 func DEY() {
 	/*
-		DEY - Decrement Index Register Y By One
+	   DEY - Decrement Index Register Y By One
 	*/
 	disassembleOpcode()
-
-	// Decrement the  Y register by 1
-	cpu.Y--
-	// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-	if cpu.getYBit(7) == 1 {
+	// Decrement the X register by 1, with underflow handling
+	cpu.Y = (cpu.preOpY - 1) & 0xFF
+	// Update the Negative Flag based on the new value of Y
+	if cpu.Y&0x80 != 0 {
 		cpu.setNegativeFlag()
 	} else {
 		cpu.unsetNegativeFlag()
 	}
-	// If Y==0 then set the Zero flag
+	// Update the Zero Flag based on the new value of Y
 	if cpu.Y == 0 {
 		cpu.setZeroFlag()
 	} else {
@@ -2134,20 +1638,16 @@ func INX() {
 		INX - Increment Index Register X By One
 	*/
 	disassembleOpcode()
-
-	// Increment the X register by 1
 	cpu.X++
-	// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-	if cpu.getXBit(7) == 1 {
-		cpu.setNegativeFlag()
-	} else {
-		cpu.unsetNegativeFlag()
-	}
-	// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-	if cpu.X == 0 {
+	if cpu.X == 0 { // Check for overflow
 		cpu.setZeroFlag()
 	} else {
 		cpu.unsetZeroFlag()
+	}
+	if cpu.X&0x80 != 0 { // Check the negative flag
+		cpu.setNegativeFlag()
+	} else {
+		cpu.unsetNegativeFlag()
 	}
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -2157,20 +1657,16 @@ func INY() {
 		INY - Increment Index Register Y By One
 	*/
 	disassembleOpcode()
-
-	// Increment the  Y register by 1
 	cpu.Y++
-	// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
-	if cpu.getYBit(7) == 1 {
-		cpu.setNegativeFlag()
-	} else {
-		cpu.unsetNegativeFlag()
-	}
-	// If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-	if cpu.Y == 0 {
+	if cpu.Y == 0 { // Check for overflow
 		cpu.setZeroFlag()
 	} else {
 		cpu.unsetZeroFlag()
+	}
+	if cpu.Y&0x80 != 0 { // Check the negative flag
+		cpu.setNegativeFlag()
+	} else {
+		cpu.unsetNegativeFlag()
 	}
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -2188,9 +1684,7 @@ func PHA() {
 		PHA - Push Accumulator On Stack
 	*/
 	disassembleOpcode()
-
-	// Update memory address pointed to by SP with value stored in accumulator
-	updateStack(cpu.A)
+	cpu.updateStack(cpu.A)
 	cpu.decSP()
 	cpu.updateCycleCounter(3)
 	cpu.handleState(1)
@@ -2200,14 +1694,11 @@ func PHP() {
 	   PHP - Push Processor Status On Stack
 	*/
 	disassembleOpcode()
-
 	// Set the break flag and the unused bit only for the push operation
 	status := cpu.SR | (1 << 4) // Set break flag
 	status |= (1 << 5)          // Set unused bit
-
 	// Push the status onto the stack
-	updateStack(status)
-
+	cpu.updateStack(status)
 	// Decrement the stack pointer
 	cpu.decSP()
 	cpu.updateCycleCounter(3)
@@ -2218,15 +1709,11 @@ func PLA() {
 	   PLA - Pull Accumulator From Stack
 	*/
 	disassembleOpcode()
-
 	// Increment the stack pointer first
 	cpu.incSP()
-
 	// Read the value from the stack into the accumulator
-	cpu.A = readStack()
-
+	cpu.A = cpu.readStack()
 	// No flag updates should occur here
-
 	cpu.updateCycleCounter(4)
 	cpu.handleState(1)
 }
@@ -2235,19 +1722,14 @@ func PLP() {
 		PLP - Pull Processor Status From Stack
 	*/
 	disassembleOpcode()
-
 	// Read the status from the stack
-	newStatus := readStack()
-
+	newStatus := cpu.readStack()
 	// Preserve break flag and unused bit from current status
 	newStatus = (newStatus & 0xCF) | (cpu.SR & 0x30)
-
 	// Update SR with the new status
 	cpu.SR = newStatus
-
 	// Increment the stack pointer after the operation
 	cpu.incSP()
-
 	cpu.updateCycleCounter(4)
 	cpu.handleState(1)
 }
@@ -2255,24 +1737,17 @@ func RTI() {
 	/*
 	   RTI - Return From Interrupt
 	*/
-
 	disassembleOpcode()
-
-	cpu.SR = readStack() & 0xCF
+	cpu.SR = cpu.readStack() & 0xCF
 	cpu.incSP()
-
 	// Increment the stack pointer to get low byte of PC
 	cpu.incSP()
-
 	// Get low byte of PC
-	low := uint16(readStack())
-
+	low := uint16(cpu.readStack())
 	// Increment the stack pointer to get high byte of PC
 	cpu.incSP()
-
 	// Get high byte of PC
-	high := uint16(readStack())
-
+	high := uint16(cpu.readStack())
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
 	// Update PC with the value stored in memory at the address pointed to by SP
@@ -2284,14 +1759,12 @@ func RTS() {
 	*/
 	disassembleOpcode()
 	//Get low byte of new PC
-	low := uint16(readStack())
+	low := uint16(cpu.readStack())
 	// Increment the stack pointer
 	cpu.incSP()
 	//Get high byte of new PC
-	high := uint16(readStack())
-
+	high := uint16(cpu.readStack())
 	//Update PC with the value stored in memory at the address pointed to by SP
-	//cpu.setPC((high << 8) | low + 1)
 	cpu.setPC(((high << 8) | low) + 1)
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
@@ -2301,8 +1774,6 @@ func SEC() {
 		SEC - Set Carry Flag
 	*/
 	disassembleOpcode()
-
-	// Set SR carry flag bit 0 to 1
 	cpu.setCarryFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -2312,8 +1783,6 @@ func SED() {
 		SED - Set Decimal Mode
 	*/
 	disassembleOpcode()
-
-	// Set SR decimal mode flag to 1
 	cpu.setDecimalFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -2323,8 +1792,6 @@ func SEI() {
 		SEI - Set Interrupt Disable
 	*/
 	disassembleOpcode()
-
-	// Set SR interrupt disable bit 2 to 1
 	cpu.setInterruptFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -2334,16 +1801,13 @@ func TAX() {
 		TAX - Transfer Accumulator To Index X
 	*/
 	disassembleOpcode()
-
 	// Update X with the value of A
-	cpu.X = cpu.A
-	// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+	cpu.X = cpu.preOpA
 	if cpu.getXBit(7) == 1 {
 		cpu.setNegativeFlag()
 	} else {
 		cpu.unsetNegativeFlag()
 	}
-	// If X register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
 	if cpu.X == 0 {
 		cpu.setZeroFlag()
 	} else {
@@ -2357,17 +1821,14 @@ func TAY() {
 		TAY - Transfer Accumulator To Index Y
 	*/
 	disassembleOpcode()
-
 	// Set Y register to the value of the accumulator
-	cpu.Y = cpu.A
-	// If Y register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
+	cpu.Y = cpu.preOpA
 	if cpu.getYBit(7) == 1 {
 		cpu.setNegativeFlag()
 	} else {
 		cpu.unsetNegativeFlag()
 	}
-	// If Y register is 0, set the SR zero flag bit 1 to 1 else set SR zero flag bit 1 to 0
-	if cpu.A == 0 {
+	if cpu.Y == 0 {
 		cpu.setZeroFlag()
 	} else {
 		cpu.unsetZeroFlag()
@@ -2380,9 +1841,8 @@ func TSX() {
 		TSX - Transfer Stack Pointer To Index X
 	*/
 	disassembleOpcode()
-
 	// Update X with the SP
-	cpu.X = byte(cpu.SP)
+	cpu.X = byte(cpu.preOpSP)
 	// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
 	if cpu.getXBit(7) == 1 {
 		cpu.setNegativeFlag()
@@ -2403,9 +1863,8 @@ func TXA() {
 		TXA - Transfer Index X To Accumulator
 	*/
 	disassembleOpcode()
-
 	// Set accumulator to value of X register
-	cpu.A = cpu.X
+	cpu.A = cpu.preOpX
 	// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
 	if cpu.getABit(7) == 1 {
 		cpu.setNegativeFlag()
@@ -2426,7 +1885,6 @@ func TXS() {
 		TXS - Transfer Index X To Stack Pointer
 	*/
 	disassembleOpcode()
-
 	// Set stack pointer to value of X register
 	cpu.SP = uint16(cpu.X)
 	cpu.updateCycleCounter(2)
@@ -2437,7 +1895,6 @@ func TYA() {
 		TYA - Transfer Index Y To Accumulator
 	*/
 	disassembleOpcode()
-
 	// Set accumulator to value of Y register
 	cpu.A = cpu.Y
 	// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
@@ -3026,20 +2483,25 @@ func STA_IY() {
 */
 func BPL_R() {
 	/*
-		BPL - Branch on Result Plus
+	   BPL - Branch on Result Plus
 	*/
 	disassembleOpcode()
-	offset := cpu.operand1()
-	signedOffset := int8(offset)
-	// Calculate the branch target address
-	targetAddress := cpu.PC + 2 + uint16(signedOffset)
-	// If N flag is not set, branch to address
+	offset := cpu.preOpOperand1
+	signedOffset := int8(offset) // Cast to int8 to handle signed offset
+
+	// The branch target address should be calculated from the address of the next instruction
+	// The next instruction's address is current PC + size of this instruction (2 bytes: 1 for opcode, 1 for operand)
+	nextInstructionAddress := cpu.preOpPC + 2
+	// If the Negative flag is clear, then branch
 	if cpu.getSRBit(7) == 0 {
-		oldPC := cpu.PC
-		cpu.PC = targetAddress
-		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
-		cpu.incrementCycleCountForBranch(oldPC)
-		cpu.instructionCounter++ // Increment the instruction counter if branch is taken
+		targetAddress := nextInstructionAddress + uint16(signedOffset) // Add signed offset to the next instruction's address
+		cpu.setPC(targetAddress)
+		// Increment the cycle counter based on branching
+		cpu.updateCycleCounter(1) // Minimum cycle count for branching
+		if (nextInstructionAddress & 0xFF00) != (targetAddress & 0xFF00) {
+			cpu.updateCycleCounter(1) // Add an extra cycle for crossing a page boundary
+		}
+		cpu.handleState(0)
 	} else {
 		// Don't branch
 		cpu.updateCycleCounter(2) // Two cycles when branch is not taken
@@ -3051,18 +2513,17 @@ func BMI_R() {
 	   BMI - Branch on Result Minus
 	*/
 	disassembleOpcode()
-	offset := int8(cpu.operand1()) // Get offset from operand
+	offset := int8(cpu.preOpOperand1) // Get offset from operand
 
 	// If N flag is set, branch to address
 	if cpu.getSRBit(7) == 1 {
-		oldPC := cpu.PC
-		targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+		targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
 
-		cpu.PC = targetAddress
+		cpu.setPC(targetAddress)
 		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
 
 		// Increment the cycle count for branch and page crossing
-		cpu.incrementCycleCountForBranch(oldPC)
+		cpu.incrementCycleCountForBranch(cpu.preOpPC)
 	} else {
 		// Don't branch, skip to the next instruction
 		cpu.incPC(2)
@@ -3074,18 +2535,17 @@ func BVC_R() {
 	   BVC - Branch on Overflow Clear
 	*/
 	disassembleOpcode()
-	offset := int8(cpu.operand1()) // Get offset from operand
+	offset := int8(cpu.preOpOperand1) // Get offset from operand
 
 	// If overflow flag is not set, branch to address
 	if cpu.getSRBit(6) == 0 {
-		oldPC := cpu.PC
-		targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+		targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
 
-		cpu.PC = targetAddress
+		cpu.setPC(targetAddress)
 		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
 
 		// Increment the cycle count for branch and page crossing
-		cpu.incrementCycleCountForBranch(oldPC)
+		cpu.incrementCycleCountForBranch(cpu.preOpPC)
 	} else {
 		// Don't branch, skip to the next instruction
 		cpu.incPC(2)
@@ -3097,18 +2557,17 @@ func BVS_R() {
 	   BVS - Branch on Overflow Set
 	*/
 	disassembleOpcode()
-	offset := int8(cpu.operand1()) // Get offset from operand
+	offset := int8(cpu.preOpOperand1) // Get offset from operand
 
 	// If overflow flag is set, branch to address
 	if cpu.getSRBit(6) == 1 {
-		oldPC := cpu.PC
-		targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+		targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
 
-		cpu.PC = targetAddress
+		cpu.setPC(targetAddress)
 		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
 
 		// Increment the cycle count for branch and page crossing
-		cpu.incrementCycleCountForBranch(oldPC)
+		cpu.incrementCycleCountForBranch(cpu.preOpPC)
 	} else {
 		// Don't branch, skip to the next instruction
 		cpu.incPC(2)
@@ -3121,18 +2580,15 @@ func BCC_R() {
 	*/
 	disassembleOpcode()
 
-	offset := int8(cpu.operand1())                             // Get offset from operand
-	targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+	offset := int8(cpu.preOpOperand1)                               // Get offset from operand
+	targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
 
 	// If carry flag is clear, branch to address
 	if cpu.getSRBit(0) == 0 {
-		oldPC := cpu.PC
-		cpu.PC = targetAddress
-
+		cpu.setPC(targetAddress)
 		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
-
 		// Increment the cycle count for branch and page crossing
-		cpu.incrementCycleCountForBranch(oldPC)
+		cpu.incrementCycleCountForBranch(cpu.preOpPC)
 	} else {
 		// Don't branch, skip to the next instruction
 		cpu.incPC(2)
@@ -3145,18 +2601,15 @@ func BCS_R() {
 	*/
 	disassembleOpcode()
 
-	offset := int8(cpu.operand1())                             // Get offset as signed 8-bit integer
-	targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+	offset := int8(cpu.preOpOperand1)                               // Get offset as signed 8-bit integer
+	targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
 
 	// If carry flag is set, branch to address
 	if cpu.getSRBit(0) == 1 {
-		oldPC := cpu.PC
-		cpu.PC = targetAddress
-
+		cpu.setPC(targetAddress)
 		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
-
 		// Increment the cycle count for branch and page crossing
-		cpu.incrementCycleCountForBranch(oldPC)
+		cpu.incrementCycleCountForBranch(cpu.preOpPC)
 	} else {
 		// Don't branch, skip to the next instruction
 		cpu.incPC(2)
@@ -3169,16 +2622,15 @@ func BNE_R() {
 	*/
 	disassembleOpcode()
 
-	offset := int8(cpu.operand1())                             // Cast to signed 8-bit to handle negative offsets
-	targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+	offset := int8(cpu.preOpOperand1)                               // Cast to signed 8-bit to handle negative offsets
+	targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
 
 	// Check Z flag to determine if branching is needed
 	if cpu.getSRBit(1) == 0 {
-		oldPC := cpu.PC
-		cpu.PC = targetAddress
+		cpu.setPC(targetAddress)
 		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
 		// Increment the cycle count for branch and page crossing
-		cpu.incrementCycleCountForBranch(oldPC)
+		cpu.incrementCycleCountForBranch(cpu.preOpPC)
 	} else {
 		// If Z flag is set, don't branch, skip to the next instruction
 		cpu.incPC(2)
@@ -3191,18 +2643,15 @@ func BEQ_R() {
 	*/
 	disassembleOpcode()
 
-	offset := int8(cpu.operand1())                             // Cast to signed 8-bit to handle negative offsets
-	targetAddress := uint16(int16(cpu.PC) + 2 + int16(offset)) // Calculate the target address
+	offset := int8(cpu.preOpOperand1)                               // Cast to signed 8-bit to handle negative offsets
+	targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
 
 	// If Z flag is set, branch to address
 	if cpu.getSRBit(1) == 1 {
-		oldPC := cpu.PC
-		cpu.PC = targetAddress
-
+		cpu.setPC(targetAddress)
 		cpu.updateCycleCounter(1) // Every branch takes at least one cycle
-
 		// Increment the cycle count for branch and page crossing
-		cpu.incrementCycleCountForBranch(oldPC)
+		cpu.incrementCycleCountForBranch(cpu.preOpPC)
 	} else {
 		// If Z flag is not set, don't branch, skip to the next instruction
 		cpu.incPC(2)
@@ -3308,12 +2757,12 @@ func JSR_ABS() {
 	disassembleOpcode()
 	// First, push the high byte
 	cpu.decSP()
-	updateStack(byte(cpu.PC >> 8))
+	cpu.updateStack(byte(cpu.preOpPC >> 8))
 	cpu.decSP()
-	updateStack(byte((cpu.PC)&0xFF) + 1)
+	cpu.updateStack(byte((cpu.preOpPC)&0xFF) + 1)
 
 	// Now, jump to the subroutine address specified by the operands
-	cpu.setPC(uint16(cpu.operand2())<<8 | uint16(cpu.operand1()))
+	cpu.setPC(uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1))
 	cpu.updateCycleCounter(1)
 	cpu.handleState(0)
 }
@@ -3596,4 +3045,77 @@ func JMP_IND() {
 	*/
 	disassembleOpcode()
 	JMP("indirect")
+}
+
+// ZeroPageAddressing computes the effective address for the Zero Page addressing mode.
+func (cpu *CPU) ZeroPageAddressing() uint16 {
+	address := cpu.preOpOperand1
+	return uint16(address)
+}
+
+// ZeroPageXAddressing computes the effective address for the Zero Page, X addressing mode.
+func (cpu *CPU) ZeroPageXAddressing() uint16 {
+	address := (cpu.preOpOperand1 + cpu.X) & 0xFF
+	return uint16(address)
+}
+
+// AbsoluteAddressing computes the effective address for the Absolute addressing mode.
+func (cpu *CPU) AbsoluteAddressing() uint16 {
+	address := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+	return address
+}
+
+// AbsoluteXAddressing computes the effective address for the Absolute, X addressing mode.
+func (cpu *CPU) AbsoluteXAddressing() uint16 {
+	baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+	address := baseAddress + uint16(cpu.X)
+	return address
+}
+
+// AbsoluteYAddressing computes the effective address for the Absolute, Y addressing mode.
+func (cpu *CPU) AbsoluteYAddressing() uint16 {
+	baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+	address := baseAddress + uint16(cpu.Y)
+	return address
+}
+
+// IndirectXAddressing computes the effective address for the Pre-indexed Indirect addressing mode.
+func (cpu *CPU) IndirectXAddressing() uint16 {
+	zeroPageAddress := uint16(cpu.preOpOperand1+cpu.X) & 0xFF // Zero page wraparound
+	lo := readMemory(zeroPageAddress)
+	hi := readMemory((zeroPageAddress + 1) & 0xFF) // Zero page wraparound for high byte
+	address := uint16(hi)<<8 | uint16(lo)
+	return address
+}
+
+// IndirectYAddressing computes the effective address for the Post-indexed Indirect addressing mode.
+func (cpu *CPU) IndirectYAddressing() uint16 {
+	zeroPageAddress := cpu.preOpOperand1
+	lo := readMemory(uint16(zeroPageAddress))
+	hi := readMemory((uint16(zeroPageAddress) + 1) & 0xFF) // Zero page wraparound for high byte
+	baseAddress := uint16(hi)<<8 | uint16(lo)
+	address := baseAddress + uint16(cpu.Y)
+	return address
+}
+
+// ImmediateAddressing simply returns the operand as the immediate value.
+func (cpu *CPU) ImmediateAddressing() byte {
+	return cpu.preOpOperand1 // Immediate mode uses the operand itself as the value
+}
+func (cpu *CPU) ZeroPageYAddressing() uint16 {
+	// Add the Y register to the operand, but keep the address in the zero page (0x00FF)
+	address := (cpu.preOpOperand1 + cpu.Y) & 0xFF
+	return uint16(address)
+}
+func (cpu *CPU) IndirectAddressing() uint16 {
+	// Fetch the low byte of the address from memory using the operand as the address
+	lo := readMemory(uint16(cpu.preOpOperand1))
+
+	// Fetch the high byte of the address. Note that the 6502 has a bug in the indirect addressing mode:
+	// if the low byte of the provided address is 0xFF, it will wrap around and read the high byte from 0xXX00,
+	// where XX is the high byte of the provided address.
+	hi := readMemory(uint16(cpu.preOpOperand1+1)&0xFF00 | uint16((cpu.preOpOperand1+1)&0x00FF))
+
+	// Combine the high and low bytes to get the final address
+	return uint16(hi)<<8 | uint16(lo)
 }

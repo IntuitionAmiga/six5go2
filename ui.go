@@ -23,8 +23,12 @@ func userInterface() {
 	cpuState.SetBorder(true).SetTitle(" CPU State ")
 
 	// Create Trace Panel
-	trace := tview.NewTextView().SetText("Execution and disassembly")
-	trace.SetBorder(true).SetTitle(" Trace ")
+	trace := tview.NewTextView().SetText("PC and Instruction")
+	trace.SetBorder(true).SetTitle(" Current Instruction ")
+
+	// Create panel for next instruction trace
+	nextTrace := tview.NewTextView().SetText("Next PC and Instruction")
+	nextTrace.SetBorder(true).SetTitle(" Next Instruction ")
 
 	// Create Emulated Display Area
 	display := tview.NewTextView().SetText("\n\t\tCOMMODORE BASIC V3.5 60671 BYTES FREE\n\t\t3-PLUS-1 ON KEY F1\n\n\t\tREADY.\n\n")
@@ -55,7 +59,7 @@ func userInterface() {
 		for range ticker.C {
 			app.QueueUpdateDraw(func() {
 				// Update CPU State Panel
-				formattedText := fmt.Sprintf("A:$%02X X:$%02X Y:$%02X SP:$%04X", cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.SP)
+				formattedText := fmt.Sprintf("A:$%02X X:$%02X Y:$%02X SP:$%04X", cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.preOpSP)
 				cpuState.SetText(formattedText)
 
 				// Update Trace Panel
@@ -63,10 +67,11 @@ func userInterface() {
 				formattedTrace := fmt.Sprintf("%s", cpu.traceLine)
 				//trace.SetText(cpu.traceLine)
 				trace.SetText(formattedTrace)
+				nextTrace.SetText(cpu.nextTraceLine)
 
 				// Update SRFlags Panel
 				statusLine := statusFlags()
-				stackLine := fmt.Sprintf("\nStack: $%04X", readStack())
+				stackLine := fmt.Sprintf("\nStack: $%04X", cpu.readStack())
 				srFlags.SetText(statusLine + stackLine)
 
 				// Update Counters Panel
@@ -89,13 +94,14 @@ func userInterface() {
 		AddItem(srFlags, 1, 0, 1, 1, 0, 0, false).
 		AddItem(counters, 2, 0, 1, 1, 0, 0, false).
 		AddItem(trace, 3, 0, 1, 1, 0, 0, false).
-		AddItem(disassembly, 4, 0, 1, 1, 0, 0, false).
+		AddItem(nextTrace, 4, 0, 1, 1, 0, 0, false).
+		AddItem(disassembly, 5, 0, 1, 1, 0, 0, false).
 		AddItem(toolbar, 9, 0, 1, 1, 0, 0, false).
 		AddItem(display, 0, 1, 10, 1, 0, 0, false)
 
 	breakpointsView := tview.NewTextView().SetText("N/A ")
 	breakpointsView.SetBorder(true).SetTitle(" Breakpoints ")
-	grid.AddItem(breakpointsView, 5, 0, 1, 1, 0, 0, false) // Replace 5, 0, 1, 1 with the appropriate position and size in your layout.
+	grid.AddItem(breakpointsView, 8, 0, 1, 1, 0, 0, false) // Replace 5, 0, 1, 1 with the appropriate position and size in your layout.
 
 	messageView := tview.NewTextView()
 	messageView.SetDynamicColors(true)
@@ -119,9 +125,9 @@ func userInterface() {
 			loadROMs()
 		case 'c':
 			if breakpointHalted {
-				breakpointHit <- cpu.PC  // Signal to continue
-				breakpointHalted = false // Reset the flag
-				messageView.SetText("")  // Clear the message
+				breakpointHit <- cpu.preOpPC // Signal to continue
+				breakpointHalted = false     // Reset the flag
+				messageView.SetText("")      // Clear the message
 			}
 		case 'm':
 			// Create modal
