@@ -670,6 +670,7 @@ func (cpu *CPU) JMP(addressingMode string) {
 func (cpu *CPU) AND(addressingMode string) {
 	var value, result byte
 	var address uint16
+
 	setFlags := func() {
 		// If the result is 0, set the zero flag
 		if result == 0 {

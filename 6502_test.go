@@ -937,3 +937,201 @@ func TestPLP(t *testing.T) {
 		t.Errorf("PLP failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
+
+func TestANDImmediate(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// AND #10
+	cpu.writeMemory(cpu.PC, AND_IMMEDIATE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x00 {
+		t.Errorf("AND Immediate failed: got %02X, want %02X", cpu.A, 0x00)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for AND immediate
+		t.Errorf("AND Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestANDZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// AND $10
+	cpu.writeMemory(cpu.PC, AND_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0010, 0x20)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("AND Zero Page failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for AND immediate
+		t.Errorf("AND Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestANDZeroPageX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// AND $10,X
+	cpu.writeMemory(cpu.PC, AND_ZERO_PAGE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0011, 0x20)
+	cpu.X = 0x01
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("AND Zero Page X failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for AND immediate
+		t.Errorf("AND Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestANDAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// AND $1000
+	cpu.writeMemory(cpu.PC, AND_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1000, 0x20)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("AND Absolute failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for AND immediate
+		t.Errorf("AND Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestANDAbsoluteX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// AND $1000,X
+	cpu.writeMemory(cpu.PC, AND_ABSOLUTE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1001, 0x20)
+	cpu.X = 0x01
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("AND Absolute X failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { //
+	}
+}
+
+func TestANDAbsoluteY(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// AND $1000,Y
+	cpu.writeMemory(cpu.PC, AND_ABSOLUTE_Y_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1001, 0x20)
+	cpu.Y = 0x01
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("AND Absolute Y failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for AND immediate
+		t.Errorf("AND Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+//func TestANDIndirectX(t *testing.T) {
+//	var cpu CPU // Create a new CPU instance for the test
+//
+//	cpu.resetCPU()
+//	cpu.setPC(0x0000)
+//
+//	// AND ($10,X)
+//	cpu.writeMemory(cpu.PC, AND_INDIRECT_X_OPCODE)
+//	cpu.writeMemory(cpu.PC+1, 0x10)
+//	cpu.writeMemory(0x0010, 0x00)
+//	cpu.writeMemory(0x0011, 0x10)
+//	cpu.writeMemory(0x1000, 0x20)
+//	cpu.A = 0x20
+//	cpu.X = 0x01
+//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//	cpu.startCPU()     // Initialize the CPU state
+//
+//	// Check if A has the expected value
+//	if cpu.A != 0x20 {
+//		t.Errorf("AND Indirect X failed: got %02X, want %02X", cpu.A, 0x20)
+//	}
+//	// Check if Program Counter is incremented correctly
+//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for AND immediate
+//		t.Errorf("AND Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//	}
+//}
+
+func TestANDIndirectY(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// AND ($10),Y
+	cpu.writeMemory(cpu.PC, AND_INDIRECT_Y_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0010, 0x00)
+	cpu.writeMemory(0x0011, 0x10)
+	cpu.writeMemory(0x1001, 0x20)
+	cpu.A = 0x20
+	cpu.Y = 0x01
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("AND Indirect Y failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for AND immediate
+		t.Errorf("AND Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
