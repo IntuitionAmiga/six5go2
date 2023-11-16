@@ -59,6 +59,8 @@ type CPU struct {
 	traceMutex              sync.Mutex
 	instructionCounter      uint32
 	disassembledInstruction string
+
+	cpuQuit bool
 }
 
 var (
@@ -71,13 +73,13 @@ var (
 )
 
 func (cpu *CPU) opcode() byte {
-	return readMemory(cpu.PC)
+	return cpu.readMemory(cpu.PC)
 }
 func (cpu *CPU) operand1() byte {
-	return readMemory(cpu.PC + 1)
+	return cpu.readMemory(cpu.PC + 1)
 }
 func (cpu *CPU) operand2() byte {
-	return readMemory(cpu.PC + 2)
+	return cpu.readMemory(cpu.PC + 2)
 }
 
 func (cpu *CPU) incSP() {
@@ -134,8 +136,8 @@ func (cpu *CPU) handleIRQ() {
 	cpu.setInterruptFlag()
 	//fmt.Printf("Debug: PC pushed to stack. SP: %X\n", cpu.SP)
 	// Set PC to IRQ Service Routine address
-	lowByte := readMemory(IRQVectorAddressLow)
-	highByte := readMemory(IRQVectorAddressHigh)
+	lowByte := cpu.readMemory(IRQVectorAddressLow)
+	highByte := cpu.readMemory(IRQVectorAddressHigh)
 	cpu.setPC(uint16(lowByte) | uint16(highByte)<<8)
 	//fmt.Printf("Debug: Jumping to IRQ Service Routine at %X\n", cpu.PC)
 	cpu.irq = false
@@ -151,8 +153,8 @@ func (cpu *CPU) handleNMI() {
 	cpu.updateStack(cpu.SR)
 	cpu.decSP()
 	// Set PC to NMI Service Routine address
-	lowByte := readMemory(NMIVectorAddressLow)
-	highByte := readMemory(NMIVectorAddressHigh)
+	lowByte := cpu.readMemory(NMIVectorAddressLow)
+	highByte := cpu.readMemory(NMIVectorAddressHigh)
 	cpu.setPC(uint16(lowByte) | uint16(highByte)<<8)
 	cpu.nmi = false // Clear the NMI flag
 }
@@ -225,8 +227,8 @@ func (cpu *CPU) resetCPU() {
 		cpu.setPC(0x400)
 	} else {
 		// Set PC to value stored at reset vector address
-		lowByte := readMemory(RESETVectorAddressLow)
-		highByte := readMemory(RESETVectorAddressHigh)
+		lowByte := cpu.readMemory(RESETVectorAddressLow)
+		highByte := cpu.readMemory(RESETVectorAddressHigh)
 		cpu.setPC(uint16(lowByte) | uint16(highByte)<<8)
 	}
 }
@@ -287,6 +289,7 @@ func (cpu *CPU) setCarryFlag() {
 func (cpu *CPU) unsetCarryFlag() {
 	cpu.setSRBitOff(0)
 }
+
 func (cpu *CPU) startCPU() {
 	for uint(cpu.PC) < 0xFFFF {
 		cpu.preOpPC = cpu.PC
@@ -319,103 +322,103 @@ func (cpu *CPU) startCPU() {
 		*/
 		case BRK_OPCODE:
 			cpu.cycleStart()
-			BRK()
+			cpu.BRK()
 			cpu.cycleEnd()
 		case CLC_OPCODE:
 			cpu.cycleStart()
-			CLC()
+			cpu.CLC()
 			cpu.cycleEnd()
 		case CLD_OPCODE:
 			cpu.cycleStart()
-			CLD()
+			cpu.CLD()
 			cpu.cycleEnd()
 		case CLI_OPCODE:
 			cpu.cycleStart()
-			CLI()
+			cpu.CLI()
 			cpu.cycleEnd()
 		case CLV_OPCODE:
 			cpu.cycleStart()
-			CLV()
+			cpu.CLV()
 			cpu.cycleEnd()
 		case DEX_OPCODE:
 			cpu.cycleStart()
-			DEX()
+			cpu.DEX()
 			cpu.cycleEnd()
 		case DEY_OPCODE:
 			cpu.cycleStart()
-			DEY()
+			cpu.DEY()
 			cpu.cycleEnd()
 		case INX_OPCODE:
 			cpu.cycleStart()
-			INX()
+			cpu.INX()
 			cpu.cycleEnd()
 		case INY_OPCODE:
 			cpu.cycleStart()
-			INY()
+			cpu.INY()
 			cpu.cycleEnd()
 		case NOP_OPCODE:
 			cpu.cycleStart()
-			NOP()
+			cpu.NOP()
 			cpu.cycleEnd()
 		case PHA_OPCODE:
 			cpu.cycleStart()
-			PHA()
+			cpu.PHA()
 			cpu.cycleEnd()
 		case PHP_OPCODE:
 			cpu.cycleStart()
-			PHP()
+			cpu.PHP()
 			cpu.cycleEnd()
 		case PLA_OPCODE:
 			cpu.cycleStart()
-			PLA()
+			cpu.PLA()
 			cpu.cycleEnd()
 		case PLP_OPCODE:
 			cpu.cycleStart()
-			PLP()
+			cpu.PLP()
 			cpu.cycleEnd()
 		case RTI_OPCODE:
 			cpu.cycleStart()
-			RTI()
+			cpu.RTI()
 			cpu.cycleEnd()
 		case RTS_OPCODE:
 			cpu.cycleStart()
-			RTS()
+			cpu.RTS()
 			cpu.cycleEnd()
 		case SEC_OPCODE:
 			cpu.cycleStart()
-			SEC()
+			cpu.SEC()
 			cpu.cycleEnd()
 		case SED_OPCODE:
 			cpu.cycleStart()
-			SED()
+			cpu.SED()
 			cpu.cycleEnd()
 		case SEI_OPCODE:
 			cpu.cycleStart()
-			SEI()
+			cpu.SEI()
 			cpu.cycleEnd()
 		case TAX_OPCODE:
 			cpu.cycleStart()
-			TAX()
+			cpu.TAX()
 			cpu.cycleEnd()
 		case TAY_OPCODE:
 			cpu.cycleStart()
-			TAY()
+			cpu.TAY()
 			cpu.cycleEnd()
 		case TSX_OPCODE:
 			cpu.cycleStart()
-			TSX()
+			cpu.TSX()
 			cpu.cycleEnd()
 		case TXA_OPCODE:
 			cpu.cycleStart()
-			TXA()
+			cpu.TXA()
 			cpu.cycleEnd()
 		case TXS_OPCODE:
 			cpu.cycleStart()
-			TXS()
+			cpu.TXS()
 			cpu.cycleEnd()
 		case TYA_OPCODE:
 			cpu.cycleStart()
-			TYA()
+			cpu.TYA()
 			cpu.cycleEnd()
 
 		// Accumulator instructions
@@ -428,19 +431,19 @@ func (cpu *CPU) startCPU() {
 		*/
 		case ASL_ACCUMULATOR_OPCODE:
 			cpu.cycleStart()
-			ASL_A()
+			cpu.ASL_A()
 			cpu.cycleEnd()
 		case LSR_ACCUMULATOR_OPCODE:
 			cpu.cycleStart()
-			LSR_A()
+			cpu.LSR_A()
 			cpu.cycleEnd()
 		case ROL_ACCUMULATOR_OPCODE:
 			cpu.cycleStart()
-			ROL_A()
+			cpu.ROL_A()
 			cpu.cycleEnd()
 		case ROR_ACCUMULATOR_OPCODE:
 			cpu.cycleStart()
-			ROR_A()
+			cpu.ROR_A()
 			cpu.cycleEnd()
 		//}
 
@@ -456,47 +459,47 @@ func (cpu *CPU) startCPU() {
 		*/
 		case ADC_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			ADC_I()
+			cpu.ADC_I()
 			cpu.cycleEnd()
 		case AND_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			AND_I()
+			cpu.AND_I()
 			cpu.cycleEnd()
 		case CMP_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			CMP_I()
+			cpu.CMP_I()
 			cpu.cycleEnd()
 		case CPX_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			CPX_I()
+			cpu.CPX_I()
 			cpu.cycleEnd()
 		case CPY_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			CPY_I()
+			cpu.CPY_I()
 			cpu.cycleEnd()
 		case EOR_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			EOR_I()
+			cpu.EOR_I()
 			cpu.cycleEnd()
 		case LDA_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			LDA_I()
+			cpu.LDA_I()
 			cpu.cycleEnd()
 		case LDX_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			LDX_I()
+			cpu.LDX_I()
 			cpu.cycleEnd()
 		case LDY_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			LDY_I()
+			cpu.LDY_I()
 			cpu.cycleEnd()
 		case ORA_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			ORA_I()
+			cpu.ORA_I()
 			cpu.cycleEnd()
 		case SBC_IMMEDIATE_OPCODE:
 			cpu.cycleStart()
-			SBC_I()
+			cpu.SBC_I()
 			cpu.cycleEnd()
 
 		// Zero Page addressing mode instructions
@@ -509,87 +512,87 @@ func (cpu *CPU) startCPU() {
 		*/
 		case ADC_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			ADC_Z()
+			cpu.ADC_Z()
 			cpu.cycleEnd()
 		case AND_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			AND_Z()
+			cpu.AND_Z()
 			cpu.cycleEnd()
 		case ASL_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			ASL_Z()
+			cpu.ASL_Z()
 			cpu.cycleEnd()
 		case BIT_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			BIT_Z()
+			cpu.BIT_Z()
 			cpu.cycleEnd()
 		case CMP_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			CMP_Z()
+			cpu.CMP_Z()
 			cpu.cycleEnd()
 		case CPX_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			CPX_Z()
+			cpu.CPX_Z()
 			cpu.cycleEnd()
 		case CPY_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			CPY_Z()
+			cpu.CPY_Z()
 			cpu.cycleEnd()
 		case DEC_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			DEC_Z()
+			cpu.DEC_Z()
 			cpu.cycleEnd()
 		case EOR_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			EOR_Z()
+			cpu.EOR_Z()
 			cpu.cycleEnd()
 		case INC_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			INC_Z()
+			cpu.INC_Z()
 			cpu.cycleEnd()
 		case LDA_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			LDA_Z()
+			cpu.LDA_Z()
 			cpu.cycleEnd()
 		case LDX_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			LDX_Z()
+			cpu.LDX_Z()
 			cpu.cycleEnd()
 		case LDY_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			LDY_Z()
+			cpu.LDY_Z()
 			cpu.cycleEnd()
 		case LSR_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			LSR_Z()
+			cpu.LSR_Z()
 			cpu.cycleEnd()
 		case ORA_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			ORA_Z()
+			cpu.ORA_Z()
 			cpu.cycleEnd()
 		case ROL_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			ROL_Z()
+			cpu.ROL_Z()
 			cpu.cycleEnd()
 		case ROR_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			ROR_Z()
+			cpu.ROR_Z()
 			cpu.cycleEnd()
 		case SBC_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			SBC_Z()
+			cpu.SBC_Z()
 			cpu.cycleEnd()
 		case STA_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			STA_Z()
+			cpu.STA_Z()
 			cpu.cycleEnd()
 		case STX_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			STX_Z()
+			cpu.STX_Z()
 			cpu.cycleEnd()
 		case STY_ZERO_PAGE_OPCODE:
 			cpu.cycleStart()
-			STY_Z()
+			cpu.STY_Z()
 			cpu.cycleEnd()
 
 		// X Indexed Zero Page addressing mode instructions
@@ -602,67 +605,67 @@ func (cpu *CPU) startCPU() {
 		*/
 		case ADC_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			ADC_ZX()
+			cpu.ADC_ZX()
 			cpu.cycleEnd()
 		case AND_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			AND_ZX()
+			cpu.AND_ZX()
 			cpu.cycleEnd()
 		case ASL_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			ASL_ZX()
+			cpu.ASL_ZX()
 			cpu.cycleEnd()
 		case CMP_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			CMP_ZX()
+			cpu.CMP_ZX()
 			cpu.cycleEnd()
 		case DEC_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			DEC_ZX()
+			cpu.DEC_ZX()
 			cpu.cycleEnd()
 		case LDA_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			LDA_ZX()
+			cpu.LDA_ZX()
 			cpu.cycleEnd()
 		case LDY_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			LDY_ZX()
+			cpu.LDY_ZX()
 			cpu.cycleEnd()
 		case LSR_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			LSR_ZX()
+			cpu.LSR_ZX()
 			cpu.cycleEnd()
 		case ORA_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			ORA_ZX()
+			cpu.ORA_ZX()
 			cpu.cycleEnd()
 		case ROL_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			ROL_ZX()
+			cpu.ROL_ZX()
 			cpu.cycleEnd()
 		case ROR_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			ROR_ZX()
+			cpu.ROR_ZX()
 			cpu.cycleEnd()
 		case EOR_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			EOR_ZX()
+			cpu.EOR_ZX()
 			cpu.cycleEnd()
 		case INC_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			INC_ZX()
+			cpu.INC_ZX()
 			cpu.cycleEnd()
 		case SBC_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			SBC_ZX()
+			cpu.SBC_ZX()
 			cpu.cycleEnd()
 		case STA_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			STA_ZX()
+			cpu.STA_ZX()
 			cpu.cycleEnd()
 		case STY_ZERO_PAGE_X_OPCODE:
 			cpu.cycleStart()
-			STY_ZX()
+			cpu.STY_ZX()
 			cpu.cycleEnd()
 
 		// Y Indexed Zero Page addressing mode instructions
@@ -675,11 +678,11 @@ func (cpu *CPU) startCPU() {
 		*/
 		case LDX_ZERO_PAGE_Y_OPCODE:
 			cpu.cycleStart()
-			LDX_ZY()
+			cpu.LDX_ZY()
 			cpu.cycleEnd()
 		case STX_ZERO_PAGE_Y_OPCODE:
 			cpu.cycleStart()
-			STX_ZY()
+			cpu.STX_ZY()
 			cpu.cycleEnd()
 
 		// X Indexed Zero Page Indirect addressing mode instructions
@@ -692,35 +695,35 @@ func (cpu *CPU) startCPU() {
 		*/
 		case ADC_INDIRECT_X_OPCODE:
 			cpu.cycleStart()
-			ADC_IX()
+			cpu.ADC_IX()
 			cpu.cycleEnd()
 		case AND_INDIRECT_X_OPCODE:
 			cpu.cycleStart()
-			AND_IX()
+			cpu.AND_IX()
 			cpu.cycleEnd()
 		case CMP_INDIRECT_X_OPCODE:
 			cpu.cycleStart()
-			CMP_IX()
+			cpu.CMP_IX()
 			cpu.cycleEnd()
 		case EOR_INDIRECT_X_OPCODE:
 			cpu.cycleStart()
-			EOR_IX()
+			cpu.EOR_IX()
 			cpu.cycleEnd()
 		case LDA_INDIRECT_X_OPCODE:
 			cpu.cycleStart()
-			LDA_IX()
+			cpu.LDA_IX()
 			cpu.cycleEnd()
 		case ORA_INDIRECT_X_OPCODE:
 			cpu.cycleStart()
-			ORA_IX()
+			cpu.ORA_IX()
 			cpu.cycleEnd()
 		case SBC_INDIRECT_X_OPCODE:
 			cpu.cycleStart()
-			SBC_IX()
+			cpu.SBC_IX()
 			cpu.cycleEnd()
 		case STA_INDIRECT_X_OPCODE:
 			cpu.cycleStart()
-			STA_IX()
+			cpu.STA_IX()
 			cpu.cycleEnd()
 
 		// Zero Page Indirect Y Indexed addressing mode instructions
@@ -733,35 +736,35 @@ func (cpu *CPU) startCPU() {
 		*/
 		case ADC_INDIRECT_Y_OPCODE:
 			cpu.cycleStart()
-			ADC_IY()
+			cpu.ADC_IY()
 			cpu.cycleEnd()
 		case AND_INDIRECT_Y_OPCODE:
 			cpu.cycleStart()
-			AND_IY()
+			cpu.AND_IY()
 			cpu.cycleEnd()
 		case CMP_INDIRECT_Y_OPCODE:
 			cpu.cycleStart()
-			CMP_IY()
+			cpu.CMP_IY()
 			cpu.cycleEnd()
 		case EOR_INDIRECT_Y_OPCODE:
 			cpu.cycleStart()
-			EOR_IY()
+			cpu.EOR_IY()
 			cpu.cycleEnd()
 		case LDA_INDIRECT_Y_OPCODE:
 			cpu.cycleStart()
-			LDA_IY()
+			cpu.LDA_IY()
 			cpu.cycleEnd()
 		case ORA_INDIRECT_Y_OPCODE:
 			cpu.cycleStart()
-			ORA_IY()
+			cpu.ORA_IY()
 			cpu.cycleEnd()
 		case SBC_INDIRECT_Y_OPCODE:
 			cpu.cycleStart()
-			SBC_IY()
+			cpu.SBC_IY()
 			cpu.cycleEnd()
 		case STA_INDIRECT_Y_OPCODE:
 			cpu.cycleStart()
-			STA_IY()
+			cpu.STA_IY()
 			cpu.cycleEnd()
 
 		// Relative addressing mode instructions
@@ -776,35 +779,35 @@ func (cpu *CPU) startCPU() {
 		*/
 		case BPL_RELATIVE_OPCODE:
 			cpu.cycleStart()
-			BPL_R()
+			cpu.BPL_R()
 			cpu.cycleEnd()
 		case BMI_RELATIVE_OPCODE:
 			cpu.cycleStart()
-			BMI_R()
+			cpu.BMI_R()
 			cpu.cycleEnd()
 		case BVC_RELATIVE_OPCODE:
 			cpu.cycleStart()
-			BVC_R()
+			cpu.BVC_R()
 			cpu.cycleEnd()
 		case BVS_RELATIVE_OPCODE:
 			cpu.cycleStart()
-			BVS_R()
+			cpu.BVS_R()
 			cpu.cycleEnd()
 		case BCC_RELATIVE_OPCODE:
 			cpu.cycleStart()
-			BCC_R()
+			cpu.BCC_R()
 			cpu.cycleEnd()
 		case BCS_RELATIVE_OPCODE:
 			cpu.cycleStart()
-			BCS_R()
+			cpu.BCS_R()
 			cpu.cycleEnd()
 		case BNE_RELATIVE_OPCODE:
 			cpu.cycleStart()
-			BNE_R()
+			cpu.BNE_R()
 			cpu.cycleEnd()
 		case BEQ_RELATIVE_OPCODE:
 			cpu.cycleStart()
-			BEQ_R()
+			cpu.BEQ_R()
 			cpu.cycleEnd()
 		//}
 
@@ -820,95 +823,95 @@ func (cpu *CPU) startCPU() {
 		*/
 		case ADC_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			ADC_ABS()
+			cpu.ADC_ABS()
 			cpu.cycleEnd()
 		case AND_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			AND_ABS()
+			cpu.AND_ABS()
 			cpu.cycleEnd()
 		case ASL_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			ASL_ABS()
+			cpu.ASL_ABS()
 			cpu.cycleEnd()
 		case BIT_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			BIT_ABS()
+			cpu.BIT_ABS()
 			cpu.cycleEnd()
 		case CMP_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			CMP_ABS()
+			cpu.CMP_ABS()
 			cpu.cycleEnd()
 		case CPX_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			CPX_ABS()
+			cpu.CPX_ABS()
 			cpu.cycleEnd()
 		case CPY_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			CPY_ABS()
+			cpu.CPY_ABS()
 			cpu.cycleEnd()
 		case DEC_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			DEC_ABS()
+			cpu.DEC_ABS()
 			cpu.cycleEnd()
 		case EOR_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			EOR_ABS()
+			cpu.EOR_ABS()
 			cpu.cycleEnd()
 		case INC_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			INC_ABS()
+			cpu.INC_ABS()
 			cpu.cycleEnd()
 		case JMP_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			JMP_ABS()
+			cpu.JMP_ABS()
 			cpu.cycleEnd()
 		case JSR_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			JSR_ABS()
+			cpu.JSR_ABS()
 			cpu.cycleEnd()
 		case LDA_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			LDA_ABS()
+			cpu.LDA_ABS()
 			cpu.cycleEnd()
 		case LDX_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			LDX_ABS()
+			cpu.LDX_ABS()
 			cpu.cycleEnd()
 		case LDY_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			LDY_ABS()
+			cpu.LDY_ABS()
 			cpu.cycleEnd()
 		case LSR_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			LSR_ABS()
+			cpu.LSR_ABS()
 			cpu.cycleEnd()
 		case ORA_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			ORA_ABS()
+			cpu.ORA_ABS()
 			cpu.cycleEnd()
 		case ROL_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			ROL_ABS()
+			cpu.ROL_ABS()
 			cpu.cycleEnd()
 		case ROR_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			ROR_ABS()
+			cpu.ROR_ABS()
 			cpu.cycleEnd()
 		case SBC_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			SBC_ABS()
+			cpu.SBC_ABS()
 			cpu.cycleEnd()
 		case STA_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			STA_ABS()
+			cpu.STA_ABS()
 			cpu.cycleEnd()
 		case STX_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			STX_ABS()
+			cpu.STX_ABS()
 			cpu.cycleEnd()
 		case STY_ABSOLUTE_OPCODE:
 			cpu.cycleStart()
-			STY_ABS()
+			cpu.STY_ABS()
 			cpu.cycleEnd()
 
 		// X Indexed Absolute addressing mode instructions
@@ -926,63 +929,63 @@ func (cpu *CPU) startCPU() {
 		*/
 		case ADC_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			ADC_ABX()
+			cpu.ADC_ABX()
 			cpu.cycleEnd()
 		case AND_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			AND_ABX()
+			cpu.AND_ABX()
 			cpu.cycleEnd()
 		case ASL_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			ASL_ABX()
+			cpu.ASL_ABX()
 			cpu.cycleEnd()
 		case CMP_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			CMP_ABX()
+			cpu.CMP_ABX()
 			cpu.cycleEnd()
 		case DEC_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			DEC_ABX()
+			cpu.DEC_ABX()
 			cpu.cycleEnd()
 		case EOR_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			EOR_ABX()
+			cpu.EOR_ABX()
 			cpu.cycleEnd()
 		case INC_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			INC_ABX()
+			cpu.INC_ABX()
 			cpu.cycleEnd()
 		case LDA_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			LDA_ABX()
+			cpu.LDA_ABX()
 			cpu.cycleEnd()
 		case LDY_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			LDY_ABX()
+			cpu.LDY_ABX()
 			cpu.cycleEnd()
 		case LSR_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			LSR_ABX()
+			cpu.LSR_ABX()
 			cpu.cycleEnd()
 		case ORA_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			ORA_ABX()
+			cpu.ORA_ABX()
 			cpu.cycleEnd()
 		case ROL_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			ROL_ABX()
+			cpu.ROL_ABX()
 			cpu.cycleEnd()
 		case ROR_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			ROR_ABX()
+			cpu.ROR_ABX()
 			cpu.cycleEnd()
 		case SBC_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			SBC_ABX()
+			cpu.SBC_ABX()
 			cpu.cycleEnd()
 		case STA_ABSOLUTE_X_OPCODE:
 			cpu.cycleStart()
-			STA_ABX()
+			cpu.STA_ABX()
 			cpu.cycleEnd()
 
 		// Y Indexed Absolute addressing mode instructions
@@ -999,45 +1002,45 @@ func (cpu *CPU) startCPU() {
 		*/
 		case ADC_ABSOLUTE_Y_OPCODE:
 			cpu.cycleStart()
-			ADC_ABY()
+			cpu.ADC_ABY()
 			cpu.cycleEnd()
 		case AND_ABSOLUTE_Y_OPCODE:
 			cpu.cycleStart()
-			AND_ABY()
+			cpu.AND_ABY()
 			cpu.cycleEnd()
 		case CMP_ABSOLUTE_Y_OPCODE:
 			cpu.cycleStart()
-			CMP_ABY()
+			cpu.CMP_ABY()
 			cpu.cycleEnd()
 		case EOR_ABSOLUTE_Y_OPCODE:
 			cpu.cycleStart()
-			EOR_ABY()
+			cpu.EOR_ABY()
 			cpu.cycleEnd()
 		case LDA_ABSOLUTE_Y_OPCODE:
 			cpu.cycleStart()
-			LDA_ABY()
+			cpu.LDA_ABY()
 			cpu.cycleEnd()
 		case LDX_ABSOLUTE_Y_OPCODE:
 			cpu.cycleStart()
-			LDX_ABY()
+			cpu.LDX_ABY()
 			cpu.cycleEnd()
 		case ORA_ABSOLUTE_Y_OPCODE:
 			cpu.cycleStart()
-			ORA_ABY()
+			cpu.ORA_ABY()
 			cpu.cycleEnd()
 		case SBC_ABSOLUTE_Y_OPCODE:
 			cpu.cycleStart()
-			SBC_ABY()
+			cpu.SBC_ABY()
 			cpu.cycleEnd()
 		case STA_ABSOLUTE_Y_OPCODE:
 			cpu.cycleStart()
-			STA_ABY()
+			cpu.STA_ABY()
 			cpu.cycleEnd()
 
 		// Absolute Indirect addressing mode instructions
 		case JMP_INDIRECT_OPCODE:
 			cpu.cycleStart()
-			JMP_IND()
+			cpu.JMP_IND()
 			cpu.cycleEnd()
 		}
 		if *plus4 {
@@ -1049,5 +1052,8 @@ func (cpu *CPU) startCPU() {
 		//fmt.Fprintf(os.Stderr, "Debug: At PC $%04X/preOpPC $%04X memory[0x0314] is %04X\n", cpu.PC, cpu.preOpPC, memory[0x0314])
 
 		executionTrace()
+		if cpu.cpuQuit {
+			break
+		}
 	}
 }

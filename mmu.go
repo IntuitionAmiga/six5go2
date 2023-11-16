@@ -15,7 +15,7 @@ const (
 
 var memory [65536]byte // Memory
 
-func readMemory(address uint16) byte {
+func (cpu *CPU) readMemory(address uint16) byte {
 	var value byte
 	if address >= TED_REG_START && address <= TED_REG_END {
 		value = ted.readTEDReg(address)
@@ -25,7 +25,7 @@ func readMemory(address uint16) byte {
 	return value
 }
 
-func writeMemory(address uint16, value byte) {
+func (cpu *CPU) writeMemory(address uint16, value byte) {
 	if address >= TED_REG_START && address <= TED_REG_END {
 		ted.writeTEDReg(address, value)
 	} else {
@@ -48,8 +48,8 @@ func (cpu *CPU) readBit(bit byte, value byte) int {
 	return int((value >> bit) & 1)
 }
 func (cpu *CPU) readStack() byte {
-	return readMemory(SPBaseAddress + cpu.SP)
+	return cpu.readMemory(SPBaseAddress + cpu.SP)
 }
 func (cpu *CPU) updateStack(value byte) {
-	writeMemory(SPBaseAddress+cpu.SP, value)
+	cpu.writeMemory(SPBaseAddress+cpu.SP, value)
 }
