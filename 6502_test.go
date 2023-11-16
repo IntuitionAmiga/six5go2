@@ -1522,3 +1522,79 @@ func TestORAIndirectY(t *testing.T) {
 	if cpu.PC != cpu.preOpPC+2 { // 2 bytes
 	}
 }
+
+func TestBITZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// Setup for BIT instruction (Zero Page addressing mode)
+	// BIT $10
+	cpu.writeMemory(cpu.PC, BIT_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Address in Zero Page
+	testValue := byte(0xC0)         // Test value at Zero Page address (0xC0 chosen to set negative and overflow flags)
+	cpu.writeMemory(0x0010, testValue)
+	cpu.A = 0x80 // Set accumulator to a value that will affect the zero flag
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if Zero Flag is set correctly
+	if cpu.getSRBit(1) != 0 { // Zero flag is bit 1 of the status register
+		t.Errorf("BIT Zero Page failed: Zero Flag should be set")
+	}
+
+	// Check if Negative Flag is set correctly
+	if cpu.getSRBit(7) != (testValue>>7)&1 {
+		t.Errorf("BIT Zero Page failed: Negative Flag should match bit 7 of test value")
+	}
+
+	// Check if Overflow Flag is set correctly
+	if cpu.getSRBit(6) != (testValue>>6)&1 {
+		t.Errorf("BIT Zero Page failed: Overflow Flag should match bit 6 of test value")
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for BIT Zero Page
+		t.Errorf("BIT Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestBITAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// Setup for BIT instruction (Absolute addressing mode)
+	// BIT $1000
+	cpu.writeMemory(cpu.PC, BIT_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10) // Address in Zero Page
+	testValue := byte(0xC0)         // Test value at Zero Page address (0xC0 chosen to set negative and overflow flags)
+	cpu.writeMemory(0x1000, testValue)
+	cpu.A = 0x80 // Set accumulator to a value that will affect the zero flag
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if Zero Flag is set correctly
+	if cpu.getSRBit(1) != 0 { // Zero flag is bit 1 of the status register
+		t.Errorf("BIT Absolute failed: Zero Flag should be set")
+	}
+
+	// Check if Negative Flag is set correctly
+	if cpu.getSRBit(7) != (testValue>>7)&1 {
+		t.Errorf("BIT Absolute failed: Negative Flag should match bit 7 of test value")
+	}
+
+	// Check if Overflow Flag is set correctly
+	if cpu.getSRBit(6) != (testValue>>6)&1 {
+		t.Errorf("BIT Absolute failed: Overflow Flag should match bit 6 of test value")
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for BIT Absolute
+		t.Errorf("BIT Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
