@@ -695,7 +695,6 @@ func TestSTYAbsolute(t *testing.T) {
 		t.Errorf("STY Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestTAX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -716,7 +715,6 @@ func TestTAX(t *testing.T) {
 		t.Errorf("TAX failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestTAY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -737,7 +735,6 @@ func TestTAY(t *testing.T) {
 		t.Errorf("TAY failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestTXA(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -758,7 +755,6 @@ func TestTXA(t *testing.T) {
 		t.Errorf("TXA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestTYA(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -779,7 +775,6 @@ func TestTYA(t *testing.T) {
 		t.Errorf("TYA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestTSX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -800,7 +795,6 @@ func TestTSX(t *testing.T) {
 		t.Errorf("TSX failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestTXS(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -821,7 +815,6 @@ func TestTXS(t *testing.T) {
 		t.Errorf("TXS failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestPHA(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -843,7 +836,6 @@ func TestPHA(t *testing.T) {
 		t.Errorf("PHA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestPLA(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -900,7 +892,6 @@ func TestPHP(t *testing.T) {
 		t.Errorf("PHP failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestPLP(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -937,7 +928,6 @@ func TestPLP(t *testing.T) {
 		t.Errorf("PLP failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestANDImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -959,7 +949,6 @@ func TestANDImmediate(t *testing.T) {
 		t.Errorf("AND Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestANDZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -982,7 +971,6 @@ func TestANDZeroPage(t *testing.T) {
 		t.Errorf("AND Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestANDZeroPageX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1006,7 +994,6 @@ func TestANDZeroPageX(t *testing.T) {
 		t.Errorf("AND Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestANDAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1030,7 +1017,6 @@ func TestANDAbsolute(t *testing.T) {
 		t.Errorf("AND Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestANDAbsoluteX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1055,7 +1041,6 @@ func TestANDAbsoluteX(t *testing.T) {
 	if cpu.PC != cpu.preOpPC+3 { //
 	}
 }
-
 func TestANDAbsoluteY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1082,33 +1067,32 @@ func TestANDAbsoluteY(t *testing.T) {
 	}
 }
 
-//func TestANDIndirectX(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
+//	func TestANDIndirectX(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
 //
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
 //
-//	// AND ($10,X)
-//	cpu.writeMemory(cpu.PC, AND_INDIRECT_X_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x10)
-//	cpu.writeMemory(0x0010, 0x00)
-//	cpu.writeMemory(0x0011, 0x10)
-//	cpu.writeMemory(0x1000, 0x20)
-//	cpu.A = 0x20
-//	cpu.X = 0x01
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
+//		// AND ($10,X)
+//		cpu.writeMemory(cpu.PC, AND_INDIRECT_X_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x10)
+//		cpu.writeMemory(0x0010, 0x00)
+//		cpu.writeMemory(0x0011, 0x10)
+//		cpu.writeMemory(0x1000, 0x20)
+//		cpu.A = 0x20
+//		cpu.X = 0x01
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
 //
-//	// Check if A has the expected value
-//	if cpu.A != 0x20 {
-//		t.Errorf("AND Indirect X failed: got %02X, want %02X", cpu.A, 0x20)
+//		// Check if A has the expected value
+//		if cpu.A != 0x20 {
+//			t.Errorf("AND Indirect X failed: got %02X, want %02X", cpu.A, 0x20)
+//		}
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for AND immediate
+//			t.Errorf("AND Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//		}
 //	}
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for AND immediate
-//		t.Errorf("AND Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//	}
-//}
-
 func TestANDIndirectY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1135,7 +1119,6 @@ func TestANDIndirectY(t *testing.T) {
 		t.Errorf("AND Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestEORImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1157,7 +1140,6 @@ func TestEORImmediate(t *testing.T) {
 		t.Errorf("EOR Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestEORZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1180,7 +1162,6 @@ func TestEORZeroPage(t *testing.T) {
 		t.Errorf("EOR Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestEORZeroPageX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1204,7 +1185,6 @@ func TestEORZeroPageX(t *testing.T) {
 		t.Errorf("EOR Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestEORAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1228,7 +1208,6 @@ func TestEORAbsolute(t *testing.T) {
 		t.Errorf("EOR Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestEORAbsoluteX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1253,7 +1232,6 @@ func TestEORAbsoluteX(t *testing.T) {
 		t.Errorf("EOR Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestEORAbsoluteY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1279,32 +1257,31 @@ func TestEORAbsoluteY(t *testing.T) {
 	}
 }
 
-//func TestEORIndirectX(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
+//	func TestEORIndirectX(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
 //
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
 //
-//	// EOR ($10,X)
-//	cpu.writeMemory(cpu.PC, EOR_INDIRECT_X_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x10)
-//	cpu.writeMemory(0x0010, 0x00)
-//	cpu.writeMemory(0x0011, 0x10)
-//	cpu.writeMemory(0x1000, 0x20)
-//	cpu.A = 0x20
-//	cpu.X = 0x01
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
-//	// Check if A has the expected value
-//	if cpu.A != 0x00 {
-//		t.Errorf("EOR Indirect X failed: got %02X, want %02X", cpu.A, 0x00)
+//		// EOR ($10,X)
+//		cpu.writeMemory(cpu.PC, EOR_INDIRECT_X_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x10)
+//		cpu.writeMemory(0x0010, 0x00)
+//		cpu.writeMemory(0x0011, 0x10)
+//		cpu.writeMemory(0x1000, 0x20)
+//		cpu.A = 0x20
+//		cpu.X = 0x01
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
+//		// Check if A has the expected value
+//		if cpu.A != 0x00 {
+//			t.Errorf("EOR Indirect X failed: got %02X, want %02X", cpu.A, 0x00)
+//		}
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for EOR immediate
+//			t.Errorf("EOR Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//		}
 //	}
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for EOR immediate
-//		t.Errorf("EOR Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//	}
-//}
-
 func TestEORIndirectY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1330,7 +1307,6 @@ func TestEORIndirectY(t *testing.T) {
 		t.Errorf("EOR Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestORAImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1351,7 +1327,6 @@ func TestORAImmediate(t *testing.T) {
 		t.Errorf("ORA Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestORAZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1374,7 +1349,6 @@ func TestORAZeroPage(t *testing.T) {
 		t.Errorf("ORA Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestORAZeroPageX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1398,7 +1372,6 @@ func TestORAZeroPageX(t *testing.T) {
 		t.Errorf("ORA Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestORAAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1422,7 +1395,6 @@ func TestORAAbsolute(t *testing.T) {
 		t.Errorf("ORA Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestORAAbsoluteX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1447,7 +1419,6 @@ func TestORAAbsoluteX(t *testing.T) {
 		t.Errorf("ORA Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestORAAbsoluteY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1472,7 +1443,6 @@ func TestORAAbsoluteY(t *testing.T) {
 		t.Errorf("ORA Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestORAIndirectX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1497,7 +1467,6 @@ func TestORAIndirectX(t *testing.T) {
 	if cpu.PC != cpu.preOpPC+2 { // 2 bytes
 	}
 }
-
 func TestORAIndirectY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1522,7 +1491,6 @@ func TestORAIndirectY(t *testing.T) {
 	if cpu.PC != cpu.preOpPC+2 { // 2 bytes
 	}
 }
-
 func TestBITZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1560,7 +1528,6 @@ func TestBITZeroPage(t *testing.T) {
 		t.Errorf("BIT Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestBITAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1598,7 +1565,6 @@ func TestBITAbsolute(t *testing.T) {
 		t.Errorf("BIT Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestADCImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1619,7 +1585,6 @@ func TestADCImmediate(t *testing.T) {
 		t.Errorf("ADC Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestADCZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1641,7 +1606,6 @@ func TestADCZeroPage(t *testing.T) {
 		t.Errorf("ADC Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestADCZeroPageX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1664,7 +1628,6 @@ func TestADCZeroPageX(t *testing.T) {
 		t.Errorf("ADC Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestADCAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1687,7 +1650,6 @@ func TestADCAbsolute(t *testing.T) {
 		t.Errorf("ADC Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestADCAbsoluteX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1712,7 +1674,6 @@ func TestADCAbsoluteX(t *testing.T) {
 		t.Errorf("ADC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestADCAbsoluteY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1738,32 +1699,31 @@ func TestADCAbsoluteY(t *testing.T) {
 	}
 }
 
-//func TestADCIndirectX(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
+//	func TestADCIndirectX(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
 //
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//	// ADC ($10,X)
-//	cpu.writeMemory(cpu.PC, ADC_INDIRECT_X_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x10)
-//	cpu.writeMemory(0x0010, 0x00)
-//	cpu.writeMemory(0x0011, 0x10)
-//	cpu.writeMemory(0x1000, 0x10)
-//	cpu.A = 0x20
-//	cpu.X = 0x01
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
+//		// ADC ($10,X)
+//		cpu.writeMemory(cpu.PC, ADC_INDIRECT_X_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x10)
+//		cpu.writeMemory(0x0010, 0x00)
+//		cpu.writeMemory(0x0011, 0x10)
+//		cpu.writeMemory(0x1000, 0x10)
+//		cpu.A = 0x20
+//		cpu.X = 0x01
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
 //
-//	// Check if A has the expected value
-//	if cpu.A != 0x30 {
-//		t.Errorf("ADC Indirect X failed: got %02X, want %02X", cpu.A, 0x30)
+//		// Check if A has the expected value
+//		if cpu.A != 0x30 {
+//			t.Errorf("ADC Indirect X failed: got %02X, want %02X", cpu.A, 0x30)
+//		}
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ADC immediate
+//			t.Errorf("ADC Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//		}
 //	}
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ADC immediate
-//		t.Errorf("ADC Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//	}
-//}
-
 func TestADCIndirectY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1790,363 +1750,362 @@ func TestADCIndirectY(t *testing.T) {
 	}
 }
 
-//func TestSBCImmediate(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
+//	func TestSBCImmediate(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
 //
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
 //
-//	// SBC #10
-//	cpu.writeMemory(cpu.PC, SBC_IMMEDIATE_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x10) // Immediate value to subtract
-//	cpu.A = 0x20                    // Set accumulator for subtraction
-//	cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
+//		// SBC #10
+//		cpu.writeMemory(cpu.PC, SBC_IMMEDIATE_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x10) // Immediate value to subtract
+//		cpu.A = 0x20                    // Set accumulator for subtraction
+//		cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
 //
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
 //
-//	expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
+//		expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
 //
-//	// Check if accumulator has the expected value
-//	if cpu.A != expectedValue {
-//		t.Errorf("SBC Immediate failed: got %02X, want %02X", cpu.A, expectedValue)
+//		// Check if accumulator has the expected value
+//		if cpu.A != expectedValue {
+//			t.Errorf("SBC Immediate failed: got %02X, want %02X", cpu.A, expectedValue)
+//		}
+//
+//		// Check if the zero flag is set correctly
+//		if expectedValue == 0 && cpu.getSRBit(1) != 1 {
+//			t.Errorf("SBC Immediate failed: Zero flag not set correctly")
+//		}
+//
+//		// Check if the negative flag is set correctly
+//		if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
+//			t.Errorf("SBC Immediate failed: Negative flag not set correctly")
+//		}
+//
+//		// Check if the carry flag is set correctly (no borrow)
+//		if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+//			t.Errorf("SBC Immediate failed: Carry flag not set correctly")
+//		}
+//
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Immediate
+//			t.Errorf("SBC Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//		}
 //	}
 //
-//	// Check if the zero flag is set correctly
-//	if expectedValue == 0 && cpu.getSRBit(1) != 1 {
-//		t.Errorf("SBC Immediate failed: Zero flag not set correctly")
+//	func TestSBCZeroPage(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
+//
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
+//
+//		// SBC $10
+//		cpu.writeMemory(cpu.PC, SBC_ZERO_PAGE_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x10) // Zero Page address to subtract
+//		cpu.writeMemory(0x0010, 0x10)   // Value at Zero Page address to subtract
+//		cpu.A = 0x20                    // Set accumulator for subtraction
+//		cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
+//
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
+//
+//		expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
+//
+//		// Check if accumulator has the expected value
+//		if cpu.A != expectedValue {
+//			t.Errorf("SBC Zero Page failed: got %02X, want %02X", cpu.A, expectedValue)
+//		}
+//
+//		// Check if the zero flag is set correctly
+//		if expectedValue == 0 && cpu.getSRBit(1) != 1 {
+//			t.Errorf("SBC Zero Page failed: Zero flag not set correctly")
+//		}
+//
+//		// Check if the negative flag is set correctly
+//		if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
+//			t.Errorf("SBC Zero Page failed: Negative flag not set correctly")
+//		}
+//
+//		// Check if the carry flag is set correctly (no borrow)
+//		if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+//			t.Errorf("SBC Zero Page failed: Carry flag not set correctly")
+//		}
+//
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Zero Page
+//			t.Errorf("SBC Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//		}
 //	}
 //
-//	// Check if the negative flag is set correctly
-//	if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
-//		t.Errorf("SBC Immediate failed: Negative flag not set correctly")
+//	func TestSBCZeroPageX(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
+//
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
+//		// SBC $10,X
+//		cpu.writeMemory(cpu.PC, SBC_ZERO_PAGE_X_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x10) // Zero Page address to subtract
+//		cpu.writeMemory(0x0011, 0x10)   // Value at Zero Page address to subtract
+//		cpu.X = 0x01                    // Set X register for Zero Page addressing
+//		cpu.A = 0x20                    // Set accumulator for subtraction
+//		cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
+//
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
+//
+//		expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
+//
+//		// Check if accumulator has the expected value
+//		if cpu.A != expectedValue {
+//			t.Errorf("SBC Zero Page X failed: got %02X, want %02X", cpu.A, expectedValue)
+//		}
+//
+//		// Check if the zero flag is set correctly
+//		if expectedValue == 0 && cpu.getSRBit(1) != 1 {
+//			t.Errorf("SBC Zero Page X failed: Zero flag not set correctly")
+//		}
+//
+//		// Check if the negative flag is set correctly
+//		if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
+//			t.Errorf("SBC Zero Page X failed: Negative flag not set correctly")
+//		}
+//
+//		// Check if the carry flag is set correctly (no borrow)
+//		if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+//			t.Errorf("SBC Zero Page X failed: Carry flag not set correctly")
+//		}
+//
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Zero Page
+//			t.Errorf("SBC Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//		}
 //	}
 //
-//	// Check if the carry flag is set correctly (no borrow)
-//	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
-//		t.Errorf("SBC Immediate failed: Carry flag not set correctly")
+//	func TestSBCAbsolute(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
+//
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
+//		// SBC $1000
+//		cpu.writeMemory(cpu.PC, SBC_ABSOLUTE_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address to subtract
+//		cpu.writeMemory(cpu.PC+2, 0x10)
+//		cpu.writeMemory(0x1000, 0x10) // Value at Absolute address to subtract
+//		cpu.A = 0x20                  // Set accumulator for subtraction
+//		cpu.setCarryFlag()            // Ensure the carry flag is set before subtraction
+//
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
+//
+//		expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
+//
+//		// Check if accumulator has the expected value
+//		if cpu.A != expectedValue {
+//			t.Errorf("SBC Absolute failed: got %02X, want %02X", cpu.A, expectedValue)
+//		}
+//
+//		// Check if the zero flag is set correctly
+//		if expectedValue == 0 && cpu.getSRBit(1) != 1 {
+//			t.Errorf("SBC Absolute failed: Zero flag not set correctly")
+//		}
+//
+//		// Check if the negative flag is set correctly
+//		if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
+//			t.Errorf("SBC Absolute failed: Negative flag not set correctly")
+//		}
+//
+//		// Check if the carry flag is set correctly (no borrow)
+//		if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+//			t.Errorf("SBC Absolute failed: Carry flag not set correctly")
+//		}
+//
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+3 { // 3 bytes for SBC Absolute
+//			t.Errorf("SBC Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+//		}
 //	}
 //
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Immediate
-//		t.Errorf("SBC Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//	}
-//}
+//	func TestSBCAbsoluteX(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
 //
-//func TestSBCZeroPage(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
+//		// SBC $1000,X
+//		cpu.writeMemory(cpu.PC, SBC_ABSOLUTE_X_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address to subtract
+//		cpu.writeMemory(cpu.PC+2, 0x10)
+//		cpu.writeMemory(0x1001, 0x10) // Value at Absolute address to subtract
+//		cpu.X = 0x01                  // Set X register for Absolute addressing
+//		cpu.A = 0x20                  // Set accumulator for subtraction
+//		cpu.setCarryFlag()            // Ensure the carry flag is set before subtraction
 //
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
 //
-//	// SBC $10
-//	cpu.writeMemory(cpu.PC, SBC_ZERO_PAGE_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x10) // Zero Page address to subtract
-//	cpu.writeMemory(0x0010, 0x10)   // Value at Zero Page address to subtract
-//	cpu.A = 0x20                    // Set accumulator for subtraction
-//	cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
+//		expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
 //
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
+//		// Check if accumulator has the expected value
+//		if cpu.A != expectedValue {
+//			t.Errorf("SBC Absolute X failed: got %02X, want %02X", cpu.A, expectedValue)
+//		}
 //
-//	expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
+//		// Check if the zero flag is set correctly
+//		if expectedValue == 0 && cpu.getSRBit(1) != 1 {
+//			t.Errorf("SBC Absolute X failed: Zero flag not set correctly")
+//		}
 //
-//	// Check if accumulator has the expected value
-//	if cpu.A != expectedValue {
-//		t.Errorf("SBC Zero Page failed: got %02X, want %02X", cpu.A, expectedValue)
-//	}
+//		// Check if the negative flag is set correctly
+//		if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
+//			t.Errorf("SBC Absolute X failed: Negative flag not set correctly")
+//		}
 //
-//	// Check if the zero flag is set correctly
-//	if expectedValue == 0 && cpu.getSRBit(1) != 1 {
-//		t.Errorf("SBC Zero Page failed: Zero flag not set correctly")
-//	}
+//		// Check if the carry flag is set correctly (no borrow)
+//		if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+//			t.Errorf("SBC Absolute X failed: Carry flag not set correctly")
+//		}
 //
-//	// Check if the negative flag is set correctly
-//	if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
-//		t.Errorf("SBC Zero Page failed: Negative flag not set correctly")
-//	}
-//
-//	// Check if the carry flag is set correctly (no borrow)
-//	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
-//		t.Errorf("SBC Zero Page failed: Carry flag not set correctly")
-//	}
-//
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Zero Page
-//		t.Errorf("SBC Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//	}
-//}
-//
-//func TestSBCZeroPageX(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
-//
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//	// SBC $10,X
-//	cpu.writeMemory(cpu.PC, SBC_ZERO_PAGE_X_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x10) // Zero Page address to subtract
-//	cpu.writeMemory(0x0011, 0x10)   // Value at Zero Page address to subtract
-//	cpu.X = 0x01                    // Set X register for Zero Page addressing
-//	cpu.A = 0x20                    // Set accumulator for subtraction
-//	cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
-//
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
-//
-//	expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
-//
-//	// Check if accumulator has the expected value
-//	if cpu.A != expectedValue {
-//		t.Errorf("SBC Zero Page X failed: got %02X, want %02X", cpu.A, expectedValue)
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+3 { // 3 bytes for SBC Absolute
+//			t.Errorf("SBC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+//		}
 //	}
 //
-//	// Check if the zero flag is set correctly
-//	if expectedValue == 0 && cpu.getSRBit(1) != 1 {
-//		t.Errorf("SBC Zero Page X failed: Zero flag not set correctly")
+//	func TestSBCAbsoluteY(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
+//
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
+//		// SBC $1000,Y
+//		cpu.writeMemory(cpu.PC, SBC_ABSOLUTE_Y_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address to subtract
+//		cpu.writeMemory(cpu.PC+2, 0x10)
+//		cpu.writeMemory(0x1001, 0x10) // Value at Absolute address to subtract
+//		cpu.Y = 0x01                  // Set Y register for Absolute addressing
+//		cpu.A = 0x20                  // Set accumulator for subtraction
+//		cpu.setCarryFlag()            // Ensure the carry flag is set before subtraction
+//
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
+//
+//		expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
+//
+//		// Check if accumulator has the expected value
+//		if cpu.A != expectedValue {
+//			t.Errorf("SBC Absolute Y failed: got %02X, want %02X", cpu.A, expectedValue)
+//		}
+//
+//		// Check if the zero flag is set correctly
+//		if expectedValue == 0 && cpu.getSRBit(1) != 1 {
+//			t.Errorf("SBC Absolute Y failed: Zero flag not set correctly")
+//		}
+//
+//		// Check if the negative flag is set correctly
+//		if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
+//			t.Errorf("SBC Absolute Y failed: Negative flag not set correctly")
+//		}
+//
+//		// Check if the carry flag is set correctly (no borrow)
+//		if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+//			t.Errorf("SBC Absolute Y failed: Carry flag not set correctly")
+//		}
+//
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+3 { // 3 bytes for SBC Absolute
+//			t.Errorf("SBC Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+//		}
 //	}
 //
-//	// Check if the negative flag is set correctly
-//	if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
-//		t.Errorf("SBC Zero Page X failed: Negative flag not set correctly")
+//	func TestSBCIndirectX(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
+//
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
+//		// SBC ($10,X)
+//		cpu.writeMemory(cpu.PC, SBC_INDIRECT_X_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x10) // Zero Page address to subtract
+//		cpu.writeMemory(0x0010, 0x00)   // Value at Zero Page address to subtract
+//		cpu.writeMemory(0x0011, 0x10)   // Value at Zero Page address to subtract
+//		cpu.writeMemory(0x1000, 0x10)   // Value at Zero Page address to subtract
+//		cpu.X = 0x01                    // Set X register for Zero Page addressing
+//		cpu.A = 0x20                    // Set accumulator for subtraction
+//		cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
+//
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
+//
+//		expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
+//
+//		// Check if accumulator has the expected value
+//		if cpu.A != expectedValue {
+//			t.Errorf("SBC Indirect X failed: got %02X, want %02X", cpu.A, expectedValue)
+//		}
+//
+//		// Check if the zero flag is set correctly
+//		if expectedValue == 0 && cpu.getSRBit(1) != 1 {
+//			t.Errorf("SBC Indirect X failed: Zero flag not set correctly")
+//		}
+//
+//		// Check if the negative flag is set correctly
+//		if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
+//			t.Errorf("SBC Indirect X failed: Negative flag not set correctly")
+//		}
+//
+//		// Check if the carry flag is set correctly (no borrow)
+//		if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+//			t.Errorf("SBC Indirect X failed: Carry flag not set correctly")
+//		}
+//
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Zero Page
+//			t.Errorf("SBC Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//		}
 //	}
 //
-//	// Check if the carry flag is set correctly (no borrow)
-//	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
-//		t.Errorf("SBC Zero Page X failed: Carry flag not set correctly")
+//	func TestSBCIndirectY(t *testing.T) {
+//		var cpu CPU // Create a new CPU instance for the test
+//
+//		cpu.resetCPU()
+//		cpu.setPC(0x0000)
+//		// SBC ($10),Y
+//		cpu.writeMemory(cpu.PC, SBC_INDIRECT_Y_OPCODE)
+//		cpu.writeMemory(cpu.PC+1, 0x10) // Zero Page address to subtract
+//		cpu.writeMemory(0x0010, 0x00)   // Value at Zero Page address to subtract
+//		cpu.writeMemory(0x0011, 0x10)   // Value at Zero Page address to subtract
+//		cpu.writeMemory(0x1001, 0x10)   // Value at Zero Page address to subtract
+//		cpu.Y = 0x01                    // Set Y register for Zero Page addressing
+//		cpu.A = 0x20                    // Set accumulator for subtraction
+//		cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
+//
+//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//		cpu.startCPU()     // Initialize the CPU state
+//
+//		expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
+//
+//		// Check if accumulator has the expected value
+//		if cpu.A != expectedValue {
+//			t.Errorf("SBC Indirect Y failed: got %02X, want %02X", cpu.A, expectedValue)
+//		}
+//
+//		// Check if the zero flag is set correctly
+//		if expectedValue == 0 && cpu.getSRBit(1) != 1 {
+//			t.Errorf("SBC Indirect Y failed: Zero flag not set correctly")
+//		}
+//
+//		// Check if the negative flag is set correctly
+//		if (expectedValue&80) != 0 && cpu.getSRBit(7) != 1 {
+//			t.Errorf("SBC Indirect Y failed: Negative flag not set correctly")
+//		}
+//
+//		// Check if the carry flag is set correctly (no borrow)
+//		if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+//			t.Errorf("SBC Indirect Y failed: Carry flag not set correctly")
+//		}
+//
+//		// Check if Program Counter is incremented correctly
+//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Zero Page
+//			t.Errorf("SBC Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//		}
 //	}
-//
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Zero Page
-//		t.Errorf("SBC Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//	}
-//}
-//
-//func TestSBCAbsolute(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
-//
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//	// SBC $1000
-//	cpu.writeMemory(cpu.PC, SBC_ABSOLUTE_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address to subtract
-//	cpu.writeMemory(cpu.PC+2, 0x10)
-//	cpu.writeMemory(0x1000, 0x10) // Value at Absolute address to subtract
-//	cpu.A = 0x20                  // Set accumulator for subtraction
-//	cpu.setCarryFlag()            // Ensure the carry flag is set before subtraction
-//
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
-//
-//	expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
-//
-//	// Check if accumulator has the expected value
-//	if cpu.A != expectedValue {
-//		t.Errorf("SBC Absolute failed: got %02X, want %02X", cpu.A, expectedValue)
-//	}
-//
-//	// Check if the zero flag is set correctly
-//	if expectedValue == 0 && cpu.getSRBit(1) != 1 {
-//		t.Errorf("SBC Absolute failed: Zero flag not set correctly")
-//	}
-//
-//	// Check if the negative flag is set correctly
-//	if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
-//		t.Errorf("SBC Absolute failed: Negative flag not set correctly")
-//	}
-//
-//	// Check if the carry flag is set correctly (no borrow)
-//	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
-//		t.Errorf("SBC Absolute failed: Carry flag not set correctly")
-//	}
-//
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for SBC Absolute
-//		t.Errorf("SBC Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
-//	}
-//}
-//
-//func TestSBCAbsoluteX(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
-//
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//	// SBC $1000,X
-//	cpu.writeMemory(cpu.PC, SBC_ABSOLUTE_X_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address to subtract
-//	cpu.writeMemory(cpu.PC+2, 0x10)
-//	cpu.writeMemory(0x1001, 0x10) // Value at Absolute address to subtract
-//	cpu.X = 0x01                  // Set X register for Absolute addressing
-//	cpu.A = 0x20                  // Set accumulator for subtraction
-//	cpu.setCarryFlag()            // Ensure the carry flag is set before subtraction
-//
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
-//
-//	expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
-//
-//	// Check if accumulator has the expected value
-//	if cpu.A != expectedValue {
-//		t.Errorf("SBC Absolute X failed: got %02X, want %02X", cpu.A, expectedValue)
-//	}
-//
-//	// Check if the zero flag is set correctly
-//	if expectedValue == 0 && cpu.getSRBit(1) != 1 {
-//		t.Errorf("SBC Absolute X failed: Zero flag not set correctly")
-//	}
-//
-//	// Check if the negative flag is set correctly
-//	if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
-//		t.Errorf("SBC Absolute X failed: Negative flag not set correctly")
-//	}
-//
-//	// Check if the carry flag is set correctly (no borrow)
-//	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
-//		t.Errorf("SBC Absolute X failed: Carry flag not set correctly")
-//	}
-//
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for SBC Absolute
-//		t.Errorf("SBC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
-//	}
-//}
-//
-//func TestSBCAbsoluteY(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
-//
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//	// SBC $1000,Y
-//	cpu.writeMemory(cpu.PC, SBC_ABSOLUTE_Y_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address to subtract
-//	cpu.writeMemory(cpu.PC+2, 0x10)
-//	cpu.writeMemory(0x1001, 0x10) // Value at Absolute address to subtract
-//	cpu.Y = 0x01                  // Set Y register for Absolute addressing
-//	cpu.A = 0x20                  // Set accumulator for subtraction
-//	cpu.setCarryFlag()            // Ensure the carry flag is set before subtraction
-//
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
-//
-//	expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
-//
-//	// Check if accumulator has the expected value
-//	if cpu.A != expectedValue {
-//		t.Errorf("SBC Absolute Y failed: got %02X, want %02X", cpu.A, expectedValue)
-//	}
-//
-//	// Check if the zero flag is set correctly
-//	if expectedValue == 0 && cpu.getSRBit(1) != 1 {
-//		t.Errorf("SBC Absolute Y failed: Zero flag not set correctly")
-//	}
-//
-//	// Check if the negative flag is set correctly
-//	if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
-//		t.Errorf("SBC Absolute Y failed: Negative flag not set correctly")
-//	}
-//
-//	// Check if the carry flag is set correctly (no borrow)
-//	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
-//		t.Errorf("SBC Absolute Y failed: Carry flag not set correctly")
-//	}
-//
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for SBC Absolute
-//		t.Errorf("SBC Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
-//	}
-//}
-//
-//func TestSBCIndirectX(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
-//
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//	// SBC ($10,X)
-//	cpu.writeMemory(cpu.PC, SBC_INDIRECT_X_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x10) // Zero Page address to subtract
-//	cpu.writeMemory(0x0010, 0x00)   // Value at Zero Page address to subtract
-//	cpu.writeMemory(0x0011, 0x10)   // Value at Zero Page address to subtract
-//	cpu.writeMemory(0x1000, 0x10)   // Value at Zero Page address to subtract
-//	cpu.X = 0x01                    // Set X register for Zero Page addressing
-//	cpu.A = 0x20                    // Set accumulator for subtraction
-//	cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
-//
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
-//
-//	expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
-//
-//	// Check if accumulator has the expected value
-//	if cpu.A != expectedValue {
-//		t.Errorf("SBC Indirect X failed: got %02X, want %02X", cpu.A, expectedValue)
-//	}
-//
-//	// Check if the zero flag is set correctly
-//	if expectedValue == 0 && cpu.getSRBit(1) != 1 {
-//		t.Errorf("SBC Indirect X failed: Zero flag not set correctly")
-//	}
-//
-//	// Check if the negative flag is set correctly
-//	if (expectedValue&0x80) != 0 && cpu.getSRBit(7) != 1 {
-//		t.Errorf("SBC Indirect X failed: Negative flag not set correctly")
-//	}
-//
-//	// Check if the carry flag is set correctly (no borrow)
-//	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
-//		t.Errorf("SBC Indirect X failed: Carry flag not set correctly")
-//	}
-//
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Zero Page
-//		t.Errorf("SBC Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//	}
-//}
-//
-//func TestSBCIndirectY(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
-//
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//	// SBC ($10),Y
-//	cpu.writeMemory(cpu.PC, SBC_INDIRECT_Y_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x10) // Zero Page address to subtract
-//	cpu.writeMemory(0x0010, 0x00)   // Value at Zero Page address to subtract
-//	cpu.writeMemory(0x0011, 0x10)   // Value at Zero Page address to subtract
-//	cpu.writeMemory(0x1001, 0x10)   // Value at Zero Page address to subtract
-//	cpu.Y = 0x01                    // Set Y register for Zero Page addressing
-//	cpu.A = 0x20                    // Set accumulator for subtraction
-//	cpu.setCarryFlag()              // Ensure the carry flag is set before subtraction
-//
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
-//
-//	expectedValue := cpu.A - 0x10 - (1 - cpu.getSRBit(0)) // Adjusted expected value after subtraction
-//
-//	// Check if accumulator has the expected value
-//	if cpu.A != expectedValue {
-//		t.Errorf("SBC Indirect Y failed: got %02X, want %02X", cpu.A, expectedValue)
-//	}
-//
-//	// Check if the zero flag is set correctly
-//	if expectedValue == 0 && cpu.getSRBit(1) != 1 {
-//		t.Errorf("SBC Indirect Y failed: Zero flag not set correctly")
-//	}
-//
-//	// Check if the negative flag is set correctly
-//	if (expectedValue&80) != 0 && cpu.getSRBit(7) != 1 {
-//		t.Errorf("SBC Indirect Y failed: Negative flag not set correctly")
-//	}
-//
-//	// Check if the carry flag is set correctly (no borrow)
-//	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
-//		t.Errorf("SBC Indirect Y failed: Carry flag not set correctly")
-//	}
-//
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for SBC Zero Page
-//		t.Errorf("SBC Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//	}
-//}
-
 func TestCMPImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2181,7 +2140,6 @@ func TestCMPImmediate(t *testing.T) {
 		t.Errorf("CMP Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestCMPZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2217,7 +2175,6 @@ func TestCMPZeroPage(t *testing.T) {
 		t.Errorf("CMP Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestCMPZeroPageX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2253,7 +2210,6 @@ func TestCMPZeroPageX(t *testing.T) {
 		t.Errorf("CMP Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestCMPAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2289,7 +2245,6 @@ func TestCMPAbsolute(t *testing.T) {
 		t.Errorf("CMP Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestCMPAbsoluteX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2326,7 +2281,6 @@ func TestCMPAbsoluteX(t *testing.T) {
 		t.Errorf("CMP Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestCMPAbsoluteY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2363,7 +2317,6 @@ func TestCMPAbsoluteY(t *testing.T) {
 		t.Errorf("CMP Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestCMPIndirectX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2401,7 +2354,6 @@ func TestCMPIndirectX(t *testing.T) {
 		t.Errorf("CMP Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestCMPIndirectY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2491,7 +2443,6 @@ func TestCPXImmediate(t *testing.T) {
 		t.Errorf("CPX Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestCPXZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2545,7 +2496,6 @@ func TestCPXZeroPage(t *testing.T) {
 		t.Errorf("CPX Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestCPXAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2600,7 +2550,6 @@ func TestCPXAbsolute(t *testing.T) {
 		t.Errorf("CPX Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestCPYImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2653,7 +2602,6 @@ func TestCPYImmediate(t *testing.T) {
 		t.Errorf("CPY Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestCPYZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2707,7 +2655,6 @@ func TestCPYZeroPage(t *testing.T) {
 		t.Errorf("CPY Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestCPYAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2758,7 +2705,6 @@ func TestCPYAbsolute(t *testing.T) {
 		t.Errorf("CPY Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestDECZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2808,7 +2754,6 @@ func TestDECZeroPage(t *testing.T) {
 		t.Errorf("DEC Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestDECZeroPageX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2858,7 +2803,6 @@ func TestDECZeroPageX(t *testing.T) {
 		t.Errorf("DEC Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestDECAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2908,7 +2852,6 @@ func TestDECAbsolute(t *testing.T) {
 		t.Errorf("DEC Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestDECAbsoluteX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2959,7 +2902,6 @@ func TestDECAbsoluteX(t *testing.T) {
 		t.Errorf("DEC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestDEX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -3008,7 +2950,6 @@ func TestDEX(t *testing.T) {
 		t.Errorf("DEX failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestDEY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -3055,5 +2996,302 @@ func TestDEY(t *testing.T) {
 	// Check if Program Counter is incremented correctly
 	if cpu.PC != cpu.preOpPC+1 { // 1 byte for DEY
 		t.Errorf("DEY failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestINCZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// INC $10 (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, INC_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x10, initialMemoryValue) // Set initial value at zero page address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue + 1 // Expected value after increment
+
+	// Check if memory at zero page address has the expected incremented value
+	if cpu.readMemory(0x10) != expectedValue {
+		t.Errorf("INC Zero Page failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x10))
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("INC Zero Page failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("INC Zero Page failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("INC Zero Page failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("INC Zero Page failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for INC Zero Page
+		t.Errorf("INC Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestINCZeroPageX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// INC $10,X (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, INC_ZERO_PAGE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x11, initialMemoryValue) // Set initial value at zero page address
+	cpu.X = 0x01                              // Set X register for Zero Page addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue + 1 // Expected value after increment
+
+	// Check if memory at zero page address has the expected incremented value
+	if cpu.readMemory(0x11) != expectedValue {
+		t.Errorf("INC Zero Page X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x11))
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("INC Zero Page X failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("INC Zero Page X failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("INC Zero Page X failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("INC Zero Page X failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for INC Zero Page X
+		t.Errorf("INC Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestINCAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// INC $1000 (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, INC_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1000, initialMemoryValue) // Set initial value at absolute address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue + 1 // Expected value after increment
+
+	// Check if memory at absolute address has the expected incremented value
+	if cpu.readMemory(0x1000) != expectedValue {
+		t.Errorf("INC Absolute failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1000))
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("INC Absolute failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("INC Absolute failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("INC Absolute failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("INC Absolute failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for INC Absolute
+		t.Errorf("INC Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestINCAbsoluteX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// INC $1000,X (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, INC_ABSOLUTE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1001, initialMemoryValue) // Set initial value at absolute address
+	cpu.X = 0x01                                // Set X register for Absolute addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue + 1 // Expected value after increment
+
+	// Check if memory at absolute address has the expected incremented value
+	if cpu.readMemory(0x1001) != expectedValue {
+		t.Errorf("INC Absolute X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1001))
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("INC Absolute X failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("INC Absolute X failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("INC Absolute X failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("INC Absolute X failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for INC Absolute X
+		t.Errorf("INC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestINX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// INX
+	cpu.writeMemory(cpu.PC, INX_OPCODE) // Opcode for INX
+	initialX := byte(0x20)
+	cpu.X = initialX // Set initial value of X register
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialX + 1 // Expected value after increment
+
+	// Check if X register has the expected incremented value
+	if cpu.X != expectedValue {
+		t.Errorf("INX failed: expected X = %02X, got %02X", expectedValue, cpu.X)
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("INX failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("INX failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("INX failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("INX failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for INX
+		t.Errorf("INX failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestINY(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// INY
+	cpu.writeMemory(cpu.PC, INY_OPCODE) // Opcode for INY
+	initialY := byte(0x20)
+	cpu.Y = initialY // Set initial value of Y register
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialY + 1 // Expected value after increment
+
+	// Check if Y register has the expected incremented value
+	if cpu.Y != expectedValue {
+		t.Errorf("INY failed: expected Y = %02X, got %02X", expectedValue, cpu.Y)
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("INY failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("INY failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("INY failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("INY failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for INY
+		t.Errorf("INY failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
