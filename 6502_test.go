@@ -866,3 +866,74 @@ func TestPLA(t *testing.T) {
 		t.Errorf("PLA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
+func TestPHP(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	initialSP := cpu.SP // Store the initial value of the stack pointer
+
+	// Set some flags in the status register to test
+	cpu.SR = 0b11010101 // Set the status register
+
+	// PHP opcode
+	cpu.writeMemory(cpu.PC, PHP_OPCODE)
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if the status register is correctly pushed onto the stack
+	expectedStatus := byte(0b11010101 | 0x10 | 0x20) // Set both the B flag and the unused bit
+
+	actualStatus := cpu.readMemory(SPBaseAddress + cpu.SP + 1) // +1 because SP points to next free space
+
+	if actualStatus != expectedStatus {
+		t.Errorf("PHP failed: got status %08b, want %08b", actualStatus, expectedStatus)
+	}
+
+	// Check if the stack pointer is decremented correctly
+	if cpu.SP != initialSP-1 {
+		t.Errorf("PHP failed: expected SP = %02X, got %02X", initialSP-1, cpu.SP)
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for PHP
+		t.Errorf("PHP failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestPLP(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	initialSP := cpu.SP // Store the initial value of the stack pointer
+
+	// Set some flags in the status register to test, including the break flag and the unused bit
+	cpu.SR = 0b11010101 // Set the status register, including break flag and unused bit
+
+	// Push the status register onto the stack
+	cpu.decSP()
+	cpu.updateStack(cpu.SR)
+
+	// PLP opcode
+	cpu.writeMemory(cpu.PC, PLP_OPCODE)
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if the status register is correctly restored from the stack
+	expectedStatus := byte(0b11010101) // The expected status register value after PLP
+
+	if cpu.SR != expectedStatus {
+		t.Errorf("PLP failed: got status %08b, want %08b", cpu.SR, expectedStatus)
+	}
+
+	// Check if the stack pointer is incremented correctly
+	if cpu.SP != initialSP {
+		t.Errorf("PLP failed: expected SP = %02X, got %02X", initialSP, cpu.SP)
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for PLP
+		t.Errorf("PLP failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}

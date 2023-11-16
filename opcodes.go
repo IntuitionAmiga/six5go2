@@ -1725,7 +1725,9 @@ func (cpu *CPU) PLP() {
 	// Read the status from the stack
 	newStatus := cpu.readStack()
 	// Preserve break flag and unused bit from current status
-	newStatus = (newStatus & 0xCF) | (cpu.SR & 0x30)
+	//newStatus = (newStatus & 0xCF) | (cpu.SR & 0x30)
+	newStatus = (newStatus & 0x3F) | (cpu.SR & 0xC0)
+
 	// Update SR with the new status
 	cpu.SR = newStatus
 	// Increment the stack pointer after the operation
