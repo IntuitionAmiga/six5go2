@@ -1074,6 +1074,7 @@ func (cpu *CPU) SBC(addressingMode string) {
 	var result int
 	var address uint16
 
+	fmt.Printf("Before SBC: A: %02X, value: %02X, result: %02X, carry: %d\n", cpu.A, value, result, cpu.getSRBit(0))
 	setFlags := func() {
 		// Check for BCD mode (Decimal flag set)
 		if cpu.getSRBit(3) == 1 { // BCD mode
@@ -1153,6 +1154,7 @@ func (cpu *CPU) SBC(addressingMode string) {
 		value = cpu.readMemory(address)
 	}
 	setFlags()
+	fmt.Printf("After SBC: A: %02X, value: %02X, result: %02X, carry: %d\n", cpu.A, value, result, cpu.getSRBit(0))
 }
 func (cpu *CPU) ROR(addressingMode string) {
 	var value, result byte
