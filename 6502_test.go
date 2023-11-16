@@ -2758,3 +2758,204 @@ func TestCPYAbsolute(t *testing.T) {
 		t.Errorf("CPY Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
+
+func TestDECZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// DEC $10 (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, DEC_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x10, initialMemoryValue) // Set initial value at zero page address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue - 1 // Expected value after decrement
+
+	// Check if memory at zero page address has the expected decremented value
+	if cpu.readMemory(0x10) != expectedValue {
+		t.Errorf("DEC Zero Page failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x10))
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("DEC Zero Page failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("DEC Zero Page failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("DEC Zero Page failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("DEC Zero Page failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for DEC Zero Page
+		t.Errorf("DEC Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestDECZeroPageX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// DEC $10,X (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, DEC_ZERO_PAGE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x11, initialMemoryValue) // Set initial value at zero page address
+	cpu.X = 0x01                              // Set X register for Zero Page addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue - 1 // Expected value after decrement
+
+	// Check if memory at zero page address has the expected decremented value
+	if cpu.readMemory(0x11) != expectedValue {
+		t.Errorf("DEC Zero Page X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x11))
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("DEC Zero Page X failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("DEC Zero Page X failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("DEC Zero Page X failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("DEC Zero Page X failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for DEC Zero Page X
+		t.Errorf("DEC Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestDECAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// DEC $1000 (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, DEC_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1000, initialMemoryValue) // Set initial value at absolute address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue - 1 // Expected value after decrement
+
+	// Check if memory at absolute address has the expected decremented value
+	if cpu.readMemory(0x1000) != expectedValue {
+		t.Errorf("DEC Absolute failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1000))
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("DEC Absolute failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("DEC Absolute failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("DEC Absolute failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("DEC Absolute failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for DEC Absolute
+		t.Errorf("DEC Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestDECAbsoluteX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// DEC $1000,X (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, DEC_ABSOLUTE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1001, initialMemoryValue) // Set initial value at absolute address
+	cpu.X = 0x01                                // Set X register for Absolute addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue - 1 // Expected value after decrement
+
+	// Check if memory at absolute address has the expected decremented value
+	if cpu.readMemory(0x1001) != expectedValue {
+		t.Errorf("DEC Absolute X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1001))
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("DEC Absolute X failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("DEC Absolute X failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("DEC Absolute X failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("DEC Absolute X failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for DEC Absolute X
+		t.Errorf("DEC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
