@@ -821,3 +821,48 @@ func TestTXS(t *testing.T) {
 		t.Errorf("TXS failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
+
+func TestPHA(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	cpu.preOpSP = 0xFD
+	// PHA
+	cpu.writeMemory(cpu.PC, PHA_OPCODE)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if memory has the expected value
+	if cpu.readMemory(SPBaseAddress+cpu.preOpSP) != 0x20 {
+		t.Errorf("PHA failed: got %02X, want %02X", cpu.readMemory(SPBaseAddress+cpu.preOpSP), 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for PHA
+		t.Errorf("PHA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestPLA(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	cpu.preOpSP = 0xFD
+	// PLA
+	cpu.writeMemory(cpu.PC, PLA_OPCODE)
+	cpu.writeMemory(SPBaseAddress+cpu.preOpSP, 0x20)
+	cpu.SP--
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("PLA failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for PLA
+		t.Errorf("PLA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
