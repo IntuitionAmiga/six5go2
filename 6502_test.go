@@ -3295,3 +3295,614 @@ func TestINY(t *testing.T) {
 		t.Errorf("INY failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
+
+func TestASLAccumulator(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ASL A (Accumulator Addressing)
+	cpu.writeMemory(cpu.PC, ASL_ACCUMULATOR_OPCODE)
+	initialA := byte(0x20)
+	cpu.A = initialA // Set initial value of A register
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialA << 1 // Expected value after shift left
+
+	// Check if A register has the expected shifted value
+	if cpu.A != expectedValue {
+		t.Errorf("ASL Accumulator failed: expected A = %02X, got %02X", expectedValue, cpu.A)
+	}
+
+	// Check if the carry flag is set correctly
+	if initialA&0x80 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ASL Accumulator failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ASL Accumulator failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ASL Accumulator failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ASL Accumulator failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ASL Accumulator failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ASL Accumulator failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for ASL Accumulator
+		t.Errorf("ASL Accumulator failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestASLZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ASL $10 (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, ASL_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x10, initialMemoryValue) // Set initial value at zero page address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue << 1 // Expected value after shift left
+
+	// Check if memory at zero page address has the expected shifted value
+	if cpu.readMemory(0x10) != expectedValue {
+		t.Errorf("ASL Zero Page failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x10))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x80 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ASL Zero Page failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ASL Zero Page failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ASL Zero Page failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ASL Zero Page failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ASL Zero Page failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ASL Zero Page failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ASL Zero Page
+		t.Errorf("ASL Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestASLZeroPageX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ASL $10,X (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, ASL_ZERO_PAGE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x11, initialMemoryValue) // Set initial value at zero page address
+	cpu.X = 0x01                              // Set X register for Zero Page addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue << 1 // Expected value after shift left
+
+	// Check if memory at zero page address has the expected shifted value
+	if cpu.readMemory(0x11) != expectedValue {
+		t.Errorf("ASL Zero Page X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x11))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x80 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ASL Zero Page X failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ASL Zero Page X failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ASL Zero Page X failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ASL Zero Page X failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ASL Zero Page X failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ASL Zero Page X failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ASL Zero Page X
+		t.Errorf("ASL Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestASLAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ASL $1000 (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, ASL_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1000, initialMemoryValue) // Set initial value at absolute address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue << 1 // Expected value after shift left
+
+	// Check if memory at absolute address has the expected shifted value
+	if cpu.readMemory(0x1000) != expectedValue {
+		t.Errorf("ASL Absolute failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1000))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x80 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ASL Absolute failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ASL Absolute failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ASL Absolute failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ASL Absolute failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ASL Absolute failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ASL Absolute failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for ASL Absolute
+		t.Errorf("ASL Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestASLAbsoluteX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ASL $1000,X (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, ASL_ABSOLUTE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1001, initialMemoryValue) // Set initial value at absolute address
+	cpu.X = 0x01                                // Set X register for Absolute addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue << 1 // Expected value after shift left
+
+	// Check if memory at absolute address has the expected shifted value
+	if cpu.readMemory(0x1001) != expectedValue {
+		t.Errorf("ASL Absolute X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1001))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x80 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ASL Absolute X failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ASL Absolute X failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ASL Absolute X failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ASL Absolute X failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ASL Absolute X failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ASL Absolute X failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for ASL Absolute X
+		t.Errorf("ASL Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestLSRAccumulator(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// LSR A (Accumulator Addressing)
+	cpu.writeMemory(cpu.PC, LSR_ACCUMULATOR_OPCODE)
+	initialA := byte(0x20)
+	cpu.A = initialA // Set initial value of A register
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialA >> 1 // Expected value after shift right
+
+	// Check if A register has the expected shifted value
+	if cpu.A != expectedValue {
+		t.Errorf("LSR Accumulator failed: expected A = %02X, got %02X", expectedValue, cpu.A)
+	}
+
+	// Check if the carry flag is set correctly
+	if initialA&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("LSR Accumulator failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("LSR Accumulator failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("LSR Accumulator failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("LSR Accumulator failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("LSR Accumulator failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("LSR Accumulator failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for LSR Accumulator
+		t.Errorf("LSR Accumulator failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestLSRZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// LSR $10 (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, LSR_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x10, initialMemoryValue) // Set initial value at zero page address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
+
+	// Check if memory at zero page address has the expected shifted value
+	if cpu.readMemory(0x10) != expectedValue {
+		t.Errorf("LSR Zero Page failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x10))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("LSR Zero Page failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("LSR Zero Page failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("LSR Zero Page failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("LSR Zero Page failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("LSR Zero Page failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("LSR Zero Page failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for LSR Zero Page
+		t.Errorf("LSR Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestLSRZeroPageX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// LSR $10,X (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, LSR_ZERO_PAGE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x11, initialMemoryValue) // Set initial value at zero page address
+	cpu.X = 0x01                              // Set X register for Zero Page addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
+
+	// Check if memory at zero page address has the expected shifted value
+	if cpu.readMemory(0x11) != expectedValue {
+		t.Errorf("LSR Zero Page X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x11))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("LSR Zero Page X failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("LSR Zero Page X failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("LSR Zero Page X failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("LSR Zero Page X failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("LSR Zero Page X failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("LSR Zero Page X failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for LSR Zero Page X
+		t.Errorf("LSR Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestLSRAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// LSR $1000 (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, LSR_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1000, initialMemoryValue) // Set initial value at absolute address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
+
+	// Check if memory at absolute address has the expected shifted value
+	if cpu.readMemory(0x1000) != expectedValue {
+		t.Errorf("LSR Absolute failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1000))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("LSR Absolute failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("LSR Absolute failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("LSR Absolute failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("LSR Absolute failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("LSR Absolute failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("LSR Absolute failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for LSR Absolute
+		t.Errorf("LSR Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+//func TestLSRAbsoluteX(t *testing.T) {
+//	var cpu CPU // Create a new CPU instance for the test
+//
+//	cpu.resetCPU()
+//	cpu.setPC(0x0000)
+//
+//	// LSR $1000,X (Absolute Addressing)
+//	cpu.writeMemory(cpu.PC, LSR_ABSOLUTE_X_OPCODE)
+//	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+//	cpu.writeMemory(cpu.PC+2, 0x10)
+//	initialMemoryValue := byte(0x20)
+//	cpu.writeMemory(0x1001, initialMemoryValue) // Set initial value at absolute address
+//	cpu.X = 0x01                                // Set X register for Absolute addressing
+//
+//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//	cpu.startCPU()     // Initialize the CPU state
+//
+//	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
+//
+//	// Check if memory at absolute address has the expected shifted value
+//	if cpu.readMemory(0x1001) != expectedValue {
+//		t.Errorf("LSR Absolute X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1001))
+//	}
+//
+//	// Check if the carry flag is set correctly
+//	if initialMemoryValue&0x01 != 0 {
+//		if cpu.getSRBit(0) != 1 {
+//			t.Errorf("LSR Absolute X failed: Carry flag not set correctly")
+//		} else {
+//			if cpu.getSRBit(0) != 0 {
+//				t.Errorf("LSR Absolute X failed: Carry flag should not be set")
+//			}
+//		}
+//	}
+//
+//	// Check if the negative flag is set correctly
+//	if expectedValue&0x80 != 0 {
+//		if cpu.getSRBit(7) != 1 {
+//			t.Errorf("LSR Absolute X failed: Negative flag not set correctly")
+//		} else {
+//			if cpu.getSRBit(7) != 0 {
+//				t.Errorf("LSR Absolute X failed: Negative flag should not be set")
+//			}
+//		}
+//	}
+//
+//	// Check if the zero flag is set correctly
+//	if expectedValue == 0 {
+//		if cpu.getSRBit(1) != 1 {
+//			t.Errorf("LSR Absolute X failed: Zero flag not set correctly")
+//		} else {
+//			if cpu.getSRBit(1) != 0 {
+//				t.Errorf("LSR Absolute X failed: Zero flag should not be set")
+//			}
+//		}
+//	}
+//
+//	// Check if Program Counter is incremented correctly
+//	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for LSR Absolute X
+//		t.Errorf("LSR Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+//	}
+//}
