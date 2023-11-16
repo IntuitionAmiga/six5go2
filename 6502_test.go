@@ -2959,3 +2959,101 @@ func TestDECAbsoluteX(t *testing.T) {
 		t.Errorf("DEC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
+
+func TestDEX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// DEX
+	cpu.writeMemory(cpu.PC, DEX_OPCODE) // Opcode for DEX
+	initialX := byte(0x20)
+	cpu.X = initialX // Set initial value of X register
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialX - 1 // Expected value after decrement
+
+	// Check if X register has the expected decremented value
+	if cpu.X != expectedValue {
+		t.Errorf("DEX failed: expected X = %02X, got %02X", expectedValue, cpu.X)
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("DEX failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("DEX failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("DEX failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("DEX failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for DEX
+		t.Errorf("DEX failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestDEY(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// DEY
+	cpu.writeMemory(cpu.PC, DEY_OPCODE) // Opcode for DEY
+	initialY := byte(0x20)
+	cpu.Y = initialY // Set initial value of Y register
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialY - 1 // Expected value after decrement
+
+	// Check if Y register has the expected decremented value
+	if cpu.Y != expectedValue {
+		t.Errorf("DEY failed: expected Y = %02X, got %02X", expectedValue, cpu.Y)
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("DEY failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("DEY failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("DEY failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("DEY failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for DEY
+		t.Errorf("DEY failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
