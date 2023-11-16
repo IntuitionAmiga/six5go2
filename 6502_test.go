@@ -1135,3 +1135,390 @@ func TestANDIndirectY(t *testing.T) {
 		t.Errorf("AND Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
+
+func TestEORImmediate(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// EOR #10
+	cpu.writeMemory(cpu.PC, EOR_IMMEDIATE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != (0x20 ^ 0x10) {
+		t.Errorf("EOR Immediate failed: got %02X, want %02X", cpu.A, 0x20^0x10)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for EOR immediate
+		t.Errorf("EOR Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestEORZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// EOR $10
+	cpu.writeMemory(cpu.PC, EOR_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0010, 0x20)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x00 {
+		t.Errorf("EOR Zero Page failed: got %02X, want %02X", cpu.A, 0x00)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for EOR immediate
+		t.Errorf("EOR Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestEORZeroPageX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// EOR $10,X
+	cpu.writeMemory(cpu.PC, EOR_ZERO_PAGE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0011, 0x20)
+	cpu.X = 0x01
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x00 {
+		t.Errorf("EOR Zero Page X failed: got %02X, want %02X", cpu.A, 0x00)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for EOR immediate
+		t.Errorf("EOR Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestEORAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// EOR $1000
+	cpu.writeMemory(cpu.PC, EOR_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1000, 0x20)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x00 {
+		t.Errorf("EOR Absolute failed: got %02X, want %02X", cpu.A, 0x00)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for EOR immediate
+		t.Errorf("EOR Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestEORAbsoluteX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// EOR $1000,X
+	cpu.writeMemory(cpu.PC, EOR_ABSOLUTE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1001, 0x20)
+	cpu.X = 0x01
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x00 {
+		t.Errorf("EOR Absolute X failed: got %02X, want %02X", cpu.A, 0x00)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for EOR immediate
+		t.Errorf("EOR Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestEORAbsoluteY(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// EOR $1000,Y
+	cpu.writeMemory(cpu.PC, EOR_ABSOLUTE_Y_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1001, 0x20)
+	cpu.Y = 0x01
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x00 {
+		t.Errorf("EOR Absolute Y failed: got %02X, want %02X", cpu.A, 0x00)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for EOR immediate
+		t.Errorf("EOR Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+//func TestEORIndirectX(t *testing.T) {
+//	var cpu CPU // Create a new CPU instance for the test
+//
+//	cpu.resetCPU()
+//	cpu.setPC(0x0000)
+//
+//	// EOR ($10,X)
+//	cpu.writeMemory(cpu.PC, EOR_INDIRECT_X_OPCODE)
+//	cpu.writeMemory(cpu.PC+1, 0x10)
+//	cpu.writeMemory(0x0010, 0x00)
+//	cpu.writeMemory(0x0011, 0x10)
+//	cpu.writeMemory(0x1000, 0x20)
+//	cpu.A = 0x20
+//	cpu.X = 0x01
+//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+//	cpu.startCPU()     // Initialize the CPU state
+//	// Check if A has the expected value
+//	if cpu.A != 0x00 {
+//		t.Errorf("EOR Indirect X failed: got %02X, want %02X", cpu.A, 0x00)
+//	}
+//	// Check if Program Counter is incremented correctly
+//	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for EOR immediate
+//		t.Errorf("EOR Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+//	}
+//}
+
+func TestEORIndirectY(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// EOR ($10),Y
+	cpu.writeMemory(cpu.PC, EOR_INDIRECT_Y_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0010, 0x00)
+	cpu.writeMemory(0x0011, 0x10)
+	cpu.writeMemory(0x1001, 0x20)
+	cpu.A = 0x20
+	cpu.Y = 0x01
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x00 {
+		t.Errorf("EOR Indirect Y failed: got %02X, want %02X", cpu.A, 0x00)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for EOR immediate
+		t.Errorf("EOR Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestORAImmediate(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ORA #10
+	cpu.writeMemory(cpu.PC, ORA_IMMEDIATE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x30 {
+		t.Errorf("ORA Immediate failed: got %02X, want %02X", cpu.A, 0x30)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ORA immediate
+		t.Errorf("ORA Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestORAZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// ORA $10
+	cpu.writeMemory(cpu.PC, ORA_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0010, 0x20)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("ORA Zero Page failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ORA immediate
+		t.Errorf("ORA Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestORAZeroPageX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// ORA $10,X
+	cpu.writeMemory(cpu.PC, ORA_ZERO_PAGE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0011, 0x20)
+	cpu.X = 0x01
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("ORA Zero Page X failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ORA immediate
+		t.Errorf("ORA Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestORAAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// ORA $1000
+	cpu.writeMemory(cpu.PC, ORA_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1000, 0x20)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("ORA Absolute failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for ORA immediate
+		t.Errorf("ORA Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestORAAbsoluteX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// ORA $1000,X
+	cpu.writeMemory(cpu.PC, ORA_ABSOLUTE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1001, 0x20)
+	cpu.X = 0x01
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("ORA Absolute X failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for ORA immediate
+		t.Errorf("ORA Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestORAAbsoluteY(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// ORA $1000,Y
+	cpu.writeMemory(cpu.PC, ORA_ABSOLUTE_Y_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00)
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1001, 0x20)
+	cpu.Y = 0x01
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("ORA Absolute Y failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for ORA immediate
+		t.Errorf("ORA Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestORAIndirectX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// ORA ($10,X)
+	cpu.writeMemory(cpu.PC, ORA_INDIRECT_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0010, 0x00)
+	cpu.writeMemory(0x0011, 0x10)
+	cpu.writeMemory(0x1000, 0x20)
+	cpu.A = 0x20
+	cpu.X = 0x01
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("ORA Indirect X failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes
+	}
+}
+
+func TestORAIndirectY(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// ORA ($10),Y
+	cpu.writeMemory(cpu.PC, ORA_INDIRECT_Y_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+	cpu.writeMemory(0x0010, 0x00)
+	cpu.writeMemory(0x0011, 0x10)
+	cpu.writeMemory(0x1001, 0x20)
+	cpu.A = 0x20
+	cpu.Y = 0x01
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("ORA Indirect Y failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes
+	}
+}
