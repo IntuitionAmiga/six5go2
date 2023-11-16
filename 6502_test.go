@@ -4229,3 +4229,323 @@ func TestROLAbsoluteX(t *testing.T) {
 		t.Errorf("ROL Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
+
+func TestRORAccumulator(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// ROR A (Accumulator Addressing)
+	cpu.writeMemory(cpu.PC, ROR_ACCUMULATOR_OPCODE)
+	initialA := byte(0x20)
+	cpu.A = initialA // Set initial value of A register
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialA >> 1 // Expected value after shift right
+	if cpu.getSRBit(0) == 1 {      // Check if carry flag is set
+		expectedValue |= 0x80 // Set bit 7 if carry flag is set
+	}
+
+	// Check if A register has the expected shifted value
+	if cpu.A != expectedValue {
+		t.Errorf("ROR Accumulator failed: expected A = %02X, got %02X", expectedValue, cpu.A)
+	}
+
+	// Check if the carry flag is set correctly
+	if initialA&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ROR Accumulator failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ROR Accumulator failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ROR Accumulator failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ROR Accumulator failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ROR Accumulator failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ROR Accumulator failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for ROR Accumulator
+		t.Errorf("ROR Accumulator failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestRORZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// ROR $10 (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, ROR_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x10, initialMemoryValue) // Set initial value at zero page address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
+	if cpu.getSRBit(0) == 1 {                // Check if carry flag is set
+		expectedValue |= 0x80 // Set bit 7 if carry flag is set
+	}
+
+	// Check if memory at zero page address has the expected shifted value
+	if cpu.readMemory(0x10) != expectedValue {
+		t.Errorf("ROR Zero Page failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x10))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ROR Zero Page failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ROR Zero Page failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ROR Zero Page failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ROR Zero Page failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ROR Zero Page failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ROR Zero Page failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ROR Zero Page
+		t.Errorf("ROR Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestRORZeroPageX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ROR $10,X (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, ROR_ZERO_PAGE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x11, initialMemoryValue) // Set initial value at zero page address
+	cpu.X = 0x01                              // Set X register for Zero Page addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
+	if cpu.getSRBit(0) == 1 {                // Check if carry flag is set
+		expectedValue |= 0x80 // Set bit 7 if carry flag is set
+	}
+
+	// Check if memory at zero page address has the expected shifted value
+	if cpu.readMemory(0x11) != expectedValue {
+		t.Errorf("ROR Zero Page X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x11))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ROR Zero Page X failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ROR Zero Page X failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ROR Zero Page X failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ROR Zero Page X failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ROR Zero Page X failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ROR Zero Page X failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ROR Zero Page X
+		t.Errorf("ROR Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestRORAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ROR $1000 (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, ROR_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1000, initialMemoryValue) // Set initial value at absolute address
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
+	if cpu.getSRBit(0) == 1 {                // Check if carry flag is set
+		expectedValue |= 0x80 // Set bit 7 if carry flag is set
+	}
+
+	// Check if memory at absolute address has the expected shifted value
+	if cpu.readMemory(0x1000) != expectedValue {
+		t.Errorf("ROR Absolute failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1000))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ROR Absolute failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ROR Absolute failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ROR Absolute failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ROR Absolute failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ROR Absolute failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ROR Absolute failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for ROR Absolute
+		t.Errorf("ROR Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestRORAbsoluteX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ROR $1000,X (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, ROR_ABSOLUTE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1001, initialMemoryValue) // Set initial value at absolute address
+	cpu.X = 0x01                                // Set X register for Absolute addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
+	if cpu.getSRBit(0) == 1 {                // Check if carry flag is set
+		expectedValue |= 0x80 // Set bit 7 if carry flag is set
+	}
+
+	// Check if memory at absolute address has the expected shifted value
+	if cpu.readMemory(0x1001) != expectedValue {
+		t.Errorf("ROR Absolute X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1001))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("ROR Absolute X failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("ROR Absolute X failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("ROR Absolute X failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("ROR Absolute X failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("ROR Absolute X failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("ROR Absolute X failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for ROR Absolute X
+		t.Errorf("ROR Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
