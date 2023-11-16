@@ -695,3 +695,129 @@ func TestSTYAbsolute(t *testing.T) {
 		t.Errorf("STY Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
+
+func TestTAX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// TAX
+	cpu.writeMemory(cpu.PC, TAX_OPCODE)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if X has the expected value
+	if cpu.X != 0x20 {
+		t.Errorf("TAX failed: got %02X, want %02X", cpu.X, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for TAX
+		t.Errorf("TAX failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestTAY(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// TAY
+	cpu.writeMemory(cpu.PC, TAY_OPCODE)
+	cpu.A = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if Y has the expected value
+	if cpu.Y != 0x20 {
+		t.Errorf("TAY failed: got %02X, want %02X", cpu.Y, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for TAY
+		t.Errorf("TAY failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestTXA(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// TXA
+	cpu.writeMemory(cpu.PC, TXA_OPCODE)
+	cpu.X = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("TXA failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for TXA
+		t.Errorf("TXA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestTYA(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// TYA
+	cpu.writeMemory(cpu.PC, TYA_OPCODE)
+	cpu.Y = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("TYA failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for TYA
+		t.Errorf("TYA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestTSX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// TSX
+	cpu.writeMemory(cpu.PC, TSX_OPCODE)
+	cpu.SP = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if X has the expected value
+	if cpu.X != 0x20 {
+		t.Errorf("TSX failed: got %02X, want %02X", cpu.X, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for TSX
+		t.Errorf("TSX failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
+
+func TestTXS(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// TXS
+	cpu.writeMemory(cpu.PC, TXS_OPCODE)
+	cpu.X = 0x20
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if SP has the expected value
+	if cpu.SP != 0x20 {
+		t.Errorf("TXS failed: got %02X, want %02X", cpu.SP, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+1 { // 1 byte for TXS
+		t.Errorf("TXS failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
+	}
+}
