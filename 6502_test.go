@@ -2439,3 +2439,322 @@ func TestCMPIndirectY(t *testing.T) {
 		t.Errorf("CMP Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
+func TestCPXImmediate(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// CPX #10
+	cpu.writeMemory(cpu.PC, CPX_IMMEDIATE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Immediate value for comparison
+	cpu.X = 0x20                    // Set X register for comparison
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if the carry flag is set correctly (X >= immediate)
+	if cpu.X >= 0x10 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("CPX Immediate failed: Carry flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(0) != 0 {
+			t.Errorf("CPX Immediate failed: Carry flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly (X == immediate)
+	if cpu.X == 0x10 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("CPX Immediate failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("CPX Immediate failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if (cpu.X-0x10)&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("CPX Immediate failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("CPX Immediate failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for CPX Immediate
+		t.Errorf("CPX Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestCPXZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// CPX $10 (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, CPX_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	cpu.writeMemory(0x10, 0x15)     // Value at the zero page address for comparison
+	cpu.X = 0x20                    // Set X register for comparison
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if the carry flag is set correctly (X >= memory)
+	if cpu.X >= 0x15 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("CPX Zero Page failed: Carry flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(0) != 0 {
+			t.Errorf("CPX Zero Page failed: Carry flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly (X == memory)
+	if cpu.X == 0x15 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("CPX Zero Page failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("CPX Zero Page failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if (cpu.X-0x15)&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("CPX Zero Page failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("CPX Zero Page failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for CPX Zero Page
+		t.Errorf("CPX Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestCPXAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// CPX $1000 (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, CPX_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1000, 0x15) // Value at the absolute address for comparison
+	cpu.X = 0x20                  // Set X register for comparison
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if the carry flag is set correctly (X >= memory)
+	if cpu.X >= 0x15 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("CPX Absolute failed: Carry flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(0) != 0 {
+			t.Errorf("CPX Absolute failed: Carry flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly (X == memory)
+	if cpu.X == 0x15 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("CPX Absolute failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("CPX Absolute failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if (cpu.X-0x15)&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("CPX Absolute failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("CPX Absolute failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for CPX Absolute
+		t.Errorf("CPX Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+func TestCPYImmediate(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// CPY #10
+	cpu.writeMemory(cpu.PC, CPY_IMMEDIATE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Immediate value for comparison
+	cpu.Y = 0x20                    // Set Y register for comparison
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if the carry flag is set correctly (Y >= immediate)
+	if cpu.Y >= 0x10 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("CPY Immediate failed: Carry flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(0) != 0 {
+			t.Errorf("CPY Immediate failed: Carry flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly (Y == immediate)
+	if cpu.Y == 0x10 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("CPY Immediate failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("CPY Immediate failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if (cpu.Y-0x10)&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("CPY Immediate failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("CPY Immediate failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for CPY Immediate
+		t.Errorf("CPY Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestCPYZeroPage(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// CPY $10 (Zero Page Addressing)
+	cpu.writeMemory(cpu.PC, CPY_ZERO_PAGE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10) // Zero page address
+	cpu.writeMemory(0x10, 0x15)     // Value at the zero page address for comparison
+	cpu.Y = 0x20                    // Set Y register for comparison
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if the carry flag is set correctly (Y >= memory)
+	if cpu.Y >= 0x15 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("CPY Zero Page failed: Carry flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(0) != 0 {
+			t.Errorf("CPY Zero Page failed: Carry flag should not be set")
+		}
+	}
+
+	// Check if the zero flag is set correctly (Y == memory)
+	if cpu.Y == 0x15 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("CPY Zero Page failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("CPY Zero Page failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if (cpu.Y-0x15)&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("CPY Zero Page failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("CPY Zero Page failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for CPY Zero Page
+		t.Errorf("CPY Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
+
+func TestCPYAbsolute(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// CPY $1000 (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, CPY_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	cpu.writeMemory(0x1000, 0x15) // Value at the absolute address for comparison
+	cpu.Y = 0x20                  // Set Y register for comparison
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if the carry flag is set correctly (Y >= memory)
+	if cpu.Y >= 0x15 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("CPY Absolute failed: Carry flag not set correctly")
+		}
+	}
+
+	// Check if the zero flag is set correctly (Y == memory)
+	if cpu.Y == 0x15 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("CPY Absolute failed: Zero flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(1) != 0 {
+			t.Errorf("CPY Absolute failed: Zero flag should not be set")
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if (cpu.Y-0x15)&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("CPY Absolute failed: Negative flag not set correctly")
+		}
+	} else {
+		if cpu.getSRBit(7) != 0 {
+			t.Errorf("CPY Absolute failed: Negative flag should not be set")
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for CPY Absolute
+		t.Errorf("CPY Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
