@@ -4568,43 +4568,39 @@ func TestPLP(t *testing.T) {
 	}
 }
 
-//func TestRTI(t *testing.T) {
-//	var cpu CPU
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//	cpu.writeMemory(cpu.PC, RTI_OPCODE)
-//
-//	returnAddress := uint16(0x1234)
-//	processorStatus := byte(0x20)
-//	cpu.SP = 0xFD
-//
-//	// Push the return address and processor status onto the stack
-//	cpu.decSP()
-//	cpu.updateStack(byte(returnAddress >> 8)) // High byte of return address
-//	cpu.decSP()
-//	cpu.updateStack(byte(returnAddress & 0xFF)) // Low byte of return address
-//	cpu.decSP()
-//	cpu.updateStack(processorStatus) // Processor status
-//
-//	cpu.cpuQuit = true
-//	cpu.startCPU()
-//
-//	// Check if the program counter is set correctly
-//	if cpu.PC != returnAddress {
-//		t.Errorf("RTI failed: expected PC = %04X, got %04X", returnAddress, cpu.PC)
-//	}
-//
-//	// Check if the processor status is restored correctly
-//	if cpu.SR != processorStatus {
-//		t.Errorf("RTI failed: expected SR = %02X, got %02X", processorStatus, cpu.SR)
-//	}
-//
-//	// Check if the stack pointer is updated correctly
-//	expectedSP := uint16(0xFD)
-//	if cpu.SP != expectedSP {
-//		t.Errorf("RTI failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
-//	}
-//}
+func TestRTI(t *testing.T) {
+	var cpu CPU
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	cpu.writeMemory(cpu.PC, RTI_OPCODE)
+
+	returnAddress := uint16(0x1234)
+	processorStatus := byte(0x20)
+	cpu.SP = 0xFD // Initial stack pointer
+
+	// Push return address and processor status onto the stack in reverse order
+	cpu.updateStack(byte(returnAddress >> 8)) // High byte of return address
+	cpu.decSP()
+	cpu.updateStack(byte(returnAddress & 0xFF)) // Low byte of return address
+	cpu.decSP()
+	cpu.updateStack(processorStatus) // Processor status
+	cpu.decSP()
+
+	cpu.cpuQuit = true
+	cpu.startCPU()
+
+	// Verify the program counter and processor status
+	if cpu.PC != returnAddress {
+		t.Errorf("RTI failed: expected PC = %04X, got %04X", returnAddress, cpu.PC)
+	}
+	if cpu.SR != processorStatus {
+		t.Errorf("RTI failed: expected SR = %02X, got %02X", processorStatus, cpu.SR)
+	}
+	expectedSP := uint16(0xFD)
+	if cpu.SP != expectedSP {
+		t.Errorf("RTI failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
+	}
+}
 
 func TestRTS(t *testing.T) {
 	var cpu CPU

@@ -279,7 +279,7 @@ func executionTrace() string {
 		cpu.nextTraceLine += "???    |"
 	}
 	if *traceLog {
-		writeTraceToFile(cpu.traceLine, cpu.disassembledInstruction, cpu.A, cpu.X, cpu.Y, cpu.SP, cpu.readStack())
+		writeTraceToFile(cpu.traceLine, cpu.disassembledInstruction, cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.SP, cpu.readStack())
 	}
 	return cpu.traceLine
 }

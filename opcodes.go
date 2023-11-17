@@ -1738,26 +1738,24 @@ func (cpu *CPU) PLP() {
 	cpu.updateCycleCounter(4)
 	cpu.handleState(1)
 }
+
 func (cpu *CPU) RTI() {
-	/*
-	   RTI - Return From Interrupt
-	*/
 	disassembleOpcode()
-	cpu.SR = cpu.readStack() & 0xCF
+	// Increment the stack pointer and read processor status
 	cpu.incSP()
-	// Increment the stack pointer to get low byte of PC
+	cpu.SR = cpu.readStack()
+	// Increment the stack pointer and read low byte of PC
 	cpu.incSP()
-	// Get low byte of PC
 	low := uint16(cpu.readStack())
-	// Increment the stack pointer to get high byte of PC
+	// Increment the stack pointer and read high byte of PC
 	cpu.incSP()
-	// Get high byte of PC
 	high := uint16(cpu.readStack())
+	// Combine high and low bytes and set the program counter
+	cpu.setPC((high << 8) | low)
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
-	// Update PC with the value stored in memory at the address pointed to by SP
-	cpu.setPC((high << 8) | low)
 }
+
 func (cpu *CPU) RTS() {
 	// Get low byte of new PC
 	low := uint16(cpu.readStack())
