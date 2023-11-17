@@ -1069,13 +1069,14 @@ func (cpu *CPU) ADC(addressingMode string) {
 	}
 	setFlags()
 }
+
 func (cpu *CPU) SBC(addressingMode string) {
 	var value byte
 	var result int
 	var address uint16
 
-	fmt.Printf("Before SBC: A: %02X, value: %02X, result: %02X, carry: %d\n", cpu.A, value, result, cpu.getSRBit(0))
 	setFlags := func() {
+
 		// Check for BCD mode (Decimal flag set)
 		if cpu.getSRBit(3) == 1 { // BCD mode
 			lowNibble := (cpu.preOpA & 0x0F) - (value & 0x0F) - (cpu.getSRBit(0) ^ 1)
@@ -1109,10 +1110,13 @@ func (cpu *CPU) SBC(addressingMode string) {
 				cpu.setCarryFlag()
 			} else {
 				cpu.unsetCarryFlag()
+				result = 0xFF + result + 1 // Adjust result for negative values
 			}
 		}
 
-		if cpu.readBit(7, byte(result)) == 1 {
+		cpu.A = byte(result)
+
+		if cpu.readBit(7, cpu.A) == 1 {
 			cpu.setNegativeFlag()
 		} else {
 			cpu.unsetNegativeFlag()
@@ -1120,7 +1124,6 @@ func (cpu *CPU) SBC(addressingMode string) {
 		if result == 0 {
 			cpu.setZeroFlag()
 		}
-		cpu.A = byte(result)
 
 		if addressingMode == IMMEDIATE || addressingMode == ZEROPAGE || addressingMode == ZEROPAGEX || addressingMode == INDIRECTX || addressingMode == INDIRECTY {
 			cpu.updateCycleCounter(2)
@@ -1148,14 +1151,13 @@ func (cpu *CPU) SBC(addressingMode string) {
 		address = cpu.IndirectXAddressing()
 	case INDIRECTY:
 		address = cpu.IndirectYAddressing()
-		setFlags()
 	}
 	if addressingMode != IMMEDIATE {
 		value = cpu.readMemory(address)
 	}
 	setFlags()
-	fmt.Printf("After SBC: A: %02X, value: %02X, result: %02X, carry: %d\n", cpu.A, value, result, cpu.getSRBit(0))
 }
+
 func (cpu *CPU) ROR(addressingMode string) {
 	var value, result byte
 	var address uint16
@@ -3095,14 +3097,21 @@ func (cpu *CPU) AbsoluteYAddressing() uint16 {
 	return address
 }
 
-// IndirectXAddressing computes the effective address for the Pre-indexed Indirect addressing mode.
 func (cpu *CPU) IndirectXAddressing() uint16 {
-	zeroPageAddress := uint16(cpu.preOpOperand1+cpu.X) & 0xFF // Zero page wraparound
-	lo := cpu.readMemory(zeroPageAddress)
-	//hi := cpu.readMemory((zeroPageAddress + 1) & 0xFF) // Zero page wraparound for high byte
-	hi := cpu.readMemory(uint16(byte(zeroPageAddress) + 1)) // Correct wraparound
+	// Calculate the zero page address including the X register offset
+	zeroPageAddress := uint16(cpu.preOpOperand1+cpu.X) & 0xFF
 
-	address := uint16(hi)<<8 | uint16(lo)
+	// Read the low byte of the address
+	lo := cpu.readMemory(zeroPageAddress)
+
+	// Read the high byte of the address. Note that the high byte is read from the next zero page location.
+	// Wraparound needs to be handled correctly.
+	hi := cpu.readMemory((zeroPageAddress + 1) & 0xFF)
+
+	// Combine the high and low bytes to get the final address
+	address := (uint16(hi) << 8) | uint16(lo)
+
+	//print out the values of zeroPageAddress, lo, hi, and the final address
 	return address
 }
 
