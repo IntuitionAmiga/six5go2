@@ -3087,7 +3087,9 @@ func (cpu *CPU) AbsoluteYAddressing() uint16 {
 func (cpu *CPU) IndirectXAddressing() uint16 {
 	zeroPageAddress := uint16(cpu.preOpOperand1+cpu.X) & 0xFF // Zero page wraparound
 	lo := cpu.readMemory(zeroPageAddress)
-	hi := cpu.readMemory((zeroPageAddress + 1) & 0xFF) // Zero page wraparound for high byte
+	//hi := cpu.readMemory((zeroPageAddress + 1) & 0xFF) // Zero page wraparound for high byte
+	hi := cpu.readMemory(uint16(byte(zeroPageAddress) + 1)) // Correct wraparound
+
 	address := uint16(hi)<<8 | uint16(lo)
 	return address
 }
@@ -3111,15 +3113,19 @@ func (cpu *CPU) ZeroPageYAddressing() uint16 {
 	address := (cpu.preOpOperand1 + cpu.Y) & 0xFF
 	return uint16(address)
 }
+
 func (cpu *CPU) IndirectAddressing() uint16 {
-	// Fetch the low byte of the address from memory using the operand as the address
-	lo := cpu.readMemory(uint16(cpu.preOpOperand1))
+	operandAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
 
-	// Fetch the high byte of the address. Note that the 6502 has a bug in the indirect addressing mode:
-	// if the low byte of the provided address is 0xFF, it will wrap around and read the high byte from 0xXX00,
-	// where XX is the high byte of the provided address.
-	hi := cpu.readMemory(uint16(cpu.preOpOperand1+1)&0xFF00 | uint16((cpu.preOpOperand1+1)&0x00FF))
+	var effectiveAddress uint16
+	if cpu.preOpOperand1 == 0xFF {
+		// Handle page boundary bug: high byte comes from the start of the current page
+		wrapAddress := operandAddress & 0xFF00
+		effectiveAddress = uint16(cpu.readMemory(wrapAddress)) | uint16(cpu.readMemory(operandAddress))<<8
+	} else {
+		// Normal behavior: increment the address to get the high byte
+		effectiveAddress = uint16(cpu.readMemory(operandAddress+1))<<8 | uint16(cpu.readMemory(operandAddress))
+	}
 
-	// Combine the high and low bytes to get the final address
-	return uint16(hi)<<8 | uint16(lo)
+	return effectiveAddress
 }

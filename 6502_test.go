@@ -1067,32 +1067,35 @@ func TestANDAbsoluteY(t *testing.T) {
 	}
 }
 
-//	func TestANDIndirectX(t *testing.T) {
-//		var cpu CPU // Create a new CPU instance for the test
-//
-//		cpu.resetCPU()
-//		cpu.setPC(0x0000)
-//
-//		// AND ($10,X)
-//		cpu.writeMemory(cpu.PC, AND_INDIRECT_X_OPCODE)
-//		cpu.writeMemory(cpu.PC+1, 0x10)
-//		cpu.writeMemory(0x0010, 0x00)
-//		cpu.writeMemory(0x0011, 0x10)
-//		cpu.writeMemory(0x1000, 0x20)
-//		cpu.A = 0x20
-//		cpu.X = 0x01
-//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//		cpu.startCPU()     // Initialize the CPU state
-//
-//		// Check if A has the expected value
-//		if cpu.A != 0x20 {
-//			t.Errorf("AND Indirect X failed: got %02X, want %02X", cpu.A, 0x20)
-//		}
-//		// Check if Program Counter is incremented correctly
-//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for AND immediate
-//			t.Errorf("AND Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//		}
-//	}
+func TestANDIndirectX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// AND ($10,X)
+	cpu.writeMemory(cpu.PC, AND_INDIRECT_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+
+	// Adjusted memory setup for effective address calculation
+	cpu.writeMemory(0x0011, 0x00) // Low byte of effective address
+	cpu.writeMemory(0x0012, 0x10) // High byte of effective address (was missing in your setup)
+
+	cpu.writeMemory(0x1000, 0x20) // Value to AND with
+	cpu.A = 0x20
+	cpu.X = 0x01
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x20 {
+		t.Errorf("AND Indirect X failed: got %02X, want %02X", cpu.A, 0x20)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for AND immediate
+		t.Errorf("AND Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
 func TestANDIndirectY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -4547,5 +4550,196 @@ func TestRORAbsoluteX(t *testing.T) {
 	// Check if Program Counter is incremented correctly
 	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for ROR Absolute X
 		t.Errorf("ROR Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
+
+//func TestRTI(t *testing.T) {
+//	var cpu CPU
+//	cpu.resetCPU()
+//	cpu.setPC(0x0000)
+//	cpu.writeMemory(cpu.PC, RTI_OPCODE)
+//
+//	returnAddress := uint16(0x1234)
+//	processorStatus := byte(0x20)
+//	cpu.SP = 0xFD
+//
+//	// Push the return address and processor status onto the stack
+//	cpu.decSP()
+//	cpu.updateStack(byte(returnAddress >> 8)) // High byte of return address
+//	cpu.decSP()
+//	cpu.updateStack(byte(returnAddress & 0xFF)) // Low byte of return address
+//	cpu.decSP()
+//	cpu.updateStack(processorStatus) // Processor status
+//
+//	cpu.cpuQuit = true
+//	cpu.startCPU()
+//
+//	// Check if the program counter is set correctly
+//	if cpu.PC != returnAddress {
+//		t.Errorf("RTI failed: expected PC = %04X, got %04X", returnAddress, cpu.PC)
+//	}
+//
+//	// Check if the processor status is restored correctly
+//	if cpu.SR != processorStatus {
+//		t.Errorf("RTI failed: expected SR = %02X, got %02X", processorStatus, cpu.SR)
+//	}
+//
+//	// Check if the stack pointer is updated correctly
+//	expectedSP := uint16(0xFD)
+//	if cpu.SP != expectedSP {
+//		t.Errorf("RTI failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
+//	}
+//}
+
+//func TestRTS(t *testing.T) {
+//	var cpu CPU
+//	cpu.resetCPU()
+//	cpu.setPC(0x0000)
+//	cpu.writeMemory(cpu.PC, RTS_OPCODE)
+//
+//	returnAddress := uint16(0x1234)
+//	cpu.SP = 0xFD
+//
+//	// Push the return address onto the stack
+//	cpu.decSP()
+//	cpu.updateStack(byte(returnAddress >> 8)) // High byte of return address
+//	cpu.decSP()
+//	cpu.updateStack(byte(returnAddress & 0xFF)) // Low byte of return address
+//
+//	cpu.cpuQuit = true
+//	cpu.startCPU()
+//
+//	// Check if the program counter is set correctly
+//	if cpu.PC != returnAddress+1 {
+//		t.Errorf("RTS failed: expected PC = %04X, got %04X", returnAddress+1, cpu.PC)
+//	}
+//
+//	// Check if the stack pointer is updated correctly
+//	expectedSP := uint16(0xFF)
+//	if cpu.SP != expectedSP {
+//		t.Errorf("RTS failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
+//	}
+//}
+
+//func TestBRK(t *testing.T) {
+//	var cpu CPU
+//	cpu.resetCPU()
+//	cpu.setPC(0x0000)
+//	cpu.writeMemory(cpu.PC, BRK_OPCODE)
+//
+//	cpu.cpuQuit = true
+//	cpu.startCPU()
+//
+//	// Check if the program counter is set correctly
+//	if cpu.PC != 0x1234 {
+//		t.Errorf("BRK failed: expected PC = %04X, got %04X", 0x1234, cpu.PC)
+//	}
+//
+//	// Check if the stack pointer is updated correctly
+//	expectedSP := uint16(0xFC)
+//	if cpu.SP != expectedSP {
+//		t.Errorf("BRK failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
+//	}
+//
+//	// Check if the processor status is updated correctly
+//	expectedSR := byte(0x34)
+//	if cpu.SR != expectedSR {
+//		t.Errorf("BRK failed: expected SR = %02X, got %02X", expectedSR, cpu.SR)
+//	}
+//}
+
+//func TestJSR(t *testing.T) {
+//	var cpu CPU
+//	cpu.resetCPU()
+//	cpu.setPC(0x0000)
+//	cpu.writeMemory(cpu.PC, JSR_ABSOLUTE_OPCODE)
+//	cpu.writeMemory(cpu.PC+1, 0x34)
+//	cpu.writeMemory(cpu.PC+2, 0x12)
+//
+//	cpu.cpuQuit = true
+//	cpu.startCPU()
+//
+//	// Check if the stack pointer is updated correctly
+//	expectedSP := uint16(0xFD)
+//	if cpu.SP != expectedSP {
+//		t.Errorf("JSR failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
+//	}
+//
+//	// Check if the return address is pushed onto the stack correctly
+//	if cpu.readMemory(0x1FF) != 0x00 {
+//		t.Errorf("JSR failed: expected stack value = %02X, got %02X", 0x00, cpu.readMemory(0x1FF))
+//	}
+//
+//	if cpu.readMemory(0x1FE) != 0x02 {
+//		t.Errorf("JSR failed: expected stack value = %02X, got %02X", 0x02, cpu.readMemory(0x1FE))
+//	}
+//
+//	// Check if the processor status is pushed onto the stack correctly
+//	if cpu.readMemory(0x1FD) != 0x00 {
+//		t.Errorf("JSR failed: expected stack value = %02X, got %02X", 0x00, cpu.readMemory(0x1FD))
+//	}
+//
+//	// Check if the stack pointer is updated correctly
+//	expectedSP = uint16(0xFB)
+//	if cpu.SP != expectedSP {
+//		t.Errorf("JSR failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
+//	}
+//
+//	// Check if the processor status is updated correctly
+//	expectedSR := byte(0x34)
+//	if cpu.SR != expectedSR {
+//		t.Errorf("JSR failed: expected SR = %02X, got %02X", expectedSR, cpu.SR)
+//	}
+//
+//	// Check if the program counter is set correctly
+//	if cpu.PC != 0x1234 {
+//		t.Errorf("JSR failed: expected PC = %04X, got %04X", 0x1234, cpu.PC)
+//	}
+//}
+
+func TestJMPAbsolute(t *testing.T) {
+	var cpu CPU
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	cpu.writeMemory(cpu.PC, JMP_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x34)
+	cpu.writeMemory(cpu.PC+2, 0x12)
+
+	cpu.cpuQuit = true
+	cpu.startCPU()
+
+	// Check if the program counter is set correctly
+	if cpu.PC != 0x1234 {
+		t.Errorf("JMP Absolute failed: expected PC = %04X, got %04X", 0x1234, cpu.PC)
+	}
+}
+
+func TestJMPIndirect(t *testing.T) {
+	var cpu CPU
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	cpu.writeMemory(cpu.PC, JMP_INDIRECT_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x34)
+	cpu.writeMemory(cpu.PC+2, 0x12)
+	cpu.writeMemory(0x1234, 0x56)
+	cpu.writeMemory(0x1235, 0x78)
+
+	cpu.cpuQuit = true
+	cpu.startCPU()
+	//fmt.Printf("PC = %04X\n", cpu.PC)
+	//fmt.Printf("Memory at PC = %02X\n", cpu.readMemory(cpu.PC))
+	//fmt.Printf("Memory at PC+1 = %02X\n", cpu.readMemory(cpu.PC+1))
+	//fmt.Printf("Memory at PC+2 = %02X\n", cpu.readMemory(cpu.PC+2))
+	//fmt.Printf("Memory at 0x1234 = %02X\n", cpu.readMemory(0x1234))
+	//fmt.Printf("Memory at 0x1235 = %02X\n", cpu.readMemory(0x1235))
+	//fmt.Printf("Memory at 0x7856 = %02X\n", cpu.readMemory(0x7856))
+	//fmt.Printf("preOpPC = %04X\n", cpu.preOpPC)
+	//fmt.Printf("Memory at preOpPC = %02X\n", cpu.readMemory(cpu.preOpPC))
+	//fmt.Printf("Memory at preOpPC+1 = %02X\n", cpu.readMemory(cpu.preOpPC+1))
+	//fmt.Printf("Memory at preOpPC+2 = %02X\n", cpu.readMemory(cpu.preOpPC+2))
+
+	// Check if the program counter is set correctly
+	if cpu.PC != 0x7856 {
+		t.Errorf("JMP Indirect failed: expected PC = %04X, got %04X", 0x7856, cpu.PC)
 	}
 }
