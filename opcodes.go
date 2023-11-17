@@ -1759,17 +1759,13 @@ func (cpu *CPU) RTI() {
 	cpu.setPC((high << 8) | low)
 }
 func (cpu *CPU) RTS() {
-	/*
-		RTS - Return From Subroutine
-	*/
-	disassembleOpcode()
-	//Get low byte of new PC
+	// Get low byte of new PC
 	low := uint16(cpu.readStack())
-	// Increment the stack pointer
-	cpu.incSP()
-	//Get high byte of new PC
+	cpu.incSP() // Increment the stack pointer
+	// Get high byte of new PC
 	high := uint16(cpu.readStack())
-	//Update PC with the value stored in memory at the address pointed to by SP
+	cpu.incSP() // Increment the stack pointer again
+	// Update PC with the value stored in memory at the address pointed to by SP
 	cpu.setPC(((high << 8) | low) + 1)
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
