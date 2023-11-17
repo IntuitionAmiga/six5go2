@@ -1258,7 +1258,6 @@ func TestEORAbsoluteY(t *testing.T) {
 		t.Errorf("EOR Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestEORIndirectX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1703,32 +1702,35 @@ func TestADCAbsoluteY(t *testing.T) {
 		t.Errorf("ADC Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
+func TestADCIndirectX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
 
-//	func TestADCIndirectX(t *testing.T) {
-//		var cpu CPU // Create a new CPU instance for the test
-//
-//		cpu.resetCPU()
-//		cpu.setPC(0x0000)
-//		// ADC ($10,X)
-//		cpu.writeMemory(cpu.PC, ADC_INDIRECT_X_OPCODE)
-//		cpu.writeMemory(cpu.PC+1, 0x10)
-//		cpu.writeMemory(0x0010, 0x00)
-//		cpu.writeMemory(0x0011, 0x10)
-//		cpu.writeMemory(0x1000, 0x10)
-//		cpu.A = 0x20
-//		cpu.X = 0x01
-//		cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//		cpu.startCPU()     // Initialize the CPU state
-//
-//		// Check if A has the expected value
-//		if cpu.A != 0x30 {
-//			t.Errorf("ADC Indirect X failed: got %02X, want %02X", cpu.A, 0x30)
-//		}
-//		// Check if Program Counter is incremented correctly
-//		if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ADC immediate
-//			t.Errorf("ADC Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
-//		}
-//	}
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	// ADC ($10,X)
+	cpu.writeMemory(cpu.PC, ADC_INDIRECT_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x10)
+
+	// Corrected memory setup for effective address calculation
+	cpu.writeMemory(0x0011, 0x00) // Low byte of effective address
+	cpu.writeMemory(0x0012, 0x10) // High byte of effective address
+
+	cpu.writeMemory(0x1000, 0x10) // Value to add
+	cpu.A = 0x20
+	cpu.X = 0x01
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	// Check if A has the expected value
+	if cpu.A != 0x30 {
+		t.Errorf("ADC Indirect X failed: got %02X, want %02X", cpu.A, 0x30)
+	}
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for ADC immediate
+		t.Errorf("ADC Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
+	}
+}
 func TestADCIndirectY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
