@@ -1069,7 +1069,6 @@ func (cpu *CPU) ADC(addressingMode string) {
 	}
 	setFlags()
 }
-
 func (cpu *CPU) SBC(addressingMode string) {
 	var value byte
 	var result int
@@ -1157,7 +1156,6 @@ func (cpu *CPU) SBC(addressingMode string) {
 	}
 	setFlags()
 }
-
 func (cpu *CPU) ROR(addressingMode string) {
 	var value, result byte
 	var address uint16
@@ -1344,7 +1342,7 @@ func (cpu *CPU) LSR(addressingMode string) {
 	case ABSOLUTEX:
 		// Dummy read for Absolute,X addressing mode if page boundary is crossed
 		baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
-		address := cpu.AbsoluteXAddressing()
+		address = cpu.AbsoluteXAddressing()
 		if (baseAddress & 0xFF00) != (address & 0xFF00) {
 			// Perform a dummy read if a page boundary is crossed
 			cpu.readMemory(baseAddress&0xFF00 | (address & 0x00FF))
@@ -3072,22 +3070,10 @@ func (cpu *CPU) AbsoluteAddressing() uint16 {
 }
 
 // AbsoluteXAddressing computes the effective address for the Absolute, X addressing mode.
-//func (cpu *CPU) AbsoluteXAddressing() uint16 {
-//	baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
-//	address := baseAddress + uint16(cpu.X)
-//	return address
-//}
-
 func (cpu *CPU) AbsoluteXAddressing() uint16 {
 	baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
-	finalAddress := baseAddress + uint16(cpu.X)
-
-	// Perform a dummy read if a page boundary is crossed
-	if (baseAddress & 0xFF00) != (finalAddress & 0xFF00) {
-		cpu.readMemory(baseAddress&0xFF00 | (finalAddress & 0x00FF))
-	}
-
-	return finalAddress
+	address := baseAddress + uint16(cpu.X)
+	return address
 }
 
 // AbsoluteYAddressing computes the effective address for the Absolute, Y addressing mode.

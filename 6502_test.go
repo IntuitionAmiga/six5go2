@@ -3489,68 +3489,68 @@ func TestLSRAbsolute(t *testing.T) {
 	}
 }
 
-//func TestLSRAbsoluteX(t *testing.T) {
-//	var cpu CPU // Create a new CPU instance for the test
-//
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//
-//	// LSR $1000,X (Absolute Addressing)
-//	cpu.writeMemory(cpu.PC, LSR_ABSOLUTE_X_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
-//	cpu.writeMemory(cpu.PC+2, 0x10)
-//	initialMemoryValue := byte(0x20)
-//	cpu.writeMemory(0x1001, initialMemoryValue) // Set initial value at absolute address
-//	cpu.X = 0x01                                // Set X register for Absolute addressing
-//
-//	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-//	cpu.startCPU()     // Initialize the CPU state
-//
-//	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
-//
-//	// Check if memory at absolute address has the expected shifted value
-//	if cpu.readMemory(0x1001) != expectedValue {
-//		t.Errorf("LSR Absolute X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1001))
-//	}
-//
-//	// Check if the carry flag is set correctly
-//	if initialMemoryValue&0x01 != 0 {
-//		if cpu.getSRBit(0) != 1 {
-//			t.Errorf("LSR Absolute X failed: Carry flag not set correctly")
-//		} else {
-//			if cpu.getSRBit(0) != 0 {
-//				t.Errorf("LSR Absolute X failed: Carry flag should not be set")
-//			}
-//		}
-//	}
-//
-//	// Check if the negative flag is set correctly
-//	if expectedValue&0x80 != 0 {
-//		if cpu.getSRBit(7) != 1 {
-//			t.Errorf("LSR Absolute X failed: Negative flag not set correctly")
-//		} else {
-//			if cpu.getSRBit(7) != 0 {
-//				t.Errorf("LSR Absolute X failed: Negative flag should not be set")
-//			}
-//		}
-//	}
-//
-//	// Check if the zero flag is set correctly
-//	if expectedValue == 0 {
-//		if cpu.getSRBit(1) != 1 {
-//			t.Errorf("LSR Absolute X failed: Zero flag not set correctly")
-//		} else {
-//			if cpu.getSRBit(1) != 0 {
-//				t.Errorf("LSR Absolute X failed: Zero flag should not be set")
-//			}
-//		}
-//	}
-//
-//	// Check if Program Counter is incremented correctly
-//	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for LSR Absolute X
-//		t.Errorf("LSR Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
-//	}
-//}
+func TestLSRAbsoluteX(t *testing.T) {
+	var cpu CPU // Create a new CPU instance for the test
+
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// LSR $1000,X (Absolute Addressing)
+	cpu.writeMemory(cpu.PC, LSR_ABSOLUTE_X_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x00) // Absolute address
+	cpu.writeMemory(cpu.PC+2, 0x10)
+	initialMemoryValue := byte(0x20)
+	cpu.writeMemory(0x1001, initialMemoryValue) // Set initial value at absolute address
+	cpu.X = 0x01                                // Set X register for Absolute addressing
+
+	cpu.cpuQuit = true // Stop the CPU after one execution cycle
+	cpu.startCPU()     // Initialize the CPU state
+
+	expectedValue := initialMemoryValue >> 1 // Expected value after shift right
+
+	// Check if memory at absolute address has the expected shifted value
+	if cpu.readMemory(0x1001) != expectedValue {
+		t.Errorf("LSR Absolute X failed: expected memory value = %02X, got %02X", expectedValue, cpu.readMemory(0x1001))
+	}
+
+	// Check if the carry flag is set correctly
+	if initialMemoryValue&0x01 != 0 {
+		if cpu.getSRBit(0) != 1 {
+			t.Errorf("LSR Absolute X failed: Carry flag not set correctly")
+		} else {
+			if cpu.getSRBit(0) != 0 {
+				t.Errorf("LSR Absolute X failed: Carry flag should not be set")
+			}
+		}
+	}
+
+	// Check if the negative flag is set correctly
+	if expectedValue&0x80 != 0 {
+		if cpu.getSRBit(7) != 1 {
+			t.Errorf("LSR Absolute X failed: Negative flag not set correctly")
+		} else {
+			if cpu.getSRBit(7) != 0 {
+				t.Errorf("LSR Absolute X failed: Negative flag should not be set")
+			}
+		}
+	}
+
+	// Check if the zero flag is set correctly
+	if expectedValue == 0 {
+		if cpu.getSRBit(1) != 1 {
+			t.Errorf("LSR Absolute X failed: Zero flag not set correctly")
+		} else {
+			if cpu.getSRBit(1) != 0 {
+				t.Errorf("LSR Absolute X failed: Zero flag should not be set")
+			}
+		}
+	}
+
+	// Check if Program Counter is incremented correctly
+	if cpu.PC != cpu.preOpPC+3 { // 3 bytes for LSR Absolute X
+		t.Errorf("LSR Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
+	}
+}
 
 func TestASLAccumulator(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
