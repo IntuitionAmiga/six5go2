@@ -3070,10 +3070,22 @@ func (cpu *CPU) AbsoluteAddressing() uint16 {
 }
 
 // AbsoluteXAddressing computes the effective address for the Absolute, X addressing mode.
+//func (cpu *CPU) AbsoluteXAddressing() uint16 {
+//	baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
+//	address := baseAddress + uint16(cpu.X)
+//	return address
+//}
+
 func (cpu *CPU) AbsoluteXAddressing() uint16 {
 	baseAddress := uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
-	address := baseAddress + uint16(cpu.X)
-	return address
+	finalAddress := baseAddress + uint16(cpu.X)
+
+	// Perform a dummy read if a page boundary is crossed
+	if (baseAddress & 0xFF00) != (finalAddress & 0xFF00) {
+		cpu.readMemory(baseAddress&0xFF00 | (finalAddress & 0x00FF))
+	}
+
+	return finalAddress
 }
 
 // AbsoluteYAddressing computes the effective address for the Absolute, Y addressing mode.
