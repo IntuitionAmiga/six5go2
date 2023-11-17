@@ -4166,32 +4166,36 @@ func TestCPYAbsolute(t *testing.T) {
 	}
 }
 
-//	func TestBRK(t *testing.T) {
-//		var cpu CPU
-//		cpu.resetCPU()
-//		cpu.setPC(0x0000)
-//		cpu.writeMemory(cpu.PC, BRK_OPCODE)
-//
-//		cpu.cpuQuit = true
-//		cpu.startCPU()
-//
-//		// Check if the program counter is set correctly
-//		if cpu.PC != 0x1234 {
-//			t.Errorf("BRK failed: expected PC = %04X, got %04X", 0x1234, cpu.PC)
-//		}
-//
-//		// Check if the stack pointer is updated correctly
-//		expectedSP := uint16(0xFC)
-//		if cpu.SP != expectedSP {
-//			t.Errorf("BRK failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
-//		}
-//
-//		// Check if the processor status is updated correctly
-//		expectedSR := byte(0x34)
-//		if cpu.SR != expectedSR {
-//			t.Errorf("BRK failed: expected SR = %02X, got %02X", expectedSR, cpu.SR)
-//		}
-//	}
+func TestBRK(t *testing.T) {
+	var cpu CPU
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+	cpu.writeMemory(cpu.PC, BRK_OPCODE)
+	// Update Reset Vector address with address for BRK
+	cpu.writeMemory(0xFFFE, 0x00)
+	cpu.writeMemory(0xFFFF, 0x10)
+
+	cpu.cpuQuit = true
+	cpu.startCPU()
+
+	// Read the pushed status register
+	pushedSR := cpu.readMemory(SPBaseAddress + cpu.SP)
+
+	// Check if the break flag is set correctly in the pushed status register
+	if pushedSR&0x10 == 0 {
+		t.Errorf("BRK failed: Break flag not set correctly in pushed SR")
+	}
+
+	// Check if the interrupt disable flag is set correctly
+	if cpu.getSRBit(2) != 1 {
+		t.Errorf("BRK failed: Interrupt disable flag not set correctly")
+	}
+
+	// Check if the Program Counter is incremented correctly
+	if cpu.PC != 0x1000 {
+		t.Errorf("BRK failed: expected PC = %04X, got %04X", 0x1000, cpu.PC)
+	}
+}
 func TestCLC(t *testing.T) {
 	var cpu CPU
 	cpu.resetCPU()
