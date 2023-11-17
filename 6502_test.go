@@ -4796,51 +4796,38 @@ func TestTYA(t *testing.T) {
 	}
 }
 
-//func TestJSR(t *testing.T) {
-//	var cpu CPU
-//	cpu.resetCPU()
-//	cpu.setPC(0x0000)
-//	cpu.writeMemory(cpu.PC, JSR_ABSOLUTE_OPCODE)
-//	cpu.writeMemory(cpu.PC+1, 0x34)
-//	cpu.writeMemory(cpu.PC+2, 0x12)
-//
-//	cpu.cpuQuit = true
-//	cpu.startCPU()
-//
-//	// Check if the stack pointer is updated correctly
-//	expectedSP := uint16(0xFD)
-//	if cpu.SP != expectedSP {
-//		t.Errorf("JSR failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
-//	}
-//
-//	// Check if the return address is pushed onto the stack correctly
-//	if cpu.readMemory(0x1FF) != 0x00 {
-//		t.Errorf("JSR failed: expected stack value = %02X, got %02X", 0x00, cpu.readMemory(0x1FF))
-//	}
-//
-//	if cpu.readMemory(0x1FE) != 0x02 {
-//		t.Errorf("JSR failed: expected stack value = %02X, got %02X", 0x02, cpu.readMemory(0x1FE))
-//	}
-//
-//	// Check if the processor status is pushed onto the stack correctly
-//	if cpu.readMemory(0x1FD) != 0x00 {
-//		t.Errorf("JSR failed: expected stack value = %02X, got %02X", 0x00, cpu.readMemory(0x1FD))
-//	}
-//
-//	// Check if the stack pointer is updated correctly
-//	expectedSP = uint16(0xFB)
-//	if cpu.SP != expectedSP {
-//		t.Errorf("JSR failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
-//	}
-//
-//	// Check if the processor status is updated correctly
-//	expectedSR := byte(0x34)
-//	if cpu.SR != expectedSR {
-//		t.Errorf("JSR failed: expected SR = %02X, got %02X", expectedSR, cpu.SR)
-//	}
-//
-//	// Check if the program counter is set correctly
-//	if cpu.PC != 0x1234 {
-//		t.Errorf("JSR failed: expected PC = %04X, got %04X", 0x1234, cpu.PC)
-//	}
-//}
+func TestJSR(t *testing.T) {
+	var cpu CPU
+	cpu.resetCPU()
+	cpu.setPC(0x0000)
+
+	// Write JSR instruction and its operand (address of subroutine)
+	cpu.writeMemory(cpu.PC, JSR_ABSOLUTE_OPCODE)
+	cpu.writeMemory(cpu.PC+1, 0x34) // Low byte of subroutine address
+	cpu.writeMemory(cpu.PC+2, 0x12) // High byte of subroutine address
+
+	cpu.cpuQuit = true
+	cpu.startCPU()
+
+	// Check stack values
+	expectedHighByte := byte(0x00)
+	expectedLowByte := byte(0x02) // PC was 0x0000, next instruction at 0x0003, pushed value is 0x0002
+	actualHighByte := cpu.readMemory(SPBaseAddress + cpu.SP + 1)
+	actualLowByte := cpu.readMemory(SPBaseAddress + cpu.SP)
+
+	if expectedHighByte != actualHighByte || expectedLowByte != actualLowByte {
+		t.Errorf("JSR failed: expected stack value = %02X%02X, got %02X%02X", expectedHighByte, expectedLowByte, actualHighByte, actualLowByte)
+	}
+
+	// Check stack pointer
+	expectedSP := uint16(0xFD) // Two bytes pushed to the stack
+	if cpu.SP != expectedSP {
+		t.Errorf("JSR failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
+	}
+
+	// Check program counter (should be set to the subroutine address)
+	expectedPC := uint16(0x1234) // Address of the subroutine
+	if cpu.PC != expectedPC {
+		t.Errorf("JSR failed: expected PC = %04X, got %04X", expectedPC, cpu.PC)
+	}
+}

@@ -1738,7 +1738,6 @@ func (cpu *CPU) PLP() {
 	cpu.updateCycleCounter(4)
 	cpu.handleState(1)
 }
-
 func (cpu *CPU) RTI() {
 	disassembleOpcode()
 	// Increment the stack pointer and read processor status
@@ -1755,7 +1754,6 @@ func (cpu *CPU) RTI() {
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
 }
-
 func (cpu *CPU) RTS() {
 	// Get low byte of new PC
 	low := uint16(cpu.readStack())
@@ -2749,19 +2747,22 @@ func (cpu *CPU) JMP_ABS() {
 	cpu.JMP("absolute")
 }
 func (cpu *CPU) JSR_ABS() {
-	/*
-		JSR - Jump To Subroutine
-	*/
+	// JSR - Jump To Subroutine
 	disassembleOpcode()
-	// First, push the high byte
-	cpu.decSP()
-	cpu.updateStack(byte(cpu.preOpPC >> 8))
-	cpu.decSP()
-	cpu.updateStack(byte((cpu.preOpPC)&0xFF) + 1)
 
-	// Now, jump to the subroutine address specified by the operands
+	// Calculate the return address (the address of the next instruction minus one)
+	returnAddr := cpu.preOpPC + 2 // JSR is 3 bytes, so next instruction is at PC + 3, return address is PC + 2
+
+	// Push return address onto the stack
+	cpu.decSP()
+	cpu.updateStack(byte(returnAddr >> 8)) // High byte
+	cpu.decSP()
+	cpu.updateStack(byte(returnAddr & 0xFF)) // Low byte
+
+	// Jump to the subroutine address specified by the operands
 	cpu.setPC(uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1))
-	cpu.updateCycleCounter(1)
+
+	cpu.updateCycleCounter(6) // JSR takes 6 cycles
 	cpu.handleState(0)
 }
 func (cpu *CPU) LDA_ABS() {
