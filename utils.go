@@ -51,30 +51,6 @@ var (
 )
 
 func loadROMs() {
-	//if *plus4 {
-	//
-	//	// Open the KERNAL ROM kernelfile
-	//	kernelfile, _ := os.Open("roms/plus4/kernal")
-	//	// Read the KERNAL ROM data into PLUS4KERNALROM
-	//	_, _ = io.ReadFull(kernelfile, PLUS4KERNALROM)
-	//	// Copy the KERNAL ROM data into memory at plus4kernalROMAddress
-	//	copy(memory[plus4kernalROMAddress:], PLUS4KERNALROM)
-	//	fmt.Printf("Copying %vKB Commodore Plus/4 KERNAL ROM into memory at $%04X to $%04X\n\n", len(PLUS4KERNALROM)/1024, plus4kernalROMAddress, plus4kernalROMAddress+len(PLUS4KERNALROM)-1)
-	//	err := kernelfile.Close()
-	//	if err != nil {
-	//		return
-	//	}
-	//
-	//	// Open the BASIC ROM file
-	//	basicfile, _ := os.Open("roms/plus4/basic")
-	//	_, _ = io.ReadFull(basicfile, PLUS4BASICROM)
-	//	fmt.Printf("Copying %vKB Commodore Plus/4 BASIC ROM into memory at $%04X to $%04X\n\n", len(PLUS4BASICROM)/1024, plus4basicROMAddress, plus4basicROMAddress+len(PLUS4BASICROM)-1)
-	//	copy(memory[plus4basicROMAddress:plus4basicROMAddress+len(PLUS4BASICROM)], PLUS4BASICROM)
-	//	err = basicfile.Close()
-	//	if err != nil {
-	//		return
-	//	}
-	//}
 	if *plus4 {
 		// Load BASIC ROM
 		basicfile, _ := os.Open("roms/plus4/basic")
@@ -175,38 +151,79 @@ func loadROMs() {
 		f.Close()
 	}
 }
-func dumpMemoryToFile(memory [65536]byte) {
+func dumpMemoryToFile(startAddress, numBytes int) {
 	file, err := os.Create("memorydump.txt")
 	if err != nil {
-		//fmt.println("Error creating file:", err)
+		// Handle error
 		return
 	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
+	defer file.Close()
 
+	endAddress := startAddress + numBytes
+	if endAddress > len(memory) {
+		endAddress = len(memory)
+	}
+
+	for i := startAddress; i < endAddress; i++ {
+		// Print the address at the start of each line
+		if (i-startAddress)%16 == 0 {
+			if i > startAddress {
+				_, _ = fmt.Fprintln(file) // Newline at the end of a line
+			}
+			_, _ = fmt.Fprintf(file, "$%04X: ", i)
 		}
-	}(file)
 
-	for _, byteValue := range memory {
-		_, err := fmt.Fprintf(file, "%02X ", byteValue)
+		// Print the byte value in hex
+		_, err := fmt.Fprintf(file, "%02X ", memory[i])
 		if err != nil {
+			// Handle error
 			return
 		}
+
+		// Add ASCII representation at the end of every 16 bytes
+		if (i-startAddress)%16 == 15 {
+			_, _ = fmt.Fprint(file, " ")
+			for j := i - 15; j <= i; j++ {
+				asciiChar := petsciiToAscii(memory[j])
+				if asciiChar >= 32 && asciiChar <= 126 {
+					_, _ = fmt.Fprintf(file, "%c", asciiChar)
+				} else {
+					_, _ = fmt.Fprint(file, ".")
+				}
+			}
+		}
 	}
-	//fmt.println("Memory dump completed!")
+
+	// Handle last line if it's not a full line of 16 bytes
+	remaining := (endAddress - startAddress) % 16
+	if remaining != 0 {
+		for i := 0; i < 16-remaining; i++ {
+			_, _ = fmt.Fprint(file, "   ") // Align ASCII representation
+		}
+		_, _ = fmt.Fprint(file, " ")
+		for i := endAddress - remaining; i < endAddress; i++ {
+			asciiChar := petsciiToAscii(memory[i])
+			if asciiChar >= 32 && asciiChar <= 126 {
+				_, _ = fmt.Fprintf(file, "%c", asciiChar)
+			} else {
+				_, _ = fmt.Fprint(file, ".")
+			}
+		}
+	}
+
+	// Add a newline at the end of the file
+	_, _ = fmt.Fprintln(file)
 }
 func petsciiToAscii(petscii uint8) uint8 {
-	// Convert PETSCII to ASCII
-	if petscii >= 65 && petscii <= 90 { // PETSCII uppercase
-		return petscii + 32 // To ASCII lowercase
-	} else if petscii >= 193 && petscii <= 218 { // PETSCII lowercase
-		return petscii - 96 // To ASCII uppercase
+	// PETSCII uppercase (A-Z) and lowercase (a-z) to ASCII
+	if (petscii >= 65 && petscii <= 90) || (petscii >= 193 && petscii <= 218) {
+		return petscii & 0x7F // Unset the 6th bit to convert to ASCII
 	} else if petscii >= 219 && petscii <= 250 { // PETSCII graphics
 		return petscii - 128 // To ASCII graphics
 	}
 	return petscii
 }
+
 func plus4KernalRoutines() {
 	// CHROUT routine is at $FFD2
 	switch cpu.PC {

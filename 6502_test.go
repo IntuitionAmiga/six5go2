@@ -2299,7 +2299,7 @@ func TestSBCImmediate(t *testing.T) {
 	}
 
 	// Check if the carry flag is set correctly (no borrow)
-	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+	if cpu.getSRBit(0) != 1 {
 		t.Errorf("SBC Immediate failed: Carry flag not set correctly")
 	}
 
@@ -2342,7 +2342,7 @@ func TestSBCZeroPage(t *testing.T) {
 	}
 
 	// Check if the carry flag is set correctly (no borrow)
-	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+	if cpu.getSRBit(0) != 1 {
 		t.Errorf("SBC Zero Page failed: Carry flag not set correctly")
 	}
 
@@ -2385,7 +2385,7 @@ func TestSBCZeroPageX(t *testing.T) {
 	}
 
 	// Check if the carry flag is set correctly (no borrow)
-	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+	if cpu.getSRBit(0) != 1 {
 		t.Errorf("SBC Zero Page X failed: Carry flag not set correctly")
 	}
 
@@ -2428,7 +2428,7 @@ func TestSBCAbsolute(t *testing.T) {
 	}
 
 	// Check if the carry flag is set correctly (no borrow)
-	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+	if cpu.getSRBit(0) != 1 {
 		t.Errorf("SBC Absolute failed: Carry flag not set correctly")
 	}
 
@@ -2472,7 +2472,7 @@ func TestSBCAbsoluteX(t *testing.T) {
 	}
 
 	// Check if the carry flag is set correctly (no borrow)
-	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+	if cpu.getSRBit(0) != 1 {
 		t.Errorf("SBC Absolute X failed: Carry flag not set correctly")
 	}
 
@@ -2516,7 +2516,7 @@ func TestSBCAbsoluteY(t *testing.T) {
 	}
 
 	// Check if the carry flag is set correctly (no borrow)
-	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+	if cpu.getSRBit(0) != 1 {
 		t.Errorf("SBC Absolute Y failed: Carry flag not set correctly")
 	}
 
@@ -2566,7 +2566,7 @@ func TestSBCIndirectX(t *testing.T) {
 	}
 
 	// Check if the carry flag is set correctly (no borrow)
-	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+	if cpu.getSRBit(0) != 1 {
 		t.Errorf("SBC Indirect X failed: Carry flag not set correctly")
 	}
 
@@ -2613,7 +2613,7 @@ func TestSBCIndirectY(t *testing.T) {
 	}
 
 	// Check if the carry flag is set correctly (no borrow)
-	if expectedValue >= 0 && cpu.getSRBit(0) != 1 {
+	if cpu.getSRBit(0) != 1 {
 		t.Errorf("SBC Indirect Y failed: Carry flag not set correctly")
 	}
 

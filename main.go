@@ -7,6 +7,7 @@ func main() {
 		memory[i] = 0
 	}
 	loadROMs()
+	//dumpMemoryToFile(plus4basicROMAddress, len(PLUS4BASICROM))
 	cpu.resetCPU()
 	ted.resetTED()
 	go userInterface()
