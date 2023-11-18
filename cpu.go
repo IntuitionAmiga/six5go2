@@ -1053,13 +1053,11 @@ func (cpu *CPU) startCPU() {
 			ted.Timer2Counter++
 			ted.Timer3Counter++
 		}
-		//fmt.Fprintf(os.Stderr, "Debug: At PC $%04X/preOpPC $%04X memory[0x0314] is %04X\n", cpu.PC, cpu.preOpPC, memory[0x0314])
 
 		executionTrace()
 		if cpu.cpuQuit {
 			break
 		}
-		fmt.Fprintf(os.Stderr, "After instruction %s, readMemory(0x8009): %02X\n", cpu.disassembledInstruction, cpu.readMemory(0x8009))
 		// For AllSuiteA.bin 6502 opcode test suite
 		if *allsuitea && cpu.readMemory(0x210) == 0xFF {
 			fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", cpu.readMemory(0x210))

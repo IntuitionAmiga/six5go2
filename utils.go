@@ -17,7 +17,7 @@ var (
 	c64         = flag.Bool("c64", false, "C64 ROMs")
 	disassemble = flag.Bool("dis", false, "Disassembler mode (Optional)")
 	traceLog    = flag.Bool("trace", false, "State monitor mode (Optional)")
-	test        = flag.Bool("test", false, "Test mode (Optional)")
+	diag        = flag.Bool("diag", false, "Diag264 ROM")
 
 	plus4ROMSize = 16384 // 8KB
 
@@ -139,6 +139,14 @@ func loadROMs() {
 		if err != nil {
 			return
 		}
+	}
+
+	if *diag {
+		kernelfile, _ := os.Open("roms/plus4/diag264_097_pal_kernal.bin")
+		_, _ = io.ReadFull(kernelfile, PLUS4KERNALROM)
+		copy(memory[plus4kernalROMAddress:], PLUS4KERNALROM[:])
+		fmt.Printf("Copying 264Diag as KERNAL ROM into memory at $%04X\n", plus4kernalROMAddress)
+		_ = kernelfile.Close()
 	}
 	if *traceLog {
 		f, err := os.OpenFile("trace.txt", os.O_CREATE|os.O_WRONLY, 0644)
