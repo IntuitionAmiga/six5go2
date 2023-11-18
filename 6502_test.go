@@ -49,18 +49,18 @@ func TestLDAZeroPageX(t *testing.T) {
 	cpu.resetCPU()
 	cpu.setPC(0x0000)
 	cpu.writeMemory(cpu.PC, LDA_ZERO_PAGE_X_OPCODE)
-	cpu.writeMemory(cpu.PC+1, 0x10)
-	cpu.writeMemory(0x0010, 0x20)
-	cpu.preOpX = 0x01
-	cpu.cpuQuit = true // Stop the CPU after one execution cycle
-	cpu.startCPU()     // Initialize the CPU state
+	cpu.writeMemory(cpu.PC+1, 0x10)             // Zero-page address
+	cpu.X = 0x01                                // Set X register
+	cpu.writeMemory(0x0010+uint16(cpu.X), 0x20) // Write value at zero-page address offset by X
+	cpu.cpuQuit = true                          // Stop the CPU after one execution cycle
+	cpu.startCPU()                              // Initialize the CPU state
 
 	// Check if the accumulator has the expected value
 	if cpu.A != 0x20 {
 		t.Errorf("LDA Zero Page X failed: got %02X, want %02X", cpu.A, 0x20)
 	}
 	// Check if Program Counter is incremented correctly
-	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for LDA immediate
+	if cpu.PC != cpu.preOpPC+2 { // 2 bytes for LDA Zero Page X
 		t.Errorf("LDA Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
@@ -175,7 +175,6 @@ func TestLDAIndirectY(t *testing.T) {
 		t.Errorf("LDA Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestLDXImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -288,7 +287,6 @@ func TestLDXAbsoluteY(t *testing.T) {
 		t.Errorf("LDX Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestLDYImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -401,7 +399,6 @@ func TestLDYAbsoluteX(t *testing.T) {
 		t.Errorf("LDY Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestSTAZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -564,7 +561,6 @@ func TestSTAIndirectY(t *testing.T) {
 		t.Errorf("STA Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestSTXZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -633,7 +629,6 @@ func TestSTXAbsolute(t *testing.T) {
 		t.Errorf("STX Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestSTYZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -700,7 +695,6 @@ func TestSTYAbsolute(t *testing.T) {
 		t.Errorf("STY Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestCMPImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -986,7 +980,6 @@ func TestCMPIndirectY(t *testing.T) {
 		t.Errorf("CMP Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestJMPAbsolute(t *testing.T) {
 	var cpu CPU
 	cpu.resetCPU()
@@ -1021,7 +1014,6 @@ func TestJMPIndirect(t *testing.T) {
 		t.Errorf("JMP Indirect failed: expected PC = %04X, got %04X", 0x7856, cpu.PC)
 	}
 }
-
 func TestANDImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1663,7 +1655,6 @@ func TestBITAbsolute(t *testing.T) {
 		t.Errorf("BIT Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestINCZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -1861,7 +1852,6 @@ func TestINCAbsoluteX(t *testing.T) {
 		t.Errorf("INC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestDECZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2059,7 +2049,6 @@ func TestDECAbsoluteX(t *testing.T) {
 		t.Errorf("DEC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestADCImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2247,7 +2236,6 @@ func TestADCIndirectY(t *testing.T) {
 		t.Errorf("ADC Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestSBCImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2290,7 +2278,6 @@ func TestSBCImmediate(t *testing.T) {
 		t.Errorf("SBC Immediate failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestSBCZeroPage(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2334,7 +2321,6 @@ func TestSBCZeroPage(t *testing.T) {
 		t.Errorf("SBC Zero Page failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestSBCZeroPageX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2378,7 +2364,6 @@ func TestSBCZeroPageX(t *testing.T) {
 		t.Errorf("SBC Zero Page X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestSBCAbsolute(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2422,7 +2407,6 @@ func TestSBCAbsolute(t *testing.T) {
 		t.Errorf("SBC Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestSBCAbsoluteX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2467,7 +2451,6 @@ func TestSBCAbsoluteX(t *testing.T) {
 		t.Errorf("SBC Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestSBCAbsoluteY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2512,7 +2495,6 @@ func TestSBCAbsoluteY(t *testing.T) {
 		t.Errorf("SBC Absolute Y failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestSBCIndirectX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2563,7 +2545,6 @@ func TestSBCIndirectX(t *testing.T) {
 		t.Errorf("SBC Indirect X failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestSBCIndirectY(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2611,7 +2592,6 @@ func TestSBCIndirectY(t *testing.T) {
 		t.Errorf("SBC Indirect Y failed: expected PC = %04X, got %04X", cpu.preOpPC+2, cpu.PC)
 	}
 }
-
 func TestRORAccumulator(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -2927,7 +2907,6 @@ func TestRORAbsoluteX(t *testing.T) {
 		t.Errorf("ROR Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestROLAccumulator(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -3246,7 +3225,6 @@ func TestROLAbsoluteX(t *testing.T) {
 		t.Errorf("ROL Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestLSRAccumulator(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -3488,7 +3466,6 @@ func TestLSRAbsolute(t *testing.T) {
 		t.Errorf("LSR Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestLSRAbsoluteX(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -3551,7 +3528,6 @@ func TestLSRAbsoluteX(t *testing.T) {
 		t.Errorf("LSR Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestASLAccumulator(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -3850,7 +3826,6 @@ func TestASLAbsoluteX(t *testing.T) {
 		t.Errorf("ASL Absolute X failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestCPXImmediate(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -4165,7 +4140,6 @@ func TestCPYAbsolute(t *testing.T) {
 		t.Errorf("CPY Absolute failed: expected PC = %04X, got %04X", cpu.preOpPC+3, cpu.PC)
 	}
 }
-
 func TestBRK(t *testing.T) {
 	var cpu CPU
 	cpu.resetCPU()
@@ -4511,7 +4485,6 @@ func TestPHP(t *testing.T) {
 		t.Errorf("PHP failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestPLA(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -4534,7 +4507,6 @@ func TestPLA(t *testing.T) {
 		t.Errorf("PLA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestPLP(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -4571,7 +4543,6 @@ func TestPLP(t *testing.T) {
 		t.Errorf("PLP failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestRTI(t *testing.T) {
 	var cpu CPU
 	cpu.resetCPU()
@@ -4605,7 +4576,6 @@ func TestRTI(t *testing.T) {
 		t.Errorf("RTI failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
 	}
 }
-
 func TestRTS(t *testing.T) {
 	var cpu CPU
 	cpu.resetCPU()
@@ -4635,7 +4605,6 @@ func TestRTS(t *testing.T) {
 		t.Errorf("RTS failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
 	}
 }
-
 func TestSEC(t *testing.T) {
 	var cpu CPU
 	cpu.resetCPU()
@@ -4778,7 +4747,6 @@ func TestTXS(t *testing.T) {
 		t.Errorf("TXS failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestTYA(t *testing.T) {
 	var cpu CPU // Create a new CPU instance for the test
 
@@ -4799,7 +4767,6 @@ func TestTYA(t *testing.T) {
 		t.Errorf("TYA failed: expected PC = %04X, got %04X", cpu.preOpPC+1, cpu.PC)
 	}
 }
-
 func TestJSR(t *testing.T) {
 	var cpu CPU
 	cpu.resetCPU()
