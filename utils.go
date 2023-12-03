@@ -152,8 +152,8 @@ func loadROMs() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Fprintf(f, "|   PC  | OP |OPERANDS| DISASSEMBLY |        REGISTERS        |  STACK  | SR FLAGS | INST | CYCLE |   TIME  |\n")
-		fmt.Fprintf(f, "|-------|----|--------|-------------|-------------------------|---------|----------|------|-------|---------|\n")
+		fmt.Fprintf(f, "|   PC  | OP |OPERANDS|   DISASSEMBLY   |        REGISTERS        |  STACK  | SR FLAGS | INST | CYCLE |  TIME   |\n")
+		fmt.Fprintf(f, "|-------|----|--------|-----------------|-------------------------|---------|----------|------|-------|---------|\n")
 		f.Sync()
 		f.Close()
 	}
@@ -283,7 +283,7 @@ func executionTrace() string {
 	cpu.traceLine = fmt.Sprintf("| $%04X | %02X | ", cpu.preOpPC, cpu.preOpOpcode)
 	cpu.nextTraceLine = fmt.Sprintf("| $%04X | %02X | ", cpu.PC, cpu.opcode())
 	if oneByteInstructions[cpu.preOpOpcode] {
-		cpu.disassembledInstruction = getMnemonic(cpu.preOpOpcode) + "\t\t" // Add tabs for formatting
+		cpu.disassembledInstruction = getMnemonic(cpu.preOpOpcode) + "\t" // Add tabs for formatting
 	}
 	if twoByteInstructions[cpu.preOpOpcode] {
 		cpu.disassembledInstruction = getMnemonic(cpu.preOpOpcode) + "  " // Add tab for formatting
