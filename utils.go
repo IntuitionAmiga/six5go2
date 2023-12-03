@@ -153,8 +153,8 @@ func loadROMs() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Fprintf(f, "|   PC  | OP |OPERANDS|    DISASSEMBLY   | \t REGISTERS\t  |  STACK  | SR FLAGS | INST COUNT | CYCLE COUNT | TIME SPENT  |\n")
-		fmt.Fprintf(f, "|-------|----|--------|------------------|-------------------------|---------|----------|------------|-------------|-------------|\n")
+		fmt.Fprintf(f, "|   PC  | OP |OPERANDS|   DISASSEMBLY   |        REGISTERS        |  STACK  | SR FLAGS | INST | CYCLE |   TIME    |\n")
+		fmt.Fprintf(f, "|-------|----|--------|-----------------|-------------------------|---------|----------|------|-------|-----------|\n")
 		f.Sync()
 		f.Close()
 	}
@@ -266,7 +266,7 @@ func plus4KernalRoutines() {
 }
 func disassembleOpcode() {
 	if *disassemble {
-		fmt.Printf("%s\n", getMnemonic(cpu.preOpOpcode))
+		fmt.Printf("%sXXX\n", getMnemonic(cpu.preOpOpcode))
 	}
 }
 func boilerPlate() {
@@ -288,7 +288,15 @@ func boilerPlate() {
 func executionTrace() string {
 	cpu.traceLine = fmt.Sprintf("| $%04X | %02X | ", cpu.preOpPC, cpu.preOpOpcode)
 	cpu.nextTraceLine = fmt.Sprintf("| $%04X | %02X | ", cpu.PC, cpu.opcode())
-	cpu.disassembledInstruction = getMnemonic(cpu.preOpOpcode)
+	if oneByteInstructions[cpu.preOpOpcode] {
+		cpu.disassembledInstruction = getMnemonic(cpu.preOpOpcode) + "\t\t" // Add tabs for formatting
+	}
+	if twoByteInstructions[cpu.preOpOpcode] {
+		cpu.disassembledInstruction = getMnemonic(cpu.preOpOpcode) + "  " // Add tab for formatting
+	}
+	if threeByteInstructions[cpu.preOpOpcode] {
+		cpu.disassembledInstruction = getMnemonic(cpu.preOpOpcode)
+	}
 	switch {
 	case oneByteInstructions[cpu.preOpOpcode]:
 		cpu.traceLine += "       |"
@@ -316,7 +324,7 @@ func writeTraceToFile(traceLine, disassembledInstruction string, A, X, Y byte, S
 	}
 	defer f.Close()
 	// Create the full trace line with additional information including SR flags
-	fullTraceLine := fmt.Sprintf("%s\t%s\t| A:%02X X:%02X Y:%02X SP:$%04X | $%04X | %s | %04X | %04X | %v |\n",
+	fullTraceLine := fmt.Sprintf("%s\t%s\t\t| A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | %s | %04X | %04X  | %v\t  |\n",
 		traceLine, disassembledInstruction, A, X, Y, SP, stackValue, getSRFlags(), cpu.instructionCounter, cpu.cycleCounter, cpu.cpuTimeSpent)
 	// Write the full trace line to the file
 	if _, err := f.WriteString(fullTraceLine); err != nil {

@@ -293,8 +293,6 @@ func (cpu *CPU) unsetCarryFlag() {
 }
 
 func (cpu *CPU) startCPU() {
-	fmt.Fprintf(os.Stderr, "Before any instruction is executed, readMemory(0x8009): %02X\n", cpu.readMemory(0x8009))
-
 	for uint(cpu.PC) < 0xFFFF {
 		cpu.preOpPC = cpu.PC
 		cpu.preOpOpcode = cpu.opcode()
