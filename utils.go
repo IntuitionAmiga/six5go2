@@ -10,14 +10,13 @@ import (
 )
 
 var (
-	allsuitea   = flag.Bool("allsuitea", false, "AllSuiteA ROM")
-	klausd      = flag.Bool("klausd", false, "Klaus Dormann's 6502 functional test ROM")
-	plus4       = flag.Bool("plus4", false, "Plus/4 ROMs")
-	ruudb       = flag.Bool("ruudb", false, "RuudB's 8K Test ROM")
-	c64         = flag.Bool("c64", false, "C64 ROMs")
-	disassemble = flag.Bool("dis", false, "Disassembler mode (Optional)")
-	traceLog    = flag.Bool("trace", false, "State monitor mode (Optional)")
-	diag        = flag.Bool("diag", false, "Diag264 ROM")
+	allsuitea = flag.Bool("allsuitea", false, "AllSuiteA ROM")
+	klausd    = flag.Bool("klausd", false, "Klaus Dormann's 6502 functional test ROM")
+	plus4     = flag.Bool("plus4", false, "Plus/4 ROMs")
+	ruudb     = flag.Bool("ruudb", false, "RuudB's 8K Test ROM")
+	c64       = flag.Bool("c64", false, "C64 ROMs")
+	traceLog  = flag.Bool("trace", false, "State monitor mode (Optional)")
+	diag      = flag.Bool("diag", false, "Diag264 ROM")
 
 	plus4ROMSize = 16384 // 8KB
 
@@ -153,8 +152,8 @@ func loadROMs() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Fprintf(f, "|   PC  | OP |OPERANDS|   DISASSEMBLY   |        REGISTERS        |  STACK  | SR FLAGS | INST | CYCLE |   TIME    |\n")
-		fmt.Fprintf(f, "|-------|----|--------|-----------------|-------------------------|---------|----------|------|-------|-----------|\n")
+		fmt.Fprintf(f, "|   PC  | OP |OPERANDS| DISASSEMBLY |        REGISTERS        |  STACK  | SR FLAGS | INST | CYCLE |   TIME    |\n")
+		fmt.Fprintf(f, "|-------|----|--------|-------------|-------------------------|---------|----------|------|-------|-----------|\n")
 		f.Sync()
 		f.Close()
 	}
@@ -261,14 +260,9 @@ func plus4KernalRoutines() {
 		// This is a RESET call
 		cpu.resetCPU()
 	}
-	// print "kernal rom call address"
 	//fmt.Printf("\n\u001B[32;5mKernal ROM call address: $%04X\u001B[0m\n", PC)
 }
-func disassembleOpcode() {
-	if *disassemble {
-		fmt.Printf("%sXXX\n", getMnemonic(cpu.preOpOpcode))
-	}
-}
+
 func boilerPlate() {
 	os.Remove("trace.txt")
 	// Clear the screen and move cursor to top left
@@ -324,7 +318,7 @@ func writeTraceToFile(traceLine, disassembledInstruction string, A, X, Y byte, S
 	}
 	defer f.Close()
 	// Create the full trace line with additional information including SR flags
-	fullTraceLine := fmt.Sprintf("%s\t%s\t\t| A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | %s | %04X | %04X  | %v\t  |\n",
+	fullTraceLine := fmt.Sprintf("%s\t%s\t| A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | %s | %04X | %04X  | %v      |\n",
 		traceLine, disassembledInstruction, A, X, Y, SP, stackValue, getSRFlags(), cpu.instructionCounter, cpu.cycleCounter, cpu.cpuTimeSpent)
 	// Write the full trace line to the file
 	if _, err := f.WriteString(fullTraceLine); err != nil {

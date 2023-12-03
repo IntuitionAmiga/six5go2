@@ -254,8 +254,8 @@ var (
 		SEC_OPCODE: true, SED_OPCODE: true, SEI_OPCODE: true,
 		TAX_OPCODE: true, TAY_OPCODE: true,
 		TSX_OPCODE: true,
-		TXA_OPCODE: true, TXS_OPCODE: true, TYA_OPCODE: true, BRK_OPCODE: true, LDX_ZERO_PAGE_OPCODE: true,
-		STA_ZERO_PAGE_OPCODE: true, STX_ZERO_PAGE_OPCODE: true, STY_ZERO_PAGE_OPCODE: true, RTS_OPCODE: true, RTI_OPCODE: true,
+		TXA_OPCODE: true, TXS_OPCODE: true, TYA_OPCODE: true, BRK_OPCODE: true,
+		RTS_OPCODE: true, RTI_OPCODE: true,
 		ROL_ACCUMULATOR_OPCODE: true, ROR_ACCUMULATOR_OPCODE: true, LSR_ACCUMULATOR_OPCODE: true, ASL_ACCUMULATOR_OPCODE: true,
 	}
 	twoByteInstructions = map[byte]bool{
@@ -1526,8 +1526,6 @@ func (cpu *CPU) CPY(addressingMode string) {
 func (cpu *CPU) BRK() {
 	// BRK - Break Command
 
-	disassembleOpcode()
-
 	// Increment PC by 1 as BRK is a 2-byte instruction (opcode + padding byte)
 	nextPC := cpu.preOpPC + 1
 
@@ -1560,7 +1558,7 @@ func (cpu *CPU) CLC() {
 	/*
 		CLC - Clear Carry Flag
 	*/
-	disassembleOpcode()
+
 	cpu.unsetCarryFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -1569,7 +1567,7 @@ func (cpu *CPU) CLD() {
 	/*
 		CLD - Clear Decimal Mode
 	*/
-	disassembleOpcode()
+
 	cpu.unsetDecimalFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -1578,7 +1576,7 @@ func (cpu *CPU) CLI() {
 	/*
 		CLI - Clear Interrupt Disable
 	*/
-	disassembleOpcode()
+
 	cpu.unsetInterruptFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -1587,7 +1585,7 @@ func (cpu *CPU) CLV() {
 	/*
 		CLV - Clear Overflow Flag
 	*/
-	disassembleOpcode()
+
 	cpu.unsetOverflowFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -1596,7 +1594,7 @@ func (cpu *CPU) DEX() {
 	/*
 		DEX - Decrement Index Register X By One
 	*/
-	disassembleOpcode()
+
 	// Decrement the X register by 1, with underflow handling
 	cpu.X = (cpu.preOpX - 1) & 0xFF
 	// Update the Negative Flag based on the new value of X
@@ -1618,7 +1616,7 @@ func (cpu *CPU) DEY() {
 	/*
 	   DEY - Decrement Index Register Y By One
 	*/
-	disassembleOpcode()
+
 	// Decrement the X register by 1, with underflow handling
 	cpu.Y = (cpu.preOpY - 1) & 0xFF
 	// Update the Negative Flag based on the new value of Y
@@ -1640,7 +1638,7 @@ func (cpu *CPU) INX() {
 	/*
 		INX - Increment Index Register X By One
 	*/
-	disassembleOpcode()
+
 	cpu.X++
 	if cpu.X == 0 { // Check for overflow
 		cpu.setZeroFlag()
@@ -1659,7 +1657,7 @@ func (cpu *CPU) INY() {
 	/*
 		INY - Increment Index Register Y By One
 	*/
-	disassembleOpcode()
+
 	cpu.Y++
 	if cpu.Y == 0 { // Check for overflow
 		cpu.setZeroFlag()
@@ -1678,7 +1676,7 @@ func (cpu *CPU) NOP() {
 	/*
 		NOP - No Operation
 	*/
-	disassembleOpcode()
+
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
 }
@@ -1686,7 +1684,7 @@ func (cpu *CPU) PHA() {
 	/*
 		PHA - Push Accumulator On Stack
 	*/
-	disassembleOpcode()
+
 	cpu.updateStack(cpu.A)
 	cpu.decSP()
 	cpu.updateCycleCounter(3)
@@ -1696,7 +1694,7 @@ func (cpu *CPU) PHP() {
 	/*
 	   PHP - Push Processor Status On Stack
 	*/
-	disassembleOpcode()
+
 	// Set the break flag and the unused bit only for the push operation
 	status := cpu.SR | (1 << 4) // Set break flag
 	status |= (1 << 5)          // Set unused bit
@@ -1711,7 +1709,7 @@ func (cpu *CPU) PLA() {
 	/*
 	   PLA - Pull Accumulator From Stack
 	*/
-	disassembleOpcode()
+
 	// Increment the stack pointer first
 	cpu.incSP()
 	// Read the value from the stack into the accumulator
@@ -1724,7 +1722,7 @@ func (cpu *CPU) PLP() {
 	/*
 		PLP - Pull Processor Status From Stack
 	*/
-	disassembleOpcode()
+
 	// Read the status from the stack
 	newStatus := cpu.readStack()
 	// Preserve break flag and unused bit from current status
@@ -1739,7 +1737,7 @@ func (cpu *CPU) PLP() {
 	cpu.handleState(1)
 }
 func (cpu *CPU) RTI() {
-	disassembleOpcode()
+
 	// Increment the stack pointer and read processor status
 	cpu.incSP()
 	cpu.SR = cpu.readStack()
@@ -1770,7 +1768,7 @@ func (cpu *CPU) SEC() {
 	/*
 		SEC - Set Carry Flag
 	*/
-	disassembleOpcode()
+
 	cpu.setCarryFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -1779,7 +1777,7 @@ func (cpu *CPU) SED() {
 	/*
 		SED - Set Decimal Mode
 	*/
-	disassembleOpcode()
+
 	cpu.setDecimalFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -1788,7 +1786,7 @@ func (cpu *CPU) SEI() {
 	/*
 		SEI - Set Interrupt Disable
 	*/
-	disassembleOpcode()
+
 	cpu.setInterruptFlag()
 	cpu.updateCycleCounter(2)
 	cpu.handleState(1)
@@ -1797,7 +1795,7 @@ func (cpu *CPU) TAX() {
 	/*
 		TAX - Transfer Accumulator To Index X
 	*/
-	disassembleOpcode()
+
 	// Update X with the value of A
 	cpu.X = cpu.preOpA
 	if cpu.getXBit(7) == 1 {
@@ -1817,7 +1815,7 @@ func (cpu *CPU) TAY() {
 	/*
 		TAY - Transfer Accumulator To Index Y
 	*/
-	disassembleOpcode()
+
 	// Set Y register to the value of the accumulator
 	cpu.Y = cpu.preOpA
 	if cpu.getYBit(7) == 1 {
@@ -1837,7 +1835,7 @@ func (cpu *CPU) TSX() {
 	/*
 		TSX - Transfer Stack Pointer To Index X
 	*/
-	disassembleOpcode()
+
 	// Update X with the SP
 	cpu.X = byte(cpu.preOpSP)
 	// If X register bit 7 is 1, set the SR negative flag bit 7 to 1 else set SR negative flag bit 7 to 0
@@ -1859,7 +1857,7 @@ func (cpu *CPU) TXA() {
 	/*
 		TXA - Transfer Index X To Accumulator
 	*/
-	disassembleOpcode()
+
 	// Set accumulator to value of X register
 	cpu.A = cpu.preOpX
 	// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
@@ -1881,7 +1879,7 @@ func (cpu *CPU) TXS() {
 	/*
 		TXS - Transfer Index X To Stack Pointer
 	*/
-	disassembleOpcode()
+
 	// Set stack pointer to value of X register
 	cpu.SP = uint16(cpu.X)
 	cpu.updateCycleCounter(2)
@@ -1891,7 +1889,7 @@ func (cpu *CPU) TYA() {
 	/*
 		TYA - Transfer Index Y To Accumulator
 	*/
-	disassembleOpcode()
+
 	// Set accumulator to value of Y register
 	cpu.A = cpu.Y
 	// If bit 7 of accumulator is set, set negative SR flag else set negative SR flag to 0
@@ -1922,28 +1920,28 @@ func (cpu *CPU) ASL_A() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembleOpcode()
+
 	cpu.ASL("accumulator")
 }
 func (cpu *CPU) LSR_A() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembleOpcode()
+
 	cpu.LSR("accumulator")
 }
 func (cpu *CPU) ROL_A() {
 	/*
 		ROL - Rotate Left
 	*/
-	disassembleOpcode()
+
 	cpu.ROL("accumulator")
 }
 func (cpu *CPU) ROR_A() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembleOpcode()
+
 	cpu.ROR("accumulator")
 }
 
@@ -1960,7 +1958,6 @@ func (cpu *CPU) ADC_I() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembleOpcode()
 
 	cpu.ADC("immediate")
 }
@@ -1968,21 +1965,20 @@ func (cpu *CPU) AND_I() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.AND("immediate")
 }
 func (cpu *CPU) CMP_I() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.CMP("immediate")
 }
 func (cpu *CPU) CPX_I() {
 	/*
 		CPX - Compare Index Register X To Memory
 	*/
-	disassembleOpcode()
 
 	cpu.CPX("immediate")
 }
@@ -1990,49 +1986,49 @@ func (cpu *CPU) CPY_I() {
 	/*
 		CPY - Compare Index Register Y To Memory
 	*/
-	disassembleOpcode()
+
 	cpu.CPY("immediate")
 }
 func (cpu *CPU) EOR_I() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.EOR("immediate")
 }
 func (cpu *CPU) LDA_I() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDA("immediate")
 }
 func (cpu *CPU) LDX_I() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDX("immediate")
 }
 func (cpu *CPU) LDY_I() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDY("immediate")
 }
 func (cpu *CPU) ORA_I() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.ORA("immediate")
 }
 func (cpu *CPU) SBC_I() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembleOpcode()
+
 	cpu.SBC("immediate")
 }
 
@@ -2048,21 +2044,20 @@ func (cpu *CPU) ADC_Z() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembleOpcode()
+
 	cpu.ADC("zeropage")
 }
 func (cpu *CPU) AND_Z() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.AND("zeropage")
 }
 func (cpu *CPU) ASL_Z() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembleOpcode()
 
 	cpu.ASL("zeropage")
 }
@@ -2070,126 +2065,126 @@ func (cpu *CPU) BIT_Z() {
 	/*
 		BIT - Test Bits in Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.BIT("zeropage")
 }
 func (cpu *CPU) CMP_Z() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.CMP("zeropage")
 }
 func (cpu *CPU) CPX_Z() {
 	/*
 		CPX - Compare Index Register X To Memory
 	*/
-	disassembleOpcode()
+
 	cpu.CPX("zeropage")
 }
 func (cpu *CPU) CPY_Z() {
 	/*
 		CPY - Compare Index Register Y To Memory
 	*/
-	disassembleOpcode()
+
 	cpu.CPY("zeropage")
 }
 func (cpu *CPU) DEC_Z() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	disassembleOpcode()
+
 	cpu.DEC("zeropage")
 }
 func (cpu *CPU) EOR_Z() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.EOR("zeropage")
 }
 func (cpu *CPU) INC_Z() {
 	/*
 		INC - Increment Memory By One
 	*/
-	disassembleOpcode()
+
 	cpu.INC("zeropage")
 }
 func (cpu *CPU) LDA_Z() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDA("zeropage")
 }
 func (cpu *CPU) LDX_Z() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDX("zeropage")
 }
 func (cpu *CPU) LDY_Z() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDY("zeropage")
 }
 func (cpu *CPU) LSR_Z() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembleOpcode()
+
 	cpu.LSR("zeropage")
 }
 func (cpu *CPU) ORA_Z() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.ORA("zeropage")
 }
 func (cpu *CPU) ROL_Z() {
 	/*
 		ROL - Rotate Left
 	*/
-	disassembleOpcode()
+
 	cpu.ROL("zeropage")
 }
 func (cpu *CPU) ROR_Z() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembleOpcode()
+
 	cpu.ROR("zeropage")
 }
 func (cpu *CPU) SBC_Z() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembleOpcode()
+
 	cpu.SBC("zeropage")
 }
 func (cpu *CPU) STA_Z() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STA("zeropage")
 }
 func (cpu *CPU) STX_Z() {
 	/*
 		STX - Store Index Register X In Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STX("zeropage")
 }
 func (cpu *CPU) STY_Z() {
 	/*
 		STY - Store Index Register Y In Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STY("zeropage")
 }
 
@@ -2205,112 +2200,112 @@ func (cpu *CPU) ADC_ZX() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembleOpcode()
+
 	cpu.ADC("zeropagex")
 }
 func (cpu *CPU) AND_ZX() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.AND("zeropagex")
 }
 func (cpu *CPU) ASL_ZX() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembleOpcode()
+
 	cpu.ASL("zeropagex")
 }
 func (cpu *CPU) CMP_ZX() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.CMP("zeropagex")
 }
 func (cpu *CPU) DEC_ZX() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	disassembleOpcode()
+
 	cpu.DEC("zeropagex")
 }
 func (cpu *CPU) LDA_ZX() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDA("zeropagex")
 }
 func (cpu *CPU) LDY_ZX() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDY("zeropagex")
 }
 func (cpu *CPU) LSR_ZX() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembleOpcode()
+
 	cpu.LSR("zeropagex")
 }
 func (cpu *CPU) ORA_ZX() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.ORA("zeropagex")
 }
 func (cpu *CPU) ROL_ZX() {
 	/*
 		ROL - Rotate Left
 	*/
-	disassembleOpcode()
+
 	cpu.ROL("zeropagex")
 }
 func (cpu *CPU) ROR_ZX() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembleOpcode()
+
 	cpu.ROR("zeropagex")
 }
 func (cpu *CPU) EOR_ZX() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.EOR("zeropagex")
 }
 func (cpu *CPU) INC_ZX() {
 	/*
 		INC - Increment Memory By One
 	*/
-	disassembleOpcode()
+
 	cpu.INC("zeropagex")
 }
 func (cpu *CPU) SBC_ZX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembleOpcode()
+
 	cpu.SBC("zeropagex")
 }
 func (cpu *CPU) STA_ZX() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STA("zeropagex")
 }
 func (cpu *CPU) STY_ZX() {
 	/*
 		STY - Store Index Register Y In Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STY("zeropagex")
 }
 
@@ -2326,14 +2321,14 @@ func (cpu *CPU) LDX_ZY() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDX("zeropagey")
 }
 func (cpu *CPU) STX_ZY() {
 	/*
 		STX - Store Index Register X In Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STX("zeropagey")
 }
 
@@ -2349,56 +2344,56 @@ func (cpu *CPU) ADC_IX() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembleOpcode()
+
 	cpu.ADC("indirectx")
 }
 func (cpu *CPU) AND_IX() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.AND("indirectx")
 }
 func (cpu *CPU) CMP_IX() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.CMP("indirectx")
 }
 func (cpu *CPU) EOR_IX() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.EOR("indirectx")
 }
 func (cpu *CPU) LDA_IX() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDA("indirectx")
 }
 func (cpu *CPU) ORA_IX() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.ORA("indirectx")
 }
 func (cpu *CPU) SBC_IX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembleOpcode()
+
 	cpu.SBC("indirectx")
 }
 func (cpu *CPU) STA_IX() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STA("indirectx")
 }
 
@@ -2414,56 +2409,56 @@ func (cpu *CPU) ADC_IY() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembleOpcode()
+
 	cpu.ADC("indirecty")
 }
 func (cpu *CPU) AND_IY() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.AND("indirecty")
 }
 func (cpu *CPU) CMP_IY() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.CMP("indirecty")
 }
 func (cpu *CPU) EOR_IY() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.EOR("indirecty")
 }
 func (cpu *CPU) LDA_IY() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDA("indirecty")
 }
 func (cpu *CPU) ORA_IY() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.ORA("indirecty")
 }
 func (cpu *CPU) SBC_IY() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembleOpcode()
+
 	cpu.SBC("indirecty")
 }
 func (cpu *CPU) STA_IY() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STA("indirecty")
 }
 
@@ -2481,7 +2476,7 @@ func (cpu *CPU) BPL_R() {
 	/*
 	   BPL - Branch on Result Plus
 	*/
-	disassembleOpcode()
+
 	offset := cpu.preOpOperand1
 	signedOffset := int8(offset) // Cast to int8 to handle signed offset
 
@@ -2508,7 +2503,7 @@ func (cpu *CPU) BMI_R() {
 	/*
 	   BMI - Branch on Result Minus
 	*/
-	disassembleOpcode()
+
 	offset := int8(cpu.preOpOperand1) // Get offset from operand
 
 	// If N flag is set, branch to address
@@ -2530,7 +2525,7 @@ func (cpu *CPU) BVC_R() {
 	/*
 	   BVC - Branch on Overflow Clear
 	*/
-	disassembleOpcode()
+
 	offset := int8(cpu.preOpOperand1) // Get offset from operand
 
 	// If overflow flag is not set, branch to address
@@ -2552,7 +2547,7 @@ func (cpu *CPU) BVS_R() {
 	/*
 	   BVS - Branch on Overflow Set
 	*/
-	disassembleOpcode()
+
 	offset := int8(cpu.preOpOperand1) // Get offset from operand
 
 	// If overflow flag is set, branch to address
@@ -2574,7 +2569,6 @@ func (cpu *CPU) BCC_R() {
 	/*
 	   BCC - Branch on Carry Clear
 	*/
-	disassembleOpcode()
 
 	offset := int8(cpu.preOpOperand1)                               // Get offset from operand
 	targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
@@ -2595,7 +2589,6 @@ func (cpu *CPU) BCS_R() {
 	/*
 	   BCS - Branch on Carry Set
 	*/
-	disassembleOpcode()
 
 	offset := int8(cpu.preOpOperand1)                               // Get offset as signed 8-bit integer
 	targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
@@ -2616,7 +2609,6 @@ func (cpu *CPU) BNE_R() {
 	/*
 	   BNE - Branch on Result Not Zero
 	*/
-	disassembleOpcode()
 
 	offset := int8(cpu.preOpOperand1)                               // Cast to signed 8-bit to handle negative offsets
 	targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
@@ -2637,7 +2629,6 @@ func (cpu *CPU) BEQ_R() {
 	/*
 	   BEQ - Branch on Result Zero
 	*/
-	disassembleOpcode()
 
 	offset := int8(cpu.preOpOperand1)                               // Cast to signed 8-bit to handle negative offsets
 	targetAddress := uint16(int16(cpu.preOpPC) + 2 + int16(offset)) // Calculate the target address
@@ -2668,82 +2659,81 @@ func (cpu *CPU) ADC_ABS() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembleOpcode()
+
 	cpu.ADC("absolute")
 }
 func (cpu *CPU) AND_ABS() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.AND("absolute")
 }
 func (cpu *CPU) ASL_ABS() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembleOpcode()
+
 	cpu.ASL("absolute")
 }
 func (cpu *CPU) BIT_ABS() {
 	/*
 		BIT - Test Bits in Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.BIT("absolute")
 }
 func (cpu *CPU) CMP_ABS() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.CMP("absolute")
 }
 func (cpu *CPU) CPX_ABS() {
 	/*
 		CPX - Compare Index Register X To Memory
 	*/
-	disassembleOpcode()
+
 	cpu.CPX("absolute")
 }
 func (cpu *CPU) CPY_ABS() {
 	/*
 		CPY - Compare Index Register Y To Memory
 	*/
-	disassembleOpcode()
+
 	cpu.CPY("absolute")
 }
 func (cpu *CPU) DEC_ABS() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	disassembleOpcode()
+
 	cpu.DEC("absolute")
 }
 func (cpu *CPU) EOR_ABS() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.EOR("absolute")
 }
 func (cpu *CPU) INC_ABS() {
 	/*
 		INC - Increment Memory By One
 	*/
-	disassembleOpcode()
+
 	cpu.INC("absolute")
 }
 func (cpu *CPU) JMP_ABS() {
 	/*
 		JMP - JMP Absolute
 	*/
-	disassembleOpcode()
+
 	cpu.JMP("absolute")
 }
 func (cpu *CPU) JSR_ABS() {
 	// JSR - Jump To Subroutine
-	disassembleOpcode()
 
 	// Calculate the return address (the address of the next instruction minus one)
 	returnAddr := cpu.preOpPC + 2 // JSR is 3 bytes, so next instruction is at PC + 3, return address is PC + 2
@@ -2764,77 +2754,77 @@ func (cpu *CPU) LDA_ABS() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDA("absolute")
 }
 func (cpu *CPU) LDX_ABS() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDX("absolute")
 }
 func (cpu *CPU) LDY_ABS() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDY("absolute")
 }
 func (cpu *CPU) LSR_ABS() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembleOpcode()
+
 	cpu.LSR("absolute")
 }
 func (cpu *CPU) ORA_ABS() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.ORA("absolute")
 }
 func (cpu *CPU) ROL_ABS() {
 	/*
 		ROL - Rotate Left
 	*/
-	disassembleOpcode()
+
 	cpu.ROL("absolute")
 }
 func (cpu *CPU) ROR_ABS() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembleOpcode()
+
 	cpu.ROR("absolute")
 }
 func (cpu *CPU) SBC_ABS() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembleOpcode()
+
 	cpu.SBC("absolute")
 }
 func (cpu *CPU) STA_ABS() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STA("absolute")
 }
 func (cpu *CPU) STX_ABS() {
 	/*
 		STX - Store Index Register X In Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STX("absolute")
 }
 func (cpu *CPU) STY_ABS() {
 	/*
 		STY - Store Index Register Y In Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STY("absolute")
 }
 
@@ -2855,104 +2845,104 @@ func (cpu *CPU) ADC_ABX() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembleOpcode()
+
 	cpu.ADC("absolutex")
 }
 func (cpu *CPU) AND_ABX() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.AND("absolutex")
 }
 func (cpu *CPU) ASL_ABX() {
 	/*
 		ASL - Arithmetic Shift Left
 	*/
-	disassembleOpcode()
+
 	cpu.ASL("absolutex")
 }
 func (cpu *CPU) CMP_ABX() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.CMP("absolutex")
 }
 func (cpu *CPU) DEC_ABX() {
 	/*
 		DEC - Decrement Memory By One
 	*/
-	disassembleOpcode()
+
 	cpu.DEC("absolutex")
 }
 func (cpu *CPU) EOR_ABX() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.EOR("absolutex")
 }
 func (cpu *CPU) INC_ABX() {
 	/*
 		INC - Increment Memory By One
 	*/
-	disassembleOpcode()
+
 	cpu.INC("absolutex")
 }
 func (cpu *CPU) LDA_ABX() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDA("absolutex")
 }
 func (cpu *CPU) LDY_ABX() {
 	/*
 		LDY - Load Index Register Y From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDY("absolutex")
 }
 func (cpu *CPU) LSR_ABX() {
 	/*
 		LSR - Logical Shift Right
 	*/
-	disassembleOpcode()
+
 	cpu.LSR("absolutex")
 }
 func (cpu *CPU) ORA_ABX() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.ORA("absolutex")
 }
 func (cpu *CPU) ROL_ABX() {
 	/*
 	 */
-	disassembleOpcode()
+
 	cpu.ROL("absolutex")
 }
 func (cpu *CPU) ROR_ABX() {
 	/*
 		ROR - Rotate Right
 	*/
-	disassembleOpcode()
+
 	cpu.ROR("absolutex")
 }
 func (cpu *CPU) SBC_ABX() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembleOpcode()
+
 	cpu.SBC("absolutex")
 }
 func (cpu *CPU) STA_ABX() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STA("absolutex")
 }
 
@@ -2972,63 +2962,63 @@ func (cpu *CPU) ADC_ABY() {
 	/*
 		ADC - Add Memory to Accumulator with Carry
 	*/
-	disassembleOpcode()
+
 	cpu.ADC("absolutey")
 }
 func (cpu *CPU) AND_ABY() {
 	/*
 		AND - "AND" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.AND("absolutey")
 }
 func (cpu *CPU) CMP_ABY() {
 	/*
 		CMP - Compare Memory and Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.CMP("absolutey")
 }
 func (cpu *CPU) EOR_ABY() {
 	/*
 		EOR - "Exclusive OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.EOR("absolutey")
 }
 func (cpu *CPU) LDA_ABY() {
 	/*
 		LDA - Load Accumulator with Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDA("absolutey")
 }
 func (cpu *CPU) LDX_ABY() {
 	/*
 		LDX - Load Index Register X From Memory
 	*/
-	disassembleOpcode()
+
 	cpu.LDX("absolutey")
 }
 func (cpu *CPU) ORA_ABY() {
 	/*
 		ORA - "OR" Memory with Accumulator
 	*/
-	disassembleOpcode()
+
 	cpu.ORA("absolutey")
 }
 func (cpu *CPU) SBC_ABY() {
 	/*
 		SBC - Subtract Memory from Accumulator with Borrow
 	*/
-	disassembleOpcode()
+
 	cpu.SBC("absolutey")
 }
 func (cpu *CPU) STA_ABY() {
 	/*
 		STA - Store Accumulator in Memory
 	*/
-	disassembleOpcode()
+
 	cpu.STA("absolutey")
 }
 
@@ -3037,7 +3027,7 @@ func (cpu *CPU) JMP_IND() {
 	/*
 		JMP - JMP Indirect
 	*/
-	disassembleOpcode()
+
 	cpu.JMP("indirect")
 }
 
