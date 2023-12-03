@@ -152,8 +152,8 @@ func loadROMs() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Fprintf(f, "|   PC  | OP |OPERANDS| DISASSEMBLY |        REGISTERS        |  STACK  | SR FLAGS | INST | CYCLE |   TIME    |\n")
-		fmt.Fprintf(f, "|-------|----|--------|-------------|-------------------------|---------|----------|------|-------|-----------|\n")
+		fmt.Fprintf(f, "|   PC  | OP |OPERANDS| DISASSEMBLY |        REGISTERS        |  STACK  | SR FLAGS | INST | CYCLE |   TIME  |\n")
+		fmt.Fprintf(f, "|-------|----|--------|-------------|-------------------------|---------|----------|------|-------|---------|\n")
 		f.Sync()
 		f.Close()
 	}
@@ -301,9 +301,7 @@ func executionTrace() string {
 	case threeByteInstructions[cpu.preOpOpcode]:
 		cpu.traceLine += fmt.Sprintf("%02X %02X  |", cpu.preOpOperand1, cpu.preOpOperand2)
 		cpu.nextTraceLine += fmt.Sprintf("%02X %02X  |", cpu.operand1(), cpu.operand2())
-	default:
-		cpu.traceLine += "???    |" // Unknown instruction size
-		cpu.nextTraceLine += "???    |"
+
 	}
 	if *traceLog {
 		writeTraceToFile(cpu.traceLine, cpu.disassembledInstruction, cpu.A, cpu.X, cpu.Y, SPBaseAddress+cpu.SP, cpu.readStack())
@@ -318,7 +316,7 @@ func writeTraceToFile(traceLine, disassembledInstruction string, A, X, Y byte, S
 	}
 	defer f.Close()
 	// Create the full trace line with additional information including SR flags
-	fullTraceLine := fmt.Sprintf("%s\t%s\t| A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | %s | %04X | %04X  | %v      |\n",
+	fullTraceLine := fmt.Sprintf("%s\t%s\t| A:%02X X:%02X Y:%02X SP:$%04X |  $%04X  | %s | %04X | %04X  | %v\t|\n",
 		traceLine, disassembledInstruction, A, X, Y, SP, stackValue, getSRFlags(), cpu.instructionCounter, cpu.cycleCounter, cpu.cpuTimeSpent)
 	// Write the full trace line to the file
 	if _, err := f.WriteString(fullTraceLine); err != nil {
@@ -439,7 +437,7 @@ func getMnemonic(opcode byte) string {
 	case 0x69, 0x29, 0xC9, 0xE0, 0xC0, 0x49, 0xA9, 0xA2, 0xA0, 0x09, 0xE9:
 		return fmt.Sprintf("%s #$%02X", mnemonic, cpu.preOpOperand1)
 	// Zero Page
-	case 0x65, 0x25, 0x05, 0x24, 0xA5, 0xA6, 0xA4, 0x06, 0x46, 0xE6, 0xC6, 0x85, 0x86, 0x84:
+	case 0x65, 0x25, 0x05, 0x24, 0xA5, 0xA6, 0xA4, 0x06, 0x46, 0xE6, 0xC6, 0x85, 0x86, 0x84, 0xC5:
 		return fmt.Sprintf("%s $%02X", mnemonic, cpu.preOpOperand1)
 	// Zero Page,X
 	case 0x75, 0x35, 0x15, 0xB5, 0xB4, 0x16, 0x56, 0xF6, 0xD6, 0x95, 0x94:
@@ -448,11 +446,11 @@ func getMnemonic(opcode byte) string {
 	case 0xB6, 0x96:
 		return fmt.Sprintf("%s $%02X,Y", mnemonic, cpu.preOpOperand1)
 	// Absolute
-	case 0x6D, 0x2D, 0x0D, 0x2C, 0xAD, 0xAE, 0xAC, 0x0E, 0x4E, 0xEE, 0xCE, 0x8D, 0x8E, 0x8C, 0x4C, 0x20:
+	case 0x6D, 0x2D, 0x0D, 0x2C, 0xAD, 0xAE, 0xAC, 0x0E, 0x4E, 0xEE, 0xCE, 0x8D, 0x8E, 0x8C, 0x4C, 0x20, 0xCD:
 		address = uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
 		return fmt.Sprintf("%s $%04X", mnemonic, address)
 	// Absolute,X
-	case 0x7D, 0x3D, 0x1D, 0xBD, 0xBC, 0x1E, 0x5E, 0xFE, 0xDE, 0x9D:
+	case 0x7D, 0x3D, 0x1D, 0xBD, 0xBC, 0x1E, 0x5E, 0xFE, 0xDE, 0x9D, 0xDD:
 		address = uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
 		return fmt.Sprintf("%s $%04X,X", mnemonic, address)
 	// Absolute,Y
