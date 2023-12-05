@@ -880,7 +880,6 @@ func (cpu *CPU) BIT(addressingMode string) {
 	value = cpu.readMemory(address)
 	// AND the value with the accumulator
 	result = cpu.preOpA & value
-	cpu.A = result
 	setFlags()
 }
 func (cpu *CPU) INC(addressingMode string) {
