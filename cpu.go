@@ -170,15 +170,18 @@ func (cpu *CPU) handleState(amount int) {
 	if amount != 0 {
 		cpu.instructionCounter++
 	}
-	plus4SystemInterrupts()
-	if cpu.irq && cpu.getSRBit(2) == 0 {
-		cpu.handleIRQ()
-	}
-	if cpu.nmi {
-		cpu.handleNMI()
-	}
-	if cpu.reset {
-		cpu.handleRESET()
+	if *plus4 {
+		plus4SystemInterrupts()
+
+		if cpu.irq && cpu.getSRBit(2) == 0 {
+			cpu.handleIRQ()
+		}
+		if cpu.nmi {
+			cpu.handleNMI()
+		}
+		if cpu.reset {
+			cpu.handleRESET()
+		}
 	}
 }
 
@@ -1056,6 +1059,7 @@ func (cpu *CPU) startCPU() {
 		if cpu.cpuQuit {
 			break
 		}
+
 		// For AllSuiteA.bin 6502 opcode test suite
 		if *allsuitea && cpu.readMemory(0x210) == 0xFF {
 			fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", cpu.readMemory(0x210))

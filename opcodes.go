@@ -1721,7 +1721,6 @@ func (cpu *CPU) PLP() {
 	/*
 		PLP - Pull Processor Status From Stack
 	*/
-
 	// Read the status from the stack
 	newStatus := cpu.readStack()
 	// Preserve break flag and unused bit from current status
@@ -1734,6 +1733,7 @@ func (cpu *CPU) PLP() {
 	cpu.incSP()
 	cpu.updateCycleCounter(4)
 	cpu.handleState(1)
+
 }
 func (cpu *CPU) RTI() {
 
