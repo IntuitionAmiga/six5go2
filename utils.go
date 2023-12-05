@@ -465,8 +465,9 @@ func getMnemonic(opcode byte) string {
 		return fmt.Sprintf("%s ($%02X),Y", mnemonic, cpu.preOpOperand1)
 	// Relative (for branch instructions)
 	case 0x90, 0xB0, 0xF0, 0x30, 0xD0, 0x10, 0x50, 0x70:
-		return fmt.Sprintf("%s $%02X", mnemonic, cpu.preOpOperand1)
-	// Indirect (only JMP has this addressing mode)
+		offset := int8(cpu.preOpOperand1)                         // Interpret the operand as a signed 8-bit integer
+		relativeAddress := int(cpu.preOpPC) + 2 + int(offset)     // PC + 2 (size of instruction) + offset
+		return fmt.Sprintf("%s $%04X", mnemonic, relativeAddress) // Indirect (only JMP has this addressing mode)
 	case 0x6C:
 		address = uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1)
 		return fmt.Sprintf("%s ($%04X)", mnemonic, address)
