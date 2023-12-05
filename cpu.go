@@ -167,9 +167,9 @@ func (cpu *CPU) handleRESET() {
 func (cpu *CPU) handleState(amount int) {
 	cpu.incPC(amount)
 	// If amount is 0, then we are in a branch instruction and we don't want to increment the instruction counter
-	if amount != 0 {
-		cpu.instructionCounter++
-	}
+	//if amount != 0 {
+	cpu.instructionCounter++
+	//}
 	if *plus4 {
 		plus4SystemInterrupts()
 
