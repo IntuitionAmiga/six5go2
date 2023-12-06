@@ -1681,86 +1681,104 @@ func (cpu *CPU) NOP() {
 }
 func (cpu *CPU) PHA() {
 	/*
-		PHA - Push Accumulator On Stack
+	   PHA - Push Accumulator On Stack
 	*/
 
-	cpu.updateStack(cpu.A)
-	cpu.decSP()
+	// Push the current value of the accumulator onto the stack
+	cpu.decSP()            // Decrement the stack pointer first
+	cpu.updateStack(cpu.A) // Then update the stack with the accumulator value
+
 	cpu.updateCycleCounter(3)
 	cpu.handleState(1)
 }
-func (cpu *CPU) PHP() {
-	/*
-	   PHP - Push Processor Status On Stack
-	*/
 
+func (cpu *CPU) PHP() {
 	// Set the break flag and the unused bit only for the push operation
 	status := cpu.SR | (1 << 4) // Set break flag
 	status |= (1 << 5)          // Set unused bit
-	// Push the status onto the stack
-	cpu.updateStack(status)
-	// Decrement the stack pointer
-	cpu.decSP()
+
+	cpu.decSP()             // Decrement the stack pointer
+	cpu.updateStack(status) // Push the status onto the stack
+
 	cpu.updateCycleCounter(3)
 	cpu.handleState(1)
 }
+
 func (cpu *CPU) PLA() {
 	/*
 	   PLA - Pull Accumulator From Stack
 	*/
 
-	// Increment the stack pointer first
-	cpu.incSP()
 	// Read the value from the stack into the accumulator
 	cpu.A = cpu.readStack()
+
+	// Increment the stack pointer after reading the value
+	cpu.incSP()
+
 	// No flag updates should occur here
 	cpu.updateCycleCounter(4)
 	cpu.handleState(1)
 }
-func (cpu *CPU) PLP() {
-	/*
-		PLP - Pull Processor Status From Stack
-	*/
-	// Read the status from the stack
-	newStatus := cpu.readStack()
-	// Preserve break flag and unused bit from current status
-	//newStatus = (newStatus & 0xCF) | (cpu.SR & 0x30)
-	newStatus = (newStatus & 0x3F) | (cpu.SR & 0xC0)
 
-	// Update SR with the new status
+func (cpu *CPU) PLP() {
+	// Read the status from the stack
+	pulledStatus := cpu.readStack()
+
+	// Mask out the Break and unused bits from the pulled status
+	mask := byte(0xCF) // 1100 1111 in binary
+	newStatus := (pulledStatus & mask) | (cpu.SR & 0x30)
+
+	// Update SR with the new status, preserving the original Break and unused bits
 	cpu.SR = newStatus
+
 	// Increment the stack pointer after the operation
 	cpu.incSP()
 	cpu.updateCycleCounter(4)
 	cpu.handleState(1)
-
 }
-func (cpu *CPU) RTI() {
 
+func (cpu *CPU) RTI() {
 	// Increment the stack pointer and read processor status
 	cpu.incSP()
-	cpu.SR = cpu.readStack()
+	sr := cpu.readStack()
+
+	// Restore the full processor status (including the Carry flag)
+	cpu.SR = sr
+
 	// Increment the stack pointer and read low byte of PC
-	cpu.incSP()
 	low := uint16(cpu.readStack())
-	// Increment the stack pointer and read high byte of PC
 	cpu.incSP()
+
+	// Increment the stack pointer and read high byte of PC
 	high := uint16(cpu.readStack())
+	cpu.incSP()
+
 	// Combine high and low bytes and set the program counter
-	cpu.setPC((high << 8) | low)
+	newPC := (high << 8) | low
+	cpu.setPC(newPC)
+
 	cpu.updateCycleCounter(6)
 	cpu.handleState(0)
 }
+
 func (cpu *CPU) RTS() {
-	// Get low byte of new PC
+	// Increment stack pointer to retrieve low byte
+	cpu.incSP()
 	low := uint16(cpu.readStack())
-	cpu.incSP() // Increment the stack pointer
-	// Get high byte of new PC
+
+	// Increment stack pointer to retrieve high byte
+	cpu.incSP()
 	high := uint16(cpu.readStack())
-	cpu.incSP() // Increment the stack pointer again
-	// Update PC with the value stored in memory at the address pointed to by SP
-	cpu.setPC(((high << 8) | low) + 1)
-	cpu.updateCycleCounter(6)
+
+	// Combine high and low bytes to form the return address
+	returnAddr := (high << 8) | low
+
+	// Increment return address by one
+	returnAddr++
+
+	// Jump to the return address
+	cpu.setPC(returnAddr)
+	cpu.updateCycleCounter(6) // RTS takes 6 cycles
 	cpu.handleState(0)
 }
 func (cpu *CPU) SEC() {
@@ -2735,13 +2753,15 @@ func (cpu *CPU) JSR_ABS() {
 	// JSR - Jump To Subroutine
 
 	// Calculate the return address (the address of the next instruction minus one)
-	returnAddr := cpu.preOpPC + 2 // JSR is 3 bytes, so next instruction is at PC + 3, return address is PC + 2
+	returnAddr := cpu.preOpPC + 2 // JSR is 3 bytes
 
-	// Push return address onto the stack
-	cpu.decSP()
+	// Push high byte of return address onto the stack
 	cpu.updateStack(byte(returnAddr >> 8)) // High byte
 	cpu.decSP()
+
+	// Push low byte of return address onto the stack
 	cpu.updateStack(byte(returnAddr & 0xFF)) // Low byte
+	cpu.decSP()
 
 	// Jump to the subroutine address specified by the operands
 	cpu.setPC(uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1))
