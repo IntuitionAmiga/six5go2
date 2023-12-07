@@ -1702,6 +1702,9 @@ func (cpu *CPU) PHP() {
 
 	cpu.updateCycleCounter(3)
 	cpu.handleState(1)
+	if cpu.preOpPC == 0x4570 {
+		fmt.Fprintf(os.Stderr, "PHP: Pushed SR %02X onto stack at SP: %04X\n", status, cpu.SP)
+	}
 }
 
 func (cpu *CPU) PLA() {

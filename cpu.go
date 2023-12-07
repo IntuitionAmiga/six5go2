@@ -1061,7 +1061,7 @@ func (cpu *CPU) startCPU() {
 		}
 
 		// For AllSuiteA.bin 6502 opcode test suite
-		if *allsuitea && cpu.readMemory(0x210) == 0xFF {
+		if *allsuitea && cpu.readMemory(0x210) == 0xFF && cpu.PC == 0x45C0 {
 			fmt.Printf("\n\u001B[32;5mMemory address $210 == $%02X. All opcodes succesfully tested and passed!\u001B[0m\n", cpu.readMemory(0x210))
 			os.Exit(0)
 		}
