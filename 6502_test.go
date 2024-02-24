@@ -4618,10 +4618,10 @@ func TestRTS(t *testing.T) {
 
 	returnAddress := uint16(0x1234)
 	// Push the return address onto the stack: high byte, then low byte
-	cpu.decSP()                                 // SP becomes 0xFE
 	cpu.updateStack(byte(returnAddress & 0xFF)) // Low byte of return address
 	cpu.decSP()                                 // SP becomes 0xFD
 	cpu.updateStack(byte(returnAddress >> 8))   // High byte of return address
+	cpu.decSP()
 
 	cpu.writeMemory(cpu.PC, RTS_OPCODE)
 	cpu.cpuQuit = true

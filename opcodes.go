@@ -1702,9 +1702,6 @@ func (cpu *CPU) PHP() {
 
 	cpu.updateCycleCounter(3)
 	cpu.handleState(1)
-	if cpu.preOpPC == 0x4570 {
-		fmt.Fprintf(os.Stderr, "PHP: Pushed SR %02X onto stack at SP: %04X\n", status, cpu.SP)
-	}
 }
 
 func (cpu *CPU) PLA() {
@@ -1774,7 +1771,7 @@ func (cpu *CPU) RTS() {
 	high := uint16(cpu.readStack())
 
 	// Combine high and low bytes to form the return address
-	returnAddr := (high << 8) | low
+	returnAddr := (low << 8) | high
 
 	// Increment return address by one
 	returnAddr++
