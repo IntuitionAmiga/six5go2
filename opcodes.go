@@ -2756,12 +2756,12 @@ func (cpu *CPU) JSR_ABS() {
 	returnAddr := cpu.preOpPC + 2 // JSR is 3 bytes
 
 	// Push high byte of return address onto the stack
+	cpu.decSP()
 	cpu.updateStack(byte(returnAddr >> 8)) // High byte
 	cpu.decSP()
 
 	// Push low byte of return address onto the stack
 	cpu.updateStack(byte(returnAddr & 0xFF)) // Low byte
-	cpu.decSP()
 
 	// Jump to the subroutine address specified by the operands
 	cpu.setPC(uint16(cpu.preOpOperand2)<<8 | uint16(cpu.preOpOperand1))
