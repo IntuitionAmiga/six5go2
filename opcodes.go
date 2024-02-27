@@ -1768,6 +1768,7 @@ func (cpu *CPU) RTS() {
 	// Increment stack pointer to retrieve high byte
 	cpu.incSP()
 	high := uint16(cpu.readStack())
+	cpu.incSP()
 
 	// Combine high and low bytes to form the return address
 	returnAddr := (high << 8) | low

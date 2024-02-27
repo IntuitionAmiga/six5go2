@@ -4617,11 +4617,11 @@ func TestRTS(t *testing.T) {
 	cpu.SP = 0xFF // Set stack pointer to initial value
 
 	returnAddress := uint16(0x1234)
-	// Push the return address onto the stack: high byte, then low byte
-	cpu.updateStack(byte(returnAddress & 0xFF)) // Low byte of return address
-	cpu.decSP()                                 // SP becomes 0xFD
+	// Corrected: Push the return address onto the stack: high byte first, then low byte
+	cpu.decSP()                                 // SP becomes 0xFE
 	cpu.updateStack(byte(returnAddress >> 8))   // High byte of return address
-	cpu.decSP()
+	cpu.decSP()                                 // SP becomes 0xFD
+	cpu.updateStack(byte(returnAddress & 0xFF)) // Low byte of return address
 
 	cpu.writeMemory(cpu.PC, RTS_OPCODE)
 	cpu.cpuQuit = true
@@ -4633,8 +4633,8 @@ func TestRTS(t *testing.T) {
 		t.Errorf("RTS failed: expected PC = %04X, got %04X", expectedPC, cpu.PC)
 	}
 
-	// Check if the stack pointer is updated correctly
-	expectedSP := uint16(0xFF) // Stack pointer should be back to its initial value
+	// Correct expectation: Check if the stack pointer is updated correctly
+	expectedSP := uint16(0xFF) // Stack pointer should be back to its initial value after the test
 	if cpu.SP != expectedSP {
 		t.Errorf("RTS failed: expected SP = %02X, got %02X", expectedSP, cpu.SP)
 	}
